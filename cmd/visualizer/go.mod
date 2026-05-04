@@ -2,12 +2,12 @@ module github.com/JamesPagetButler/qbp-visualizer
 
 go 1.25.0
 
-replace github.com/JamesPagetButler/qbp-emulator => ../../emulator
+replace github.com/JamesPagetButler/qbp-compute-unit/emulator => ../../emulator
 
 replace kaiju => /home/prime/Documents/QBP/src/bakeoff/kaiju/engine/src
 
 require (
-	github.com/JamesPagetButler/qbp-emulator v0.0.0-00010101000000-000000000000
+	github.com/JamesPagetButler/qbp-compute-unit/emulator v0.0.0-00010101000000-000000000000
 	kaiju v0.0.0-00010101000000-000000000000
 )
 

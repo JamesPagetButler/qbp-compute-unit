@@ -178,8 +178,8 @@ The Go implementation is within 1.53x of SIMD ceiling. AVX assembly kernel for W
 Both modules are pure Go with zero external dependencies:
 
 ```
-github.com/JamesPagetButler/qbp-emulator     (go 1.24.2)
-github.com/JamesPagetButler/qbp-compute-unit (go 1.22)
+github.com/JamesPagetButler/qbp-compute-unit/emulator (go 1.24.2)
+github.com/JamesPagetButler/qbp-compute-unit          (go 1.22)
 ```
 
 ---
