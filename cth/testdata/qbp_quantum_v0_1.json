@@ -1,0 +1,100 @@
+{
+  "programme": "QBP-Quantum",
+  "version": "0.1.0",
+  "axioms": [
+    {
+      "id": "AXIOM-SU2",
+      "name": "SU(2) Isomorphism",
+      "tier": 0,
+      "derivable": false,
+      "status": "coherent",
+      "provenance": "T",
+      "domain": "math",
+      "residual_entropy_bits": 0.0,
+      "description": "Fundamental SU(2) algebraic structure."
+    }
+  ],
+  "derived_principles": [
+    {
+      "id": "HESSIAN-QEC-CODE",
+      "name": "Hessian QEC [[16, 4, 2]]",
+      "tier": 1,
+      "derivable": true,
+      "status": "coherent",
+      "provenance": "T",
+      "domain": "math",
+      "residual_entropy_bits": 0.0,
+      "description": "Error correcting code derived from Hessian eigenspace.",
+      "prediction_chain": ["AXIOM-SU2"]
+    }
+  ],
+  "anchors": [
+    {
+      "id": "GLIDE-DEMO",
+      "name": "Glide Phase SU(2) Preservation",
+      "tier": 2,
+      "derivable": false,
+      "status": "untested",
+      "provenance": "E",
+      "domain": "lab",
+      "residual_entropy_bits": 3.3,
+      "confirmatory_info_bits": 0.0,
+      "description": "Measurement of SU(2) preservation across SLM-NV boundary."
+    }
+  ],
+  "inputs": [
+    {
+      "id": "NV-EFFICIENCY",
+      "name": "NV Coupling Efficiency",
+      "tier": 3,
+      "derivable": false,
+      "status": "untested",
+      "provenance": "I",
+      "domain": "lab",
+      "residual_entropy_bits": 3.3,
+      "description": "Engineering parameter for Glide phase."
+    }
+  ],
+  "chains": [
+    {
+      "id": "CH-Q-QEC",
+      "source_ids": ["AXIOM-SU2"],
+      "target_id": "HESSIAN-QEC-CODE",
+      "steps": 1,
+      "fidelity": 1.0,
+      "status": "coherent"
+    }
+  ],
+  "confluence_points": [
+    {
+      "id": "CONFL-SU2-BRIDGE",
+      "anchor_id": "AXIOM-SU2",
+      "paths": [
+        {
+          "programme": "QBP",
+          "provenance": "external",
+          "fidelity": 1.0,
+          "summary": "Derived from Hessian eigenvalues."
+        },
+        {
+          "programme": "Conventional Quantum Computing",
+          "provenance": "external",
+          "fidelity": 0.99,
+          "summary": "Physical implementation of gate sets."
+        },
+        {
+          "programme": "Photonics",
+          "provenance": "external",
+          "fidelity": 0.99,
+          "summary": "Jones matrices of polarized light."
+        }
+      ],
+      "mutual_info_bits": 2.0,
+      "status": "coherent"
+    }
+  ],
+  "health": {
+    "net_compression_ratio": 0.388,
+    "information_deficit": 16.6
+  }
+}

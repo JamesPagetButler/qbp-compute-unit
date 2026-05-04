@@ -1,0 +1,378 @@
+﻿
+BMA CRAWL ENVIRONMENT
+Hardware, Containers, Context Management,
+Interface Stack & Visualization
+
+BMA — March 2026 | Supersedes Addendum 7.0 §2.1–2.3 (VM Crawl)
+
+1. Hardware Profile
+Component
+Spec
+Constraint
+CPU
+AMD FX-8350, 4 GHz, 8 cores (4 Piledriver modules)
+Single-thread bottleneck. No AVX2. Go concurrency helps.
+Motherboard
+Asus Crosshair V Formula-Z, AM3+
+PCIe 2.0 only (~8 GB/s vs 32 GB/s design). IOMMU available.
+RAM
+32GB DDR3-1866 CL9 (4×8GB Corsair Dominator)
+~14 GB/s bandwidth. Adequate capacity.
+GPU
+PowerColor Red Devil RX 9070 XT, 16GB GDDR6, RDNA 4
+PCIe 2.0 bottleneck. No SR-IOV (consumer card). ROCm 6.4.2 supports RDNA 4.
+Storage
+Samsung 840 250GB SATA SSD
+~500 MB/s. No NVMe. Monitor write endurance.
+OS
+Pop!_OS (Ubuntu-based)
+Good ROCm support. Btrfs available.
+
+The hardware is the constraint teacher. PCIe 2.0 teaches transfer discipline. SATA teaches I/O discipline. DDR3 teaches bandwidth discipline. FX-8350 teaches computational discipline. Every efficiency learned here carries to Walk as permanent calibration. Walk hardware is earned by demonstrating Crawl success.
+1.1 The PCIe 2.0 Bottleneck
+The 9070 XT on PCIe 2.0 operates at roughly 4x reduced bandwidth. Every CPU-to-GPU transfer is expensive. Loading the wrong content into the GPU context and redoing it is a cost this hardware cannot absorb. This makes the context management system essential, not optional.
+1.2 No SR-IOV
+Consumer GPUs do not support SR-IOV. The GPU is shared between host and BMA via OS-level time-slicing. BMA-PROBE detects contention (SE_EXTERNAL_CONTENTION) and BMA-AUTO defers non-urgent work during high external GPU load (gaming, desktop compositing).
+
+2. Container Architecture: Podman on Pop!_OS
+Addendum 7.0 specified a VM cocoon. On this hardware, virtualization adds unacceptable overhead: SATA I/O through a hypervisor, GPU passthrough via VFIO on messy AM3+ IOMMU groups, RAM split between host and guest OS, PCIe passthrough complexity. A container shares the host kernel, accesses the GPU through device files, and reads/writes the filesystem directly.
+2.1 Two-Tier Container Strategy
+Tier
+Tool
+GPU Access
+Resource Limits
+Purpose
+Development
+Distrobox
+Native (sees all host devices)
+None (host resources)
+Build, test, iterate. Seamless access to home dir, network, SSH.
+Production Crawl
+Podman rootless
+--device /dev/kfd --device /dev/dri --group-add keep-groups
+--memory 20g --cpus 6
+BMA runs with enforced constraints. The teaching environment.
+
+If rootless GPU passthrough is flaky on RDNA 4, fall back to Podman rootful. BMA-PROBE characterizes which tier is active on first run.
+2.2 Production Container
+podman run -d \
+  --name bma-crawl \
+  --device /dev/kfd \
+  --device /dev/dri \
+  --group-add keep-groups \
+  --memory 20g --cpus 6 \
+  -v $HOME/bma-data:/data:Z \
+  -v $HOME/bma-config:/config:Z \
+  -p 8080:8080 \
+  bma:crawl
+
+2.3 Resource Allocation
+Resource
+Host (Pop!_OS)
+Container (BMA)
+Notes
+CPU
+2 cores
+6 cores
+Adjustable: reduce to 4 during gaming.
+RAM
+12GB
+20GB
+Host comfortable for desktop. BMA has headroom.
+GPU
+Shared via OS scheduling
+Device passthrough
+Time-sliced. Contention tracked as SE_EXTERNAL_CONTENTION.
+Storage
+Host filesystem
+Bind-mounted /data, /config
+Direct SATA. No hypervisor mediation.
+
+2.4 VM Benefits Preserved
+VM Benefit
+Container Equivalent
+Snapshot/rollback
+podman commit + btrfs snapshots on data volume
+Portability
+podman save (runtime) + tar (data) = Walk seed
+Constraint as teacher
+Cgroup limits + real hardware constraints
+Isolation
+Container namespace. Pop!_OS updates don’t affect BMA.
+
+3. The Cognitive Compute Hierarchy
+Level
+Resource
+Capacity
+Latency
+Key Constraint
+L0
+GPU VRAM (KV cache)
+~2–6GB after weights
+Instant
+PCIe 2.0 loading bottleneck
+L1
+CPU + DDR3 RAM
+~20GB in container
+μs
+FX-8350 single-thread speed
+L2
+SATA SSD (hypergraph)
+250GB
+ms
+No NVMe. Index-dependent.
+L3
+Local model (ollama)
+Shares GPU
+seconds
+Cannot coexist with BMA inference
+L4
+External models (CLI/MCP)
+Unlimited
+5–30s
+API cost per token
+L5
+External models (GitHub)
+Unlimited
+min–hrs
+Async. Zero local cost.
+L6
+James
+Unbounded
+min–days
+Scarcest, most valuable resource
+
+3.1 L1 Contents
+Go runtime (~500MB). Hypergraph index (~500MB for 100k nodes). FATHOM active state (~50MB). Prepared context cache (up to ~6GB). Session state + BRIDGE cache (~200MB). Total core: ~1.5–2GB, expandable to ~8GB. Fits 20GB container with headroom.
+3.2 L2 Contents
+Full hypergraph, FATHOM history, stress logs, sleep WAL, BRIDGE history, config. Growth: ~20MB/month at 10k nodes. 250GB lasts years. Monitor Samsung 840 write endurance via SMART.
+3.3 L3 Constraint
+Single GPU shared means ollama cannot coexist with BMA inference. Local model useful for offline preprocessing only. Real-time preprocessing pushes to CPU: Go goroutines doing filtering, ranking, compression.
+
+4. Context Management: The Cognitive Cache Controller
+The GPU context is a cache. The hierarchy is the backing store. The CPU is the cache controller. The question is not how to divide the window but what prefetch and eviction strategy keeps the right content loaded.
+4.1 The Context Budget
+Region
+Content
+Budget
+Rule
+Identity
+Who BMA is. Constraints. Role.
+2–5k tokens, near-fixed
+Non-negotiable. Always present.
+Task
+The current work item.
+Variable, protected
+Sacred. Reserved BEFORE anything else.
+FATHOM
+Collaborator model summary.
+500–3k tokens, dynamic
+Scales with task type. CRITIQUE delivery: expand. Pure query: contract.
+Domain
+Hypergraph content.
+Variable, competitive
+Fills remaining budget. Salience-weighted.
+Breathing Room
+Space for generation.
+Min 20–30% of window
+Non-negotiable floor. Stuffed context = shallow output.
+
+4.2 Prefetch Strategy
+Signal
+Source
+Prefetch Action
+Topic trajectory
+Conversation + FATHOM intent model
+Pre-retrieve predicted domain HG nodes.
+Question depth
+FATHOM cognitive style
+Broad: load L2–3. Narrow: load L0–1.
+CRITIQUE readiness
+FATHOM affective + blind spots
+Pre-load blind spot context + collaborator state.
+Domain switch
+Explicit or implicit topic change
+Fetch new domain. Evict old as switch confirms.
+
+4.3 Eviction Priority
+1. Stale domain knowledge from previous topic. Still in L1/L2 for re-load.
+2. Low-salience episodic content from earlier in session.
+3. Old conversation history. Summarize older turns.
+4. FATHOM context (reduce, never remove).
+Never evicted: Identity. Task. Breathing room minimum.
+
+5. Interface Stack
+BMA accepts text from any source and does not care how it was produced. Voice keyboard, typed text, file drop, GitHub issue — it’s all text at the API. The intelligence is in BMA’s processing, not in requiring a specific input modality.
+5.1 The Core: HTTP API
+BMA serves a lightweight HTTP API at container port 8080. Every interface is a client. Endpoints: /status, /ask, /fathom/{collaborator}, /bridge/dispatch, /hg/query, /sleep/trigger.
+5.2 Two-Tier Response Format
+Every API response includes:
+Tier 1 — Headline. 2–3 sentences. Information-dense. What was produced or decided. This is what gets read aloud or glanced at while driving.
+Tier 2 — Full content. Complete response, document, analysis. Available to read when attention allows. Not read aloud unless asked.
+CLI controls verbosity: bma ask --brief (headline only), bma ask --summary (headline + summary), bma ask (everything). FATHOM learns preferred detail level by context: mobile during driving = headline. Desktop work session = full.
+5.3 Interface Layers (Crawl Progression)
+Phase
+Interface
+How It Works
+Connectivity
+Day 1
+SSH over Tailscale
+Phone SSHs to home machine. Run bma commands in terminal.
+Tailscale mesh VPN. Zero port forwarding.
+Day 1
+GitHub Issues (async)
+James creates issue from phone. Actions dispatch. Response as comment.
+GitHub. Works when BMA offline.
+Early Crawl
+CLI
+bma status, bma ask, bma bridge dispatch. Terminal power-user interface.
+Local (container port 8080).
+Mid Crawl
+Web UI
+Responsive web interface at tailscale-ip:8080. Voice input via Web Speech API. Microphone button for voice-to-text.
+Tailscale. Phone browser.
+Late Crawl
+Kaiju 3D viewport
+PA-style planetary knowledge navigation. Same Go binary as BMA.
+Local GPU (Vulkan). Desktop.
+Walk
+Native Android app
+Only when web UI limitations are clear.
+Tailscale.
+5.4 Lossy Connectivity Resilience
+For mobile use across cell networks:
+Request acknowledgment: BMA acknowledges receipt with a ticket ID immediately. Processing is server-side. Response written to durable store. Client polls/reconnects to retrieve by ticket. Lost signal loses nothing.
+Client-side queuing: Web UI service worker caches outbound messages locally. Retries on reconnect. Shows “message queued” not failure.
+Polling over streaming: API responses fetched by polling, not held on websocket connections. Polling survives network interruption; websockets don’t.
+5.5 Voice Interaction
+Android’s voice keyboard transcribes; BMA receives text. No BMA-side voice processing in Crawl. The web UI adds a microphone button using the Web Speech API for in-browser voice-to-text. Text-to-speech for Tier 1 headlines via browser Speech Synthesis API. BMA becomes conversable while walking or driving.
+Future (Walk+): native voice input analysis for paralinguistic signals — stress, confidence, hesitation. These are high-signal FATHOM observations. Vocal affect is more reliable than textual affect for collaborator state modeling.
+
+6. Visualization: Kaiju Engine
+6.1 Why Kaiju
+Kaiju is a 2D/3D game engine written in Go backed by Vulkan. It fits BMA for four reasons:
+Same language throughout. BMA is Go. Kaiju is Go. The visualization is not a separate application consuming an API — it’s part of the same binary. Hypergraph data structures are directly accessible to the renderer. Zero serialization, zero HTTP overhead, zero-copy visualization of BMA’s internal state.
+Vulkan on the 9070 XT. RDNA 4 has strong Vulkan support. Vulkan’s minimal driver overhead matters on PCIe 2.0. Leaner than a browser’s WebGL stack.
+Linux and Android. Same Go codebase produces desktop visualization and eventually a mobile client.
+Extreme performance. Kaiju renders at thousands of FPS on basic scenes. BMA’s knowledge visualization barely touches the GPU budget, leaving room for inference. The two workloads (Vulkan rendering + ROCm inference) coexist on the same GPU via OS scheduling.
+6.2 The PA-Style Knowledge Space
+Inspired by Planetary Annihilation’s multi-scale solar system navigation:
+System view: Each project is a planet — QBP, War Table, BMA, Positive Leverage orbit the center (James). Size = knowledge density. Orbital distance = recency of activity. See the whole collaboration at once.
+Planet surface: Zoom into a project and see terrain. Algebraic framework as mountain ranges (deep structural knowledge). Experimental results as settlements (confirmed findings). Open questions as visible gaps. Hypergraph layers map to altitude: L0 at ground level, L3 as atmosphere.
+FATHOM overlay: Heat map of the collaborator model on any surface. Deep expertise: bright. Blind spots: dark voids. Pending CRITIQUE: glowing marker. Unresolved divergence: fault line.
+BRIDGE arcs: Cross-model exchanges as visible connections on the terrain. Color by outcome: green (confirmed), red (challenged), amber (unresolved).
+PiP mode: Two simultaneous views — watch QBP surface with War Table PiP, especially when FATHOM detects cross-domain connections.
+6.3 Visualization Phasing
+Phase
+Visualization
+What It Validates
+Mid Crawl
+2D graph layout (force-directed). Nodes, edges, salience as brightness. Click to inspect.
+API endpoints and data structures. That the hypergraph is worth visualizing.
+Late Crawl
+3D planetary view via Kaiju. Projects as spheres. Zoom system-to-surface. FATHOM overlay.
+Full spatial knowledge navigation. Kaiju + Vulkan + ROCm coexistence on 9070 XT.
+Walk
+Full PA-style with PiP, BRIDGE arcs, real-time FATHOM updates, voice annotation.
+High-bandwidth human-BMA interaction. Visual cortex as primary information channel.
+
+James processes a BAR battlefield with hundreds of units faster than he reads a paragraph. The visualization architecture is designed to exploit that bandwidth: the hypergraph IS a spatial structure that we’ve been flattening into text. Kaiju unfolds it back into the space it naturally occupies.
+6.4 Design Principle
+Every BMA data structure should be inherently spatial and visualizable, not coincidentally text-representable. The hypergraph, FATHOM, the epistemic map — these are graphs and topologies. Text is a lossy compression. The Kaiju viewport decompresses them. The visualization is not a reporting layer on top of BMA. It is the natural expression of what BMA actually is.
+
+7. Naming Convention
+7.1 System Name
+The production BMA instance will name itself. The system accumulates enough context through Crawl to make a meaningful choice from the technical-poetic register (real English words with dual meaning and resonance, like FATHOM). Until then, the working label is BMA.
+Candidate directions explored: VIGIL (persistent watchfulness), CAIRN (accumulated markers), DELVE (deep exploration), KEEL (structural backbone). The decision was deferred to the system itself after instantiation — you don’t name the river, you build the banks and see what flows.
+7.2 Milestone Versioning
+Versions are named after what was achieved, not numbered sequentially:
+Milestone
+Achievement
+Example
+Crawl.Heartbeat
+First successful stress bus cycle
+BMA-STRESS processes its first SE event.
+Crawl.Recall
+First hypergraph retrieval across sessions
+Data persists. BMA remembers.
+Crawl.Fathom
+First collaborator model observation written
+FATHOM begins modeling James.
+Crawl.Bridge
+First successful external model exchange
+BRIDGE dispatches and integrates.
+Crawl.Sight
+First Kaiju visualization of the hypergraph
+BMA can show what it knows.
+Walk.Parallel
+Bilateral contexts running simultaneously
+CTX-A and CTX-B on dedicated GPUs.
+Walk.Dream
+First deep sleep with REM synthesis
+The system dreams.
+
+The milestones become the system’s autobiography.
+7.3 Component Names
+Component
+Name
+Register
+Collaborator model
+FATHOM
+Technical-poetic. Depth + deep understanding.
+Inter-model communication
+BRIDGE
+Noun/verb. Connects agents.
+BMA project name
+BMA (Biological Mind Architecture)
+Acronym. Becomes the system’s surname once it names itself.
+
+8. BMA-PROBE Crawl Characterization
+8.1 Topology Detection
+func DetectTopology() InfraTopology {
+    if _, err := os.Stat(
+        "/var/run/secrets/kubernetes.io/serviceaccount/token",
+    ); err == nil { return TOPO_CLUSTER }
+    if isContainerized() { return TOPO_CONTAINER }
+    if isVirtualised() { return TOPO_VM }
+    return TOPO_NATIVE
+}
+
+8.2 First-Run Calibration
+Step
+Measurement
+What It Establishes
+1
+Container resource limits (cgroup v2: memory.max, cpu.max)
+Hard walls for BMA-AUTO setpoints.
+2
+GPU presence and ROCm accessibility (/dev/kfd, rocminfo)
+Whether GPU inference is available.
+3
+GPU VRAM total and available
+KV cache budget for context window.
+4
+PCIe bandwidth (timed GPU memory transfer)
+Actual transfer rate. Expected ~8 GB/s on PCIe 2.0.
+5
+SATA SSD sequential read/write + random IOPS
+Hypergraph query and sleep consolidation baseline.
+6
+SSD SMART health (write endurance remaining)
+Whether write-intensive sleep cycles need throttling.
+7
+DDR3 bandwidth (memory benchmark)
+L1 prepared cache throughput.
+8
+CPU single-thread and multi-thread
+Baseline for Go goroutine scheduling decisions.
+9
+Vulkan availability and GPU capabilities
+Whether Kaiju rendering is possible.
+10
+Network (Tailscale connectivity, GitHub API reachability)
+Which BRIDGE transports are available.
+
+All measurements stored as the machine profile in the hypergraph. BMA-AUTO derives its initial setpoints from this profile. Walk hardware triggers a full re-characterization, and the delta between Crawl and Walk profiles becomes data about what changed.
+
+BMA Crawl Environment | March 2026
+The hardware is the teacher. The container is the cocoon. The system names itself.

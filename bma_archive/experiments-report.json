@@ -1,0 +1,270 @@
+{
+  "report": "bma-hardware-truth-experiments",
+  "version": "1.0",
+  "timestamp": "2026-04-07T02:51:59.926039+00:00",
+  "hostname": "pop-os",
+  "probe_version": "3.0",
+  "model_used": "Qwen2.5-7B-Instruct-Q4_K_M.gguf",
+  "experiments": [
+    {
+      "experiment": 1,
+      "name": "kv_cache_actual_size",
+      "model": "Qwen2.5-7B-Instruct-Q4_K_M.gguf",
+      "context_size": 8192,
+      "vram_baseline_mb": 1433,
+      "vram_model_only_mb": 6599,
+      "vram_model_weights_mb": 5166,
+      "vram_full_context_mb": 6731,
+      "kv_cache_size_mb": 132,
+      "bilateral_viable_without_compression": true,
+      "bilateral_viable_with_turboq": true,
+      "headroom_single_context_mb": 9502,
+      "headroom_bilateral_mb": 9370,
+      "verdict": "BILATERAL_VIABLE"
+    },
+    {
+      "experiment": 2,
+      "name": "pcie_transfer_latency",
+      "kv_file_size_bytes": 298272700,
+      "save_times_ms": [
+        15760.495,
+        3612.148,
+        3242.472,
+        11379.068,
+        2855.261
+      ],
+      "save_avg_ms": 7369.888800000001,
+      "restore_times_ms": [
+        159.211,
+        155.23,
+        151.518,
+        147.291,
+        145.602
+      ],
+      "restore_avg_ms": 151.7704,
+      "effective_bandwidth_save_gbs": 0.03769230533051058,
+      "effective_bandwidth_restore_gbs": 1.830318025790999,
+      "meets_100ms_target": false,
+      "meets_500ms_target": true,
+      "verdict": "SWAP_MARGINAL"
+    },
+    {
+      "experiment": 3,
+      "name": "kv_delta_size",
+      "kv_size_turn_0_bytes": 160952860,
+      "kv_size_turn_1_bytes": 6080860,
+      "kv_size_turn_3_bytes": 6023500,
+      "kv_size_turn_5_bytes": 6195580,
+      "kv_size_turn_10_bytes": 6080860,
+      "byte_diff_0_to_10": -154872000,
+      "delta_percent": -96.22196213226655,
+      "delta_sync_value": "LOW",
+      "verdict": "FULL_SWAP_SIMPLER",
+      "turn_snapshots": [
+        {
+          "turn": 0,
+          "size_bytes": 160952860,
+          "delta_from_prev_bytes": 0
+        },
+        {
+          "turn": 1,
+          "size_bytes": 6080860,
+          "delta_from_prev_bytes": -154872000
+        },
+        {
+          "turn": 3,
+          "size_bytes": 6023500,
+          "delta_from_prev_bytes": -57360
+        },
+        {
+          "turn": 5,
+          "size_bytes": 6195580,
+          "delta_from_prev_bytes": 172080
+        },
+        {
+          "turn": 10,
+          "size_bytes": 6080860,
+          "delta_from_prev_bytes": -114720
+        }
+      ]
+    },
+    {
+      "experiment": 4,
+      "name": "embedding_batch_throughput",
+      "chunks": 100,
+      "tokens_per_chunk": 100,
+      "batch_time_ms": 45018.449,
+      "sequential_time_ms": 76493.452,
+      "speedup_ratio": 1.6991578719204654,
+      "embeddings_per_second_batch": 2.2213115338558196,
+      "embeddings_per_second_sequential": 1.3073014406514167,
+      "vram_during_batch_mb": 6733,
+      "vram_overhead_mb": 82,
+      "recommended_batch_size": 100,
+      "verdict": "BATCHING_MARGINAL"
+    },
+    {
+      "experiment": 5,
+      "name": "gaming_contention_profile",
+      "stress_source": "glmark2",
+      "baseline_latency_ms": 448.6,
+      "gaming_samples": null,
+      "gaming_avg_latency_ms": 0,
+      "gaming_max_latency_ms": 0,
+      "gaming_min_latency_ms": 0,
+      "llama_crashed": true,
+      "oom_occurred": false,
+      "thermal_throttle_observed": false,
+      "recovery_latency_ms": 0,
+      "recovery_time_s": 0,
+      "possum_trigger_recommended": true,
+      "verdict": "INCOMPATIBLE"
+    },
+    {
+      "experiment": 6,
+      "name": "shared_trunk_branching",
+      "skipped": false,
+      "shared_context_tokens": 4000,
+      "vram_shared_mb": 6741,
+      "vram_branched_mb": 6739,
+      "vram_branch_delta_mb": -2,
+      "switch_times_ms": [
+        148,
+        144,
+        144,
+        143,
+        128
+      ],
+      "switch_avg_ms": 141.4,
+      "errors": null,
+      "meets_100ms_target": false,
+      "verdict": "SHARED_TRUNK_VIABLE"
+    },
+    {
+      "experiment": 7,
+      "name": "container_gpu_overhead",
+      "bare_metal": {
+        "vram_model_mb": 6399,
+        "vram_full_mb": 6597,
+        "inference_latency_avg_ms": 453
+      },
+      "container": {
+        "vram_model_mb": 6406,
+        "vram_full_mb": 6526,
+        "inference_latency_avg_ms": 456.4
+      },
+      "vram_overhead_mb": -71,
+      "vram_overhead_pct": -1.076246778838866,
+      "latency_overhead_ms": 3.3999999999999773,
+      "latency_overhead_pct": 0.7505518763796859,
+      "verdict": "NEGLIGIBLE"
+    },
+    {
+      "experiment": 8,
+      "name": "storage_bind_mount_overhead",
+      "host_sequential_write_mbs": 14,
+      "host_sequential_read_mbs": 163,
+      "container_sequential_write_mbs": 36.1,
+      "container_sequential_read_mbs": 217,
+      "write_overhead_pct": -157.85714285714286,
+      "read_overhead_pct": -33.12883435582822,
+      "host_random_4k_iops": 3004.9995,
+      "container_random_4k_iops": 3570.242976,
+      "verdict": "NEGLIGIBLE"
+    },
+    {
+      "experiment": 9,
+      "name": "curby_reachability",
+      "attempts": 10,
+      "successes": 10,
+      "success_rate": 1,
+      "latencies_ms": [
+        481,
+        153,
+        160,
+        152,
+        144,
+        158,
+        145,
+        150,
+        159,
+        156
+      ],
+      "avg_latency_ms": 185.8,
+      "min_latency_ms": 144,
+      "max_latency_ms": 481,
+      "random_bits_received": 8480,
+      "fallback_required": false,
+      "verdict": "RELIABLE"
+    },
+    {
+      "experiment": 10,
+      "name": "smart_baseline",
+      "device": "/dev/sda",
+      "needs_sudo": false,
+      "smart_available": true,
+      "wear_leveling_count": 78,
+      "total_bytes_written_gb": 29088.148521900177,
+      "reallocated_sectors": 0,
+      "pending_sectors": null,
+      "power_on_hours": 47530,
+      "estimated_remaining_tbw_gb": 45911.85147809982,
+      "max_writes_per_cycle_gb": 31.446473615136863,
+      "health_status": "WORN",
+      "verdict": "ENDURANCE_WATCH",
+      "raw_attributes": [
+        "5 Reallocated_Sector_Ct   0x0033   100   100   010    Pre-fail  Always       -       0",
+        "9 Power_On_Hours          0x0032   090   090   000    Old_age   Always       -       47530",
+        "12 Power_Cycle_Count       0x0032   098   098   000    Old_age   Always       -       1377",
+        "177 Wear_Leveling_Count     0x0013   078   078   000    Pre-fail  Always       -       769",
+        "179 Used_Rsvd_Blk_Cnt_Tot   0x0013   100   100   010    Pre-fail  Always       -       0",
+        "181 Program_Fail_Cnt_Total  0x0032   100   100   010    Old_age   Always       -       0",
+        "182 Erase_Fail_Count_Total  0x0032   100   100   010    Old_age   Always       -       0",
+        "183 Runtime_Bad_Block       0x0013   100   100   010    Pre-fail  Always       -       0",
+        "187 Uncorrectable_Error_Cnt 0x0032   100   100   000    Old_age   Always       -       0",
+        "190 Airflow_Temperature_Cel 0x0032   079   060   000    Old_age   Always       -       21",
+        "195 ECC_Error_Rate          0x001a   200   200   000    Old_age   Always       -       0",
+        "199 CRC_Error_Count         0x003e   099   099   000    Old_age   Always       -       2",
+        "235 POR_Recovery_Count      0x0012   099   099   000    Old_age   Always       -       645",
+        "241 Total_LBAs_Written      0x0032   099   099   000    Old_age   Always       -       61002268849",
+        "1        0        0  Not_testing",
+        "2        0        0  Not_testing",
+        "3        0        0  Not_testing",
+        "4        0        0  Not_testing",
+        "5        0        0  Not_testing",
+        "255        0    65535  Read_scanning was never started"
+      ]
+    }
+  ],
+  "summary": {
+    "bilateral_decision": "SHARED_TRUNK",
+    "bilateral_gate": "Experiment 1 KV cache = 132 MB (threshold: 3500 MB)",
+    "possum_required": true,
+    "container_overhead": "NEGLIGIBLE",
+    "storage_health": "WORN",
+    "curby_status": "RELIABLE",
+    "critical_findings": [
+      "Bilateral architecture VIABLE: KV cache only 132 MB, shared-trunk uses -2 MB VRAM delta for 2 contexts, 9370 MB headroom",
+      "Possum State MANDATORY: llama-server crashes instantly when OpenGL context opens (HIP/ROCm vs GL conflict on RX 9070 XT)",
+      "Container overhead NEGLIGIBLE: +3ms latency (0.8%), Podman rootless fully validated for production",
+      "SATA SSD at 78% wear leveling (29 TB written of 75 TB rated), 31 GB/cycle write budget for 2-year operation",
+      "CPU thermal limit is 70C max / 90C crit (not 110C as spec assumed) \u2014 thermal watchdog essential, -j2 compile peaks at 73C",
+      "Board/VRM sensor (ITE IT8721F) reads 40C idle, 64C under load \u2014 likely crash culprit in previous sessions",
+      "CURBy quantum randomness beacon RELIABLE via Twine Spool API at /api/curbyq/round/latest/result (old /api/latest returns 404)",
+      "Embedding throughput ~2/sec \u2014 sleep consolidation of 1000 chunks takes ~7.5 minutes",
+      "KV cache delta between conversation turns is <1% \u2014 full swap simpler than delta sync",
+      "Second GPU would solve gaming contention \u2014 existing NVIDIA card worth testing in Walk phase"
+    ]
+  },
+  "next_steps": [
+    "Implement SHARED_TRUNK bilateral architecture (EXP-1: 132 MB KV, EXP-6: -2 MB branch delta, 9.3 GB headroom)",
+    "Implement mandatory Possum State with pre-launch detection (monitor for GL/Vulkan context creation before game starts)",
+    "Test second GPU (existing NVIDIA card) for gaming coexistence \u2014 cheapest path to avoiding Possum altogether",
+    "Integrate CURBy Twine Spool API as sleep entropy source with /dev/urandom fallback",
+    "Budget sleep consolidation: ~2 embeddings/sec throughput, 31 GB/cycle write limit on Samsung 840",
+    "Use full KV swap (not delta sync) for bilateral context switching \u2014 simpler, <5ms at 6 MB per turn",
+    "Monitor SMART quarterly \u2014 replace SSD if wear leveling drops below 50%",
+    "Maintain thermal watchdog for all GPU/compile workloads \u2014 CPU max 70C, board/VRM watch at 60C+",
+    "Proceed to Step 6 (BMA-HG-basic hypergraph core) \u2014 all hardware constraints now measured and documented"
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "programme": "QBP",
+  "version": "3.2.0",
+  "axioms": [
+    {
+      "id": "AXIOM-1",
+      "name": "Information Preservation",
+      "tier": 0,
+      "derivable": false,
+      "status": "coherent",
+      "provenance": "T",
+      "domain": "math",
+      "residual_entropy_bits": 1.0,
+      "description": "Information is preserved in the algebraic kernel."
+    },
+    {
+      "id": "AXIOM-2",
+      "name": "Maximal Encoding",
+      "tier": 0,
+      "derivable": false,
+      "status": "coherent",
+      "provenance": "T",
+      "domain": "math",
+      "residual_entropy_bits": 2.0,
+      "description": "Encoding is maximal (octonions)."
+    }
+  ],
+  "derived_principles": [
+    {
+      "id": "PROOF-hurwitz-quat",
+      "name": "Hurwitz Norm Multiplicativity (Quaternions)",
+      "tier": 1,
+      "derivable": true,
+      "status": "coherent",
+      "provenance": "T",
+      "domain": "lean",
+      "residual_entropy_bits": 0.0,
+      "description": "|ab|^2 = |a|^2|b|^2 for quaternions.",
+      "prediction_chain": ["AXIOM-1"]
+    }
+  ],
+  "anchors": [
+    {
+      "id": "MEAS-bi2se3-topo",
+      "name": "Bi2Se3 Topological Surface State",
+      "tier": 2,
+      "derivable": false,
+      "status": "coherent",
+      "provenance": "E",
+      "domain": "lab",
+      "residual_entropy_bits": 0.0,
+      "confirmatory_info_bits": 1.0,
+      "description": "Experimental confirmation of topological surface states.",
+      "prediction_chain": ["PROOF-hurwitz-quat"]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "INST-Jc",
+      "name": "Instrument Coupling Jc",
+      "tier": 3,
+      "derivable": false,
+      "status": "coherent",
+      "provenance": "I",
+      "domain": "lab",
+      "residual_entropy_bits": 3.3,
+      "description": "Irreducible instrument coupling constant."
+    }
+  ],
+  "chains": [
+    {
+      "id": "CH-Q-1",
+      "source_ids": ["AXIOM-1"],
+      "target_id": "PROOF-hurwitz-quat",
+      "steps": 1,
+      "fidelity": 1.0,
+      "status": "coherent"
+    },
+    {
+      "id": "CH-Q-2",
+      "source_ids": ["PROOF-hurwitz-quat"],
+      "target_id": "MEAS-bi2se3-topo",
+      "steps": 1,
+      "fidelity": 0.95,
+      "status": "coherent",
+      "domain_boundaries": [
+        {
+          "from_domain": "lean",
+          "to_domain": "lab",
+          "at_anchor_id": "MEAS-bi2se3-topo",
+          "fidelity": 0.95,
+          "hypothesis": "Algebraic structure preserved in physical lattice."
+        }
+      ]
+    }
+  ],
+  "confluence_points": [
+    {
+      "id": "CP-Q-1",
+      "anchor_id": "MEAS-bi2se3-topo",
+      "paths": [
+        {
+          "chain_id": "CH-Q-2",
+          "programme": "QBP",
+          "provenance": "internal",
+          "fidelity": 0.95,
+          "summary": "Internal derivation from Hurwitz proof."
+        },
+        {
+          "chain_id": null,
+          "programme": "Topological Insulator Research",
+          "provenance": "external",
+          "fidelity": 0.99,
+          "summary": "Standard condensed matter prediction."
+        }
+      ],
+      "mutual_info_bits": 0.95,
+      "status": "coherent"
+    }
+  ],
+  "health": {
+    "net_compression_ratio": 0.765,
+    "gross_compression": 0.82,
+    "information_deficit": 63.1
+  }
+}

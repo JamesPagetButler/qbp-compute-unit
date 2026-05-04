@@ -1,0 +1,196 @@
+#include "textflag.h"
+
+// ----------------------------------------------------------------------------
+// Sign Masks for VXORPD
+// ----------------------------------------------------------------------------
+// Term 1 (X mask): Target is [-, +, -, +]
+// Claude's review suggested [-, +, +, +] but the math for c_y is -x1*z2.
+DATA y_sign_x<>+0x00(SB)/8, $0x8000000000000000 // W (-)
+DATA y_sign_x<>+0x08(SB)/8, $0x0000000000000000 // X (+)
+DATA y_sign_x<>+0x10(SB)/8, $0x8000000000000000 // Y (-)
+DATA y_sign_x<>+0x18(SB)/8, $0x0000000000000000 // Z (+)
+GLOBL y_sign_x<>(SB), RODATA, $32
+
+// Term 2 (Y mask): Target is [-, +, +, -]
+// Claude's review suggested [-, -, +, +] but the math for c_x is +y1*z2, c_z is -y1*x2.
+DATA y_sign_y<>+0x00(SB)/8, $0x8000000000000000 // W (-)
+DATA y_sign_y<>+0x08(SB)/8, $0x0000000000000000 // X (+)
+DATA y_sign_y<>+0x10(SB)/8, $0x0000000000000000 // Y (+)
+DATA y_sign_y<>+0x18(SB)/8, $0x8000000000000000 // Z (-)
+GLOBL y_sign_y<>(SB), RODATA, $32
+
+// Term 3 (Z mask): Target is [-, -, +, +]
+DATA y_sign_z<>+0x00(SB)/8, $0x8000000000000000 // W (-)
+DATA y_sign_z<>+0x08(SB)/8, $0x8000000000000000 // X (-)
+DATA y_sign_z<>+0x10(SB)/8, $0x0000000000000000 // Y (+)
+DATA y_sign_z<>+0x18(SB)/8, $0x0000000000000000 // Z (+)
+GLOBL y_sign_z<>(SB), RODATA, $32
+
+// Conjugate mask: [+, -, -, -]
+DATA y_conj<>+0x00(SB)/8, $0x0000000000000000   // W (+)
+DATA y_conj<>+0x08(SB)/8, $0x8000000000000000   // X (-)
+DATA y_conj<>+0x10(SB)/8, $0x8000000000000000   // Y (-)
+DATA y_conj<>+0x18(SB)/8, $0x8000000000000000   // Z (-)
+GLOBL y_conj<>(SB), RODATA, $32
+
+// ----------------------------------------------------------------------------
+// func qmul64AVX(dst *QW64, a *QW64, b *QW64)
+// ----------------------------------------------------------------------------
+TEXT ·qmul64AVX(SB), NOSPLIT, $0-24
+    MOVQ a+8(FP), AX
+    MOVQ b+16(FP), BX
+    MOVQ dst+0(FP), CX
+
+    // Load b into Y1
+    VMOVUPD (BX), Y1
+
+    // Term 0: w1 * b
+    VBROADCASTSD 0(AX), Y5
+    VMULPD Y1, Y5, Y3
+
+    // Term 1: x1 * b_shuf1
+    VBROADCASTSD 8(AX), Y5
+    VXORPD y_sign_x<>(SB), Y5, Y5
+    VSHUFPD $0x05, Y1, Y1, Y4
+    VFMADD231PD Y5, Y4, Y3
+
+    // Term 2: y1 * b_shuf2
+    VBROADCASTSD 16(AX), Y5
+    VXORPD y_sign_y<>(SB), Y5, Y5
+    VPERM2F128 $0x01, Y1, Y1, Y4
+    VFMADD231PD Y5, Y4, Y3
+
+    // Term 3: z1 * b_shuf3
+    VBROADCASTSD 24(AX), Y5
+    VXORPD y_sign_z<>(SB), Y5, Y5
+    VPERM2F128 $0x01, Y1, Y1, Y4
+    VSHUFPD $0x05, Y4, Y4, Y4
+    VFMADD231PD Y5, Y4, Y3
+
+    VMOVUPD Y3, (CX)
+    VZEROUPPER
+    RET
+
+// ----------------------------------------------------------------------------
+// func qadd64AVX(dst *QW64, a *QW64, b *QW64)
+// ----------------------------------------------------------------------------
+TEXT ·qadd64AVX(SB), NOSPLIT, $0-24
+    MOVQ a+8(FP), AX
+    MOVQ b+16(FP), BX
+    MOVQ dst+0(FP), CX
+
+    VMOVUPD (AX), Y0
+    VADDPD (BX), Y0, Y0
+    VMOVUPD Y0, (CX)
+    VZEROUPPER
+    RET
+
+// ----------------------------------------------------------------------------
+// func qconj64AVX(dst *QW64, a *QW64)
+// ----------------------------------------------------------------------------
+TEXT ·qconj64AVX(SB), NOSPLIT, $0-16
+    MOVQ a+8(FP), AX
+    MOVQ dst+0(FP), CX
+
+    VMOVUPD (AX), Y0
+    VXORPD y_conj<>(SB), Y0, Y0
+    VMOVUPD Y0, (CX)
+    VZEROUPPER
+    RET
+
+// ----------------------------------------------------------------------------
+// func qnorm64AVX(dst *float64, a *QW64)
+// ----------------------------------------------------------------------------
+TEXT ·qnorm64AVX(SB), NOSPLIT, $0-16
+    MOVQ a+8(FP), AX
+    MOVQ dst+0(FP), CX
+
+    VMOVUPD (AX), Y0
+    // w^2, x^2, y^2, z^2
+    VMULPD Y0, Y0, Y0
+    
+    // Horizontal add using VADDPD and VPERM2F128
+    // Y0 = [A, B, C, D]
+    VPERM2F128 $0x01, Y0, Y0, Y1 // Y1 = [C, D, A, B]
+    VADDPD Y0, Y1, Y0     // Y0 = [A+C, B+D, A+C, B+D]
+    
+    VSHUFPD $0x05, Y0, Y0, Y1 // Y1 = [B+D, A+C, B+D, A+C]
+    VADDPD Y0, Y1, Y0 // Y0 = [A+C+B+D, ...]
+    
+    // Store lowest double
+    VMOVSD X0, (CX)
+    VZEROUPPER
+    RET
+
+// ----------------------------------------------------------------------------
+// func qrot64AVX(dst *QW64, q *QW64, v *QW64)
+// dst = q * v * q*
+// ----------------------------------------------------------------------------
+TEXT ·qrot64AVX(SB), NOSPLIT, $0-24
+    MOVQ q+8(FP), AX
+    MOVQ v+16(FP), BX
+    MOVQ dst+0(FP), CX
+
+    // We need q in Y0, v in Y1
+    VMOVUPD (AX), Y0
+    VMOVUPD (BX), Y1
+
+    // Step 1: Compute t = q * v into Y3
+    VBROADCASTSD 0(AX), Y5
+    VMULPD Y1, Y5, Y3
+    
+    VBROADCASTSD 8(AX), Y5
+    VXORPD y_sign_x<>(SB), Y5, Y5
+    VSHUFPD $0x05, Y1, Y1, Y4
+    VFMADD231PD Y5, Y4, Y3
+
+    VBROADCASTSD 16(AX), Y5
+    VXORPD y_sign_y<>(SB), Y5, Y5
+    VPERM2F128 $0x01, Y1, Y1, Y4
+    VFMADD231PD Y5, Y4, Y3
+
+    VBROADCASTSD 24(AX), Y5
+    VXORPD y_sign_z<>(SB), Y5, Y5
+    VPERM2F128 $0x01, Y1, Y1, Y4
+    VSHUFPD $0x05, Y4, Y4, Y4
+    VFMADD231PD Y5, Y4, Y3
+
+    // Y3 now holds t = q * v
+
+    // Step 2: Compute q* into Y2
+    VXORPD y_conj<>(SB), Y0, Y2
+
+    // Now we need dst = t * q* = Y3 * Y2
+    // t is the left operand (equivalent to 'a'), Y2 is the right operand (equivalent to 'b')
+
+    // Term 0: t_w * Y2
+    VPERMILPD $0x00, Y3, Y5
+    VPERM2F128 $0x00, Y5, Y5, Y5 // Broadcast W
+    VMULPD Y2, Y5, Y6
+
+    // Term 1: t_x * Y2_shuf1
+    VPERMILPD $0x0F, Y3, Y5
+    VPERM2F128 $0x00, Y5, Y5, Y5 // Broadcast X
+    VXORPD y_sign_x<>(SB), Y5, Y5
+    VSHUFPD $0x05, Y2, Y2, Y4
+    VFMADD231PD Y5, Y4, Y6
+
+    // Term 2: t_y * Y2_shuf2
+    VPERMILPD $0x00, Y3, Y5
+    VPERM2F128 $0x11, Y5, Y5, Y5 // Broadcast Y
+    VXORPD y_sign_y<>(SB), Y5, Y5
+    VPERM2F128 $0x01, Y2, Y2, Y4
+    VFMADD231PD Y5, Y4, Y6
+
+    // Term 3: t_z * Y2_shuf3
+    VPERMILPD $0x0F, Y3, Y5
+    VPERM2F128 $0x11, Y5, Y5, Y5 // Broadcast Z
+    VXORPD y_sign_z<>(SB), Y5, Y5
+    VPERM2F128 $0x01, Y2, Y2, Y4
+    VSHUFPD $0x05, Y4, Y4, Y4
+    VFMADD231PD Y5, Y4, Y6
+
+    // Store final result
+    VMOVUPD Y6, (CX)
+    VZEROUPPER
+    RET

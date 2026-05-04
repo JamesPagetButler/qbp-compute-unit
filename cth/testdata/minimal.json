@@ -1,0 +1,101 @@
+{
+  "programme": "Minimal Test",
+  "version": "1.0.0",
+  "axioms": [
+    {
+      "id": "AX-1",
+      "name": "Axiom 1",
+      "tier": 0,
+      "derivable": false,
+      "status": "coherent",
+      "provenance": "T",
+      "domain": "math",
+      "residual_entropy_bits": 2.0,
+      "description": "Primary assumption"
+    }
+  ],
+  "derived_principles": [
+    {
+      "id": "PR-1",
+      "name": "Proof 1",
+      "tier": 1,
+      "derivable": true,
+      "status": "coherent",
+      "provenance": "T",
+      "domain": "lean",
+      "residual_entropy_bits": 0.0,
+      "description": "Formally verified theorem",
+      "prediction_chain": ["AX-1"]
+    }
+  ],
+  "anchors": [
+    {
+      "id": "MEAS-1",
+      "name": "Measurement 1",
+      "tier": 2,
+      "derivable": false,
+      "status": "coherent",
+      "provenance": "E",
+      "domain": "lab",
+      "residual_entropy_bits": 0.1,
+      "confirmatory_info_bits": 3.32,
+      "description": "Lab observation",
+      "prediction_chain": ["PR-1"]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "IN-1",
+      "name": "Input 1",
+      "tier": 3,
+      "derivable": false,
+      "status": "untested",
+      "provenance": "I",
+      "domain": "const",
+      "residual_entropy_bits": 6.64,
+      "description": "External constant"
+    }
+  ],
+  "chains": [
+    {
+      "id": "CH-1",
+      "source_ids": ["AX-1"],
+      "target_id": "PR-1",
+      "steps": 1,
+      "fidelity": 1.0,
+      "status": "coherent"
+    },
+    {
+      "id": "CH-2",
+      "source_ids": ["PR-1"],
+      "target_id": "MEAS-1",
+      "steps": 1,
+      "fidelity": 0.99,
+      "status": "coherent"
+    }
+  ],
+  "confluence_points": [
+    {
+      "id": "CP-1",
+      "anchor_id": "MEAS-1",
+      "paths": [
+        {
+          "chain_id": "CH-2",
+          "programme": "Minimal Test",
+          "provenance": "internal",
+          "fidelity": 0.99,
+          "summary": "Internal path"
+        },
+        {
+          "chain_id": null,
+          "programme": "External Peer",
+          "provenance": "external",
+          "fidelity": 0.95,
+          "summary": "External confirmation"
+        }
+      ],
+      "mutual_info_bits": 0.95,
+      "status": "coherent"
+    }
+  ]
+}

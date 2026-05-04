@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>QBP Climate: Baseline Audit</title>
+    <style>
+        body { margin: 0; background: #000; color: #ffd700; font-family: monospace; overflow: hidden; }
+        #controls { position: absolute; top: 10px; left: 10px; background: rgba(0, 0, 0, 0.9); padding: 15px; border: 2px solid #b87333; z-index: 100; width: 280px; pointer-events: auto; }
+        #canvas-container { width: 100vw; height: 100vh; }
+        h1 { margin: 0; font-size: 18px; color: #ffd700; text-align: center; }
+        .stat { margin-top: 8px; font-size: 11px; color: #fff; }
+        #time-display { color: #00ff00; font-weight: bold; font-size: 14px; }
+        hr { border: 0; border-top: 1px solid #b87333; margin: 10px 0; }
+        button { background: #b87333; color: white; border: none; padding: 10px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 5px; }
+        #latency-monitor { color: #00ffff; font-size: 12px; border: 1px solid #00ffff; padding: 5px; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <h1>BASELINE AUDIT</h1>
+        <div class="stat">Hurricane Milton Simulation</div>
+        <div class="stat" id="time-display">Simulation Day: 0.00</div>
+        <hr/>
+        <div id="latency-monitor">
+            <b>COORDINATE TAX:</b><br/>
+            Step Latency: <span id="lat-val">0</span> µs
+        </div>
+        <hr/>
+        <button id="mode-milton">MODE: MILTON TRACK</button>
+        <button id="mode-pole">MODE: POLE-CROSSING</button>
+        <hr/>
+
+        <button id="play-pause">PAUSE SIMULATION</button>
+        <div class="stat" style="color: #00ff00"><b>BEACONS:</b></div>
+        <div class="stat" style="color: red">· RED: North Pole</div>
+        <div class="stat" style="color: yellow">· YELLOW: Gulf of Mexico</div>
+    </div>
+    <div id="canvas-container"></div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script src="wasm_exec.js"></script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const go = new Go();
+        let qbpReady = false;
+
+        WebAssembly.instantiateStreaming(fetch("qbp.wasm?v=" + new Date().getTime()), go.importObject).then((result) => {
+            go.run(result.instance);
+            console.log("QBP WASM Loaded. Audit Mode Active.");
+            qbpReady = true;
+            initVisualizer();
+        });
+
+        function createBeacon(scene, color, x, y, z) {
+            const geom = new THREE.SphereGeometry(0.15, 16, 16);
+            const mat = new THREE.MeshBasicMaterial({ color: color });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.position.set(x, y, z);
+            scene.add(mesh);
+            return mesh;
+        }
+
+        function initVisualizer() {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            const controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            sunLight.position.set(50, 50, 50);
+            scene.add(sunLight);
+
+            // 1. Earth Globe
+            const textureLoader = new THREE.TextureLoader();
+            const earthTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg');
+            const globeGeom = new THREE.SphereGeometry(5, 64, 64);
+            const globeMat = new THREE.MeshPhongMaterial({ map: earthTexture });
+            const earth = new THREE.Mesh(globeGeom, globeMat);
+            // Earth rotation calibrated to align Gulf of Mexico accurately.
+            earth.rotation.y = -1.92;  
+            scene.add(earth);
+
+            // 2. DIAGNOSTIC BEACONS (JS Coordinates)
+            createBeacon(scene, 0xff0000, 0, 5.2, 0);   // North Pole
+            createBeacon(scene, 0xffff00, -5.2*0.92, 5.2*0.38, -0.09*5.2); // Milton Start
+
+            // 3. QBP Nodes
+            window.qbp_populate(32);
+            const nodeCount = window.qbp_get_node_count();
+            // Create a 3D hot tower geometry. Translate it so it scales outward from the surface
+            const pointGeom = new THREE.BoxGeometry(0.03, 0.03, 0.1);
+            pointGeom.translate(0, 0, 0.05);
+            const pointMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+            const instancedNodes = new THREE.InstancedMesh(pointGeom, pointMat, nodeCount);
+            scene.add(instancedNodes);
+
+            camera.position.set(-15, 8, 5); 
+            controls.update();
+
+            let time = 0;
+            let paused = false;
+            let simMode = 0; // 0=Milton, 1=Pole
+            const dummy = new THREE.Object3D();
+            const color = new THREE.Color();
+            
+            // Allocate node buffer for fast WASM byte-copy
+            const posBuffer = new Float32Array(nodeCount * 4);
+            const byteBuffer = new Uint8Array(posBuffer.buffer);
+
+            const savedQuats = new Array(nodeCount);
+            // Pre-calculate orientations so we don't do 40k lookAt() calls per frame!
+            window.qbp_get_nodes_buffer(byteBuffer);
+            for(let i=0; i<nodeCount; i++) {
+                dummy.position.set(posBuffer[i*4+1]*5.05, posBuffer[i*4+2]*5.05, posBuffer[i*4+0]*5.05);
+                dummy.lookAt(0, 0, 0);
+                savedQuats[i] = dummy.quaternion.clone();
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+
+                if (!paused && qbpReady) {
+                    time += 0.01;
+                    window.qbp_step(0.015, simMode);
+
+                    // Update Latency
+                    document.getElementById('lat-val').innerText = window.qbp_get_latency().toFixed(0);
+
+                    // Fetch all node data in a single byte copy
+                    window.qbp_get_nodes_buffer(byteBuffer);
+
+                    for(let i=0; i<nodeCount; i++) {
+                        const posX = posBuffer[i*4+0];
+                        const posY = posBuffer[i*4+1];
+                        const posZ = posBuffer[i*4+2];
+                        const spin = posBuffer[i*4+3];
+
+                        dummy.position.set(posY * 5.05, posZ * 5.05, posX * 5.05);
+                        dummy.quaternion.copy(savedQuats[i]);
+                        
+                        if (spin > 0.05) {
+                            // Saffir-Simpson / Infrared Palette
+                            if (spin > 15.0) color.setHex(0x800080); // Purple (Extreme/Eyewall)
+                            else if (spin > 8.0) color.setHex(0xff0000); // Red (Cat 4/5)
+                            else if (spin > 4.0) color.setHex(0xffa500); // Orange (Cat 3)
+                            else if (spin > 1.0) color.setHex(0xffff00); // Yellow (Cat 1/2)
+                            else color.setHex(0x00bfff); // Blue (Tropical Storm)
+                            
+                            // Scale Z outward based on intensity, capped to prevent blob
+                            const extrusion = Math.min(25.0, 1.0 + spin);
+                            dummy.scale.set(1.0 + Math.min(2.0, spin * 0.1), 1.0 + Math.min(2.0, spin * 0.1), extrusion);
+                        } else {
+                            color.setHSL(0.6 - (Math.abs(posZ) * 0.4), 1.0, 0.5);
+                            dummy.scale.set(1, 1, 1);
+                        }
+                        dummy.updateMatrix();
+                        instancedNodes.setMatrixAt(i, dummy.matrix);
+                        instancedNodes.setColorAt(i, color);
+                    }
+                    instancedNodes.instanceMatrix.needsUpdate = true;
+                    if (instancedNodes.instanceColor) instancedNodes.instanceColor.needsUpdate = true;
+                    
+                    document.getElementById('time-display').innerText = `Simulation Day: ${time.toFixed(2)}`;
+                }
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+            document.getElementById('play-pause').onclick = () => { paused = !paused; };
+            document.getElementById('mode-milton').onclick = () => { simMode = 0; };
+            document.getElementById('mode-pole').onclick = () => { simMode = 1; };
+        }
+    </script>
+</body>
+</html>

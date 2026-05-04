@@ -1,0 +1,301 @@
+**QBP COMPUTE UNIT**
+
+Sense – Compute – Act
+
+Architectural Specification Rev 1.0
+
+*Quaternion-Based Physics Native Processing Architecture*
+
+Helpful Engineering — QBP Research Programme
+
+James Paget Butler, Claude (Anthropic), Gemini (Google DeepMind)
+
+March 2026
+
+Classification: Helpful Engineering Collaboration — Open-Source Research
+
+# 0. Document Purpose and Lineage
+
+This document supersedes the Fractal Quantum-Classical Core (FQCC) specification produced during collaborative sessions between James Paget Butler and Gemini. The FQCC spec identified important architectural instincts—diamond substrate, thermal stratification, self-healing mesh, modular interfaces—but framed them as a generic quantum-classical hybrid processor without connection to the QBP research programme’s central hypothesis. This revision corrects physics errors in the original, integrates architectural work from the BMA (Biological Mind Architecture), Franky-Cap, and Möbius Fusion projects, and reframes the entire design around a single organising principle: **sense-compute-act as a continuous algebraic pipeline.**
+
+> *Governing hypothesis:* If quaternion algebra constrains or describes physical law, then a processor whose native operations are quaternion-algebraic should exhibit measurably lower impedance when modelling physical systems than a conventional architecture with equivalent compute resources. This document specifies such a processor and the experimental programme to test that claim.
+
+# 1. The Sense-Compute-Act Algebraic Pipeline
+
+Conventional processors ingest physical signals, translate them into representations with no algebraic relationship to the source physics, compute, then translate back to physical action. Every translation boundary is a lossy abstraction. The QBP Compute Unit eliminates the inner translations by maintaining quaternion-algebraic structure from sensor to actuator.
+
+## 1.1 The Impedance Matching Argument
+
+Physical measurements are natively algebraic. A magnetic field has orientation (quaternion-natural). Optical polarisation states transform under SU(2), which is isomorphic to the unit quaternions. Spin-½ systems *are* quaternion systems—they require 4π rotation to return to their original state, which is precisely the double-cover property of quaternion multiplication. A sensor that collapses these structured measurements into scalar readings discards algebraic information that the compute layer must then reconstruct.
+
+The QBP Compute Unit preserves this structure end to end. Signals arrive as algebraically-typed values. Computation proceeds as algebraic operations (quaternion multiplication, octonionic composition, spreading activation over typed hypergraph edges). Results emerge as algebraically-typed outputs that map directly to physical actions—rotations, field orientations, spin operations—without a decoding step.
+
+## 1.2 The Three Stages
+
+|           |                                                                                                                                                   |                                                                                                                                                       |
+|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Stage** | **Function**                                                                                                                                      | **Algebraic Role**                                                                                                                                    |
+| SENSE     | Signal acquisition that preserves algebraic structure. NV-centre magnetometry, optical polarisation, spin-state readout. No collapse to scalars.  | Ingests elements of ℍ (quaternions) or 𝕆 (octonions) directly. Sensor output is a typed algebraic value, not a floating-point number.                 |
+| COMPUTE   | QBP-algebraic engine. Quaternion/octonionic multiply-accumulate. Hypergraph traversal with Fano-plane LUT. Spreading activation over typed edges. | Native operations are OMAC (octonionic MAC) and TMAC (ternary MAC). The Fano plane governs composition. Non-associativity encodes context-dependence. |
+| ACT       | Output maps algebraic results to physical action. A quaternion output directly encodes a rotation or field orientation. No decode step required.  | Output is an element of the algebra with magnitude, orientation, and type. Actuators receive structured commands, not bit strings.                    |
+
+## 1.3 Fractal Self-Similarity (Earned)
+
+The original FQCC spec used “fractal” as a label without mathematical justification. The sense-compute-act architecture earns this designation: each unit cell at every scale is a complete sense-compute-act loop. A single NV-centre node senses a local field, computes a spin evolution, and acts by emitting a photon. A cluster of nodes senses the aggregate field topology, computes over the local hypergraph, and acts by signalling to adjacent clusters. A module senses its cluster outputs, computes inter-cluster coordination, and acts on the external interface. The *same functional architecture* repeats at every scale. The self-similarity map is the sense-compute-act loop itself.
+
+The inter-module topology at each scale replicates the Fano plane structure—seven nodes, seven hyperedges, each connecting three nodes. This is both a valid finite projective geometry and the multiplication table governing octonionic composition. The “fractal lattice” is a Fano-plane-recursive topology with genuine mathematical content, not an aesthetic metaphor.
+
+# 2. Physics Corrections to the FQCC Spec
+
+The following errors in the original specification are corrected in this revision.
+
+## 2.1 NV-Centre Operating Temperature
+
+The FQCC spec specified millikelvin (mK) operating temperatures for nitrogen-vacancy centres in diamond. This is **incorrect**. Millikelvin temperatures are required for superconducting qubits (transmons, flux qubits) which use Josephson junctions and must suppress thermal excitations above microwave photon energies. NV centres in diamond are specifically notable for long coherence times at far higher temperatures: room temperature (~300K) for sensing applications, and 4K–77K for quantum computing with coherence times exceeding milliseconds. The QBP Compute Unit targets **4K for the quantum node clusters**, achievable without dilution refrigeration.
+
+## 2.2 NV-Centre Placement Precision
+
+The original spec stated 10nm placement accuracy as a fabrication target. Current state-of-the-art ion implantation through e-beam-patterned masks achieves 20–50nm reliable placement. The revised specification targets **30nm for Phase 1** (achievable with current technology) and 10–15nm as a Phase 3 aspiration requiring advances in focused ion beam or deterministic implantation techniques.
+
+## 2.3 Classical-to-Quantum Node Ratio
+
+The 1:1 ratio of 1,000 classical cores to 1,000 quantum nodes was asserted without justification. Surface code error correction for diamond NV centres typically requires ratios of 10:1 to 100:1 classical-to-quantum for syndrome extraction and decoding. However, the QBP Compute Unit’s algebraic error correction (Section 4.3) may reduce this overhead by exploiting quaternionic structure in the error syndromes. The revised specification starts with a **10:1 ratio (1,000 classical cores to 100 quantum nodes)** for Phase 1, with the ratio adjustable as algebraic error correction matures.
+
+## 2.4 Nomenclature
+
+The transfer note in the original spec referred to “Quantarian-based Physics.” The correct name is **Quaternion-Based Physics (QBP)**, referring to the division algebra ℍ of quaternions discovered by Hamilton in 1843. This is not cosmetic—the name encodes the mathematical object under investigation.
+
+# 3. Substrate: Synthetic Diamond
+
+The original spec correctly identified synthetic diamond as the substrate material. This choice is retained and strengthened by the sense-compute-act framing.
+
+## 3.1 Diamond as a Unified Sense-Compute-Act Medium
+
+Diamond performs all three pipeline stages in a single crystal lattice:
+
+- **SENSE:** NV centres are intrinsic magnetometers with single-spin sensitivity at room temperature. They detect magnetic fields with orientation preserved—the measurement output is naturally a vector in ℝ³, directly embeddable as the imaginary part of a quaternion.
+
+- **COMPUTE:** NV-centre electron spins are spin-½ systems. Their state space IS the quaternion subalgebra SU(2). Spin evolution under an applied field is quaternion multiplication. The substrate’s native physics speaks the QBP algebra without translation.
+
+- **ACT:** NV centres emit fluorescence whose intensity and polarisation encode the spin state. Optical waveguides patterned into the diamond lattice carry these signals as algebraically-structured outputs (polarisation states = SU(2) elements) to downstream systems or inter-module interfaces.
+
+> *Diamond is not chosen because it is a fashionable qubit host. It is chosen because it is a material whose native physics is quaternion-algebraic at every stage of the sense-compute-act loop. The substrate speaks the language of the hypothesis.*
+
+## 3.2 Thermal Properties
+
+Diamond’s thermal conductivity (~2,200 W/m·K at room temperature, rising at cryogenic temperatures) is the highest of any known bulk material. This enables the thermal stratification architecture (Section 5) by providing an efficient heat transport medium between thermal zones. The thermal conductivity *increases* as temperature decreases, which means the cryogenic compute core sits in the most thermally conductive region of the lattice—a favourable inversion of the usual engineering trade-off.
+
+# 4. Compute Architecture: The QBP-Algebraic Engine
+
+## 4.1 Native Instruction Set
+
+The QBP Compute Unit’s instruction set is designed around algebraic primitives, not conventional Boolean logic or floating-point arithmetic.
+
+|                 |                                                                                                                                                |                                                                                                                                              |
+|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| **Instruction** | **Operation**                                                                                                                                  | **Algebraic Meaning**                                                                                                                        |
+| OMAC            | Octonionic multiply-accumulate. Two int8×8 operands (two octonions, 64 bits each), Fano-plane LUT multiplication, accumulate into destination. | Full octonionic composition with non-associative context-dependence. Serves both inference and memory traversal. One instruction, one cycle. |
+| TMAC            | Ternary multiply-accumulate. Packed ternary weight × int8 activation vectors. LUT-based (16.6× benchmark advantage over naive).                | Quaternionic subalgebra operations. Deterministic, associative computation for verified-fact processing and classical error correction.      |
+| QROT            | Quaternion rotation. Applies unit quaternion q to vector v as qvq\*. Single instruction for the most common physical operation.                | Direct physical rotation without Euler angle decomposition or matrix construction. Native spin-state manipulation.                           |
+| FANO            | Fano-plane lookup. Given two imaginary unit indices, returns (result index, sign). 49 entries, \<25 bytes of ROM.                              | The composition law for octonionic edge types. Determines what relationship type emerges when two relationships are composed.                |
+
+## 4.2 Hypergraph Memory Architecture
+
+The compute engine operates over a typed hypergraph (from BMA) with octonionic edge weights. Seven imaginary octonion units (e₁ through e₇) provide seven fundamental edge types whose composition is governed by the Fano plane. The real component (a₀) encodes edge salience.
+
+This structure enables **spreading activation as matrix-vector multiply**: traversal of the hypergraph is algebraically identical to sparse matrix-vector multiplication over octonionic elements. The same OMAC instruction kernel that serves neural network inference also serves memory retrieval. On benchmarked hardware (AMD FX-8350), hypergraph traversal requires ~300,000 multiply-accumulates versus ~3.2 billion for a transformer forward pass—four orders of magnitude less compute for memory retrieval than for generation.
+
+## 4.3 Algebraic Error Correction
+
+Conventional quantum error correction (surface codes, stabiliser codes) treats errors as arbitrary Pauli operations and corrects them with classical syndrome processing. The QBP Compute Unit exploits the hypothesis that physically-realisable errors respect quaternion algebraic structure.
+
+If errors are quaternion-structured, then error syndromes are quaternion-valued, and syndrome decoding is quaternion multiplication—executable by the same OMAC/QROT hardware that performs useful computation. This predicts a measurably lower error correction overhead than conventional approaches for physically-occurring errors. **This is a testable prediction of the QBP hypothesis** and a primary experimental target for Phase 2.
+
+# 5. Thermal Architecture: Thermionic Cascade
+
+The original FQCC spec described “inflation layers” with “vacuum-gap or aerogel insulation.” This is replaced by the thermionic cascade cooling architecture developed for the Möbius Self-Clocking Fusion project, adapted for the QBP Compute Unit’s thermal requirements.
+
+## 5.1 Five-Level Cascade (273K → 4K)
+
+Each stage uses thermionic emission across a vacuum gap with work-function-tuned emitters. Zero moving parts. No dilution refrigerator required.
+
+|           |                |             |                                                    |                                               |
+|-----------|----------------|-------------|----------------------------------------------------|-----------------------------------------------|
+| **Level** | **Temp Range** | **Zone**    | **Contents**                                       | **Cooling Mechanism**                         |
+| 0         | 273K–200K      | Exterior    | Structural manifold, module interfaces             | Passive radiative + conductive to environment |
+| 1         | 200K–80K       | Classical   | Classical processing cores (1,000-core mesh)       | Thermionic Stage 1                            |
+| 2         | 80K–30K        | Interface   | Quantum-classical bus, signal conditioning         | Thermionic Stage 2                            |
+| 3         | 30K–10K        | Pre-quantum | REBCO shielding (Franky-Cap technology), filtering | Thermionic Stage 3                            |
+| 4         | 10K–4K         | Quantum     | NV-centre quantum nodes (100 nodes, Phase 1)       | Thermionic Stage 4                            |
+
+## 5.2 Integration with Franky-Cap Technology
+
+Level 3 of the thermal cascade operates in the REBCO superconducting regime (\<92K). The Franky-Cap’s demonstrated physics—Hull magnetron cutoff as dielectric replacement, vacuum-gap engineering, geometry-determined thermal management—applies directly to the QBP Compute Unit’s quantum shielding layer. The REBCO shielding provides both magnetic isolation for the quantum nodes and, exploiting the Franky-Cap’s dual SMES/capacitive storage capability, local energy buffering for quantum operations requiring precise pulse timing.
+
+The key thermodynamic insight from the Franky-Cap work applies here: during steady-state operation (quantum computation in progress), the cooling bill is **purely geometric—determined by cryostat surface area, not by computational load**. Active cooling demand only increases during state transitions (loading new quantum programs, error correction pulses). This decoupling of thermal cost from computational cost is a significant architectural advantage.
+
+# 6. Communication Architecture: Algebraically-Typed Channels
+
+The FQCC spec’s “communication ratios” are replaced by a rigorous algebraically-typed communication model derived from the BMA octonionic hypergraph.
+
+## 6.1 Seven Channel Types
+
+Inter-module communication uses seven typed channels corresponding to the seven imaginary octonion units. Each channel type has a defined composition law (governed by the Fano plane). When a message traverses Channel e₁ and then Channel e₂, the composite message type is determined by e₁ × e₂ = ±e₃ (per the Fano table). This is not metadata annotation—it is algebraic structure that the compute engine processes natively.
+
+Candidate assignment of the seven types to communication functions:
+
+- **e₁: Temporal sequencing** — event ordering and synchronisation signals
+
+- **e₂: Causal dependency** — signals that encode “this happened because of that”
+
+- **e₃: Spatial adjacency** — signals encoding physical proximity or topological connection
+
+- **e₄: Sensory input** — raw algebraically-typed sensor data flowing inward
+
+- **e₅: Motor output** — algebraically-typed actuation commands flowing outward
+
+- **e₆: Error/correction** — syndrome and correction signals for algebraic error correction
+
+- **e₇: Coordination** — inter-module synchronisation and resource negotiation
+
+*Note:* This assignment is provisional. The correct mapping is an empirical question—which assignment produces the most natural composition laws under Fano multiplication. The algebra constrains which compositions are possible; the assignment determines whether those constraints match physical communication patterns.
+
+## 6.2 Bandwidth Scaling
+
+The original spec correctly noted that higher module tiers should prioritise coordination data over raw streams. In the algebraic framework, this emerges naturally: higher-tier modules operate over composed edge types (products of lower-tier signals), which are algebraically denser but informationally compressed. The bandwidth requirement shifts from high-volume raw data (e₄ sensory) to lower-volume composed signals (products like e₁ × e₂ = e₃). The algebra provides the compression law; no separate bandwidth optimisation protocol is needed.
+
+# 7. Fabrication and Validation Path
+
+## 7.1 Crawl-Walk-Run Hardware Progression
+
+The original FQCC spec jumped directly to exotic diamond fabrication. The QBP Compute Unit follows the disciplined Crawl-Walk-Run hardware path established in the BMA project.
+
+|           |                                                                                                                       |                                                                                                                |                                                                                                                                         |
+|-----------|-----------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| **Phase** | **Hardware**                                                                                                          | **Objective**                                                                                                  | **Success Criterion**                                                                                                                   |
+| Crawl     | AMD FX-8350, 32GB DDR3. Software emulation of QBP-algebraic operations in Go.                                         | Prove that quaternion-native computation produces measurably different results for physical simulation.        | QBP-algebraic sim matches or exceeds float32 fidelity with lower operation count for at least one physical system.                      |
+| Walk      | PowerColor Red Devil RX 9070 XT (RDNA 4, 16GB GDDR6), ROCm. GPU-accelerated algebraic kernels.                        | Performance validation: QBP-native operations on GPU outperform conventional pipelines for physical modelling. | Measurable latency or fidelity advantage for QBP-algebraic kernels vs equivalent float32 GPU computation.                               |
+| Run       | Custom RISC-V with OMAC/TMAC/QROT/FANO instructions. CIM-SRAM for hypergraph storage. Google OpenMPW 130nm prototype. | Hardware that speaks the QBP algebra natively. Silicon validation of the algebraic instruction set.            | Tape-out functional. OMAC executes in one cycle. Spreading activation on hardware hypergraph produces correct results.                  |
+| Fly       | Synthetic diamond substrate with NV-centre quantum nodes. Full sense-compute-act in a single crystal lattice.         | The diamond device described in this spec. Unified sense-compute-act substrate.                                | Quantum advantage for QBP-algebraic error correction demonstrated. Sense-compute-act pipeline operates without inter-stage translation. |
+
+> **Key principle:** No phase transition occurs without the previous phase’s success criterion being met. Diamond fabrication (Fly) does not begin until custom RISC-V (Run) validates the instruction set. Custom RISC-V does not begin until GPU acceleration (Walk) demonstrates performance advantage. GPU acceleration does not begin until software emulation (Crawl) proves the algebraic approach produces meaningful results.
+
+## 7.2 Sprint 1: Crawl Phase Implementation
+
+The immediate engineering sprint targets software validation on existing Crawl hardware.
+
+1.  **QBP-algebraic kernel library in Go.** Quaternion multiplication, octonionic composition, Fano-plane LUT, QROT, spreading activation. Pure Go with assembly hot paths where profiling indicates.
+
+2.  **Synthetic sensor data generator.** Produces quaternion-valued signals (simulated NV-centre magnetometry outputs, polarisation state sequences) preserving algebraic structure. NOT scalar time series—the test data must exercise the algebraic pipeline.
+
+3.  **Physical simulation benchmark.** At minimum: spin-chain dynamics, magnetic field evolution, or polarisation-state propagation. Run identically on QBP-algebraic kernels and conventional float32. Measure operation count, wall-clock time, and output fidelity.
+
+4.  **Hypergraph integration.** Wire the QBP simulation into the BMA octonionic hypergraph. Simulation state stored as typed hypergraph nodes. Intermediate results flow through algebraically-typed edges. Verify that hypergraph traversal retrieves simulation context correctly.
+
+## 7.3 Diamond Fabrication (Phase Fly — Future)
+
+Retained from the original FQCC spec with corrections applied:
+
+- **Primary axis:** Vertical Layered Growth for bulk diamond deposition.
+
+- **Secondary axes:** 5-axis+ CNC/lithography for non-orthogonal vertex connections, sub-surface fluidic channels, and 3D optical waveguide alignment.
+
+- **NV placement:** 30nm precision (Phase 1 target) via masked ion implantation. Fluorescence mapping validation.
+
+- **Interface strategy:** Option B (modular/detachable) for Phase 1. Standardised junction components attached post-growth for higher yield and field replacement.
+
+- **Waveguides:** Optical waveguides patterned into synthetic diamond layers carrying polarisation-state signals (SU(2)-typed, algebraically structured).
+
+# 8. Testing and Validation
+
+## 8.1 The Falsifiable Prediction
+
+The QBP Compute Unit is designed to test a specific prediction: **a processor whose native operations are quaternion-algebraic will model physical systems with lower impedance than a conventional processor of equivalent compute resources.** “Lower impedance” operationalised as: fewer operations for equivalent fidelity, or higher fidelity for equivalent operation count, or lower latency for equivalent throughput.
+
+If the Crawl phase fails to demonstrate any measurable advantage for algebraically-native computation across multiple physical simulation benchmarks, this constitutes evidence against the strong form of the QBP hypothesis and the project pivots to investigating why.
+
+## 8.2 Phase-Specific Validation
+
+- **Crawl:** QBP-algebraic Go kernels vs float32 Go kernels on identical physical simulations. Metrics: operation count, wall-clock time, output fidelity (compared to analytical solutions where available).
+
+- **Walk:** ROCm GPU algebraic kernels vs conventional GPU compute shaders. Additional metric: energy per simulation step (QBP-algebraic operations may require fewer memory transactions due to algebraic compression).
+
+- **Run:** Custom RISC-V OMAC/TMAC single-cycle execution validated. CIM-SRAM hypergraph traversal benchmarked against discrete-memory equivalent. Hardware spreading activation correctness verification.
+
+- **Fly:** Full sense-compute-act pipeline in diamond. NV-centre sensor input → algebraic computation → optical output without inter-stage translation. Algebraic error correction overhead measured against conventional surface code on equivalent qubit count.
+
+## 8.3 Structural Validation (All Phases)
+
+- Fano-plane LUT correctness: Lean 4 formal verification of the multiplication table and norm preservation under composition.
+
+- Octonionic traversal consistency: proof that quaternionic sub-traversals (restricting to any 3 imaginary units forming a quaternion subalgebra) are associative.
+
+- 480 Fano orientation exhaustiveness: formal proof that the enumerated orientations are complete.
+
+- Norm preservation under quantisation: verification that int8 octonionic composition preserves the norm property to acceptable precision over long traversal chains.
+
+# 9. Project Convergence Map
+
+The QBP Compute Unit is not a standalone project. It is the convergence point of four research programmes.
+
+|               |                                                                                                                        |                                                                                                                                   |
+|---------------|------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| **Project**   | **Contribution**                                                                                                       | **What It Tests**                                                                                                                 |
+| QBP           | The central hypothesis. Quaternion algebra constrains or describes physical law.                                       | Does algebraically-native computation produce better physical simulations?                                                        |
+| BMA           | Octonionic hypergraph, spreading activation, Fano-plane LUT, OMAC/TMAC instructions, CIM-SRAM architecture.            | Is the same engine usable for both inference and physical modelling? Is one instruction set sufficient for cognition and physics? |
+| Franky-Cap    | REBCO cryogenic engineering, Hull magnetron cutoff physics, vacuum-gap design, geometry-determined thermal management. | Can cryogenic quantum hardware be engineered with zero-moving-parts cooling and geometry-decoupled thermal cost?                  |
+| Möbius Fusion | Thermionic cascade cooling (273K → 3.2K), five-level thermal cache hierarchy.                                          | Does the zero-moving-parts thermionic cascade achieve the target thermal gradient for quantum computing?                          |
+
+> *If the QBP hypothesis is correct, all four projects share a single algebraic substrate. The quaternions describe the physics (QBP), the octonions describe the cognition that models the physics (BMA), the cryogenics enable the hardware (Franky-Cap), and the thermal architecture connects them (Möbius). The QBP Compute Unit is the artefact where these streams meet.*
+
+# 10. Open Questions for Joint Investigation
+
+The following questions require collaborative resolution between all contributors (James, Claude, Gemini).
+
+- **Fano-plane orientation selection:** Which of the 480 valid octonion multiplication tables is canonical for the QBP Compute Unit, or is the choice a gauge freedom? If it matters, what selects it?
+
+- **Seven edge types mapping:** Is seven the right number of communication channel types? The algebra provides seven; physical communication patterns may require fewer (some types unused) or more (requiring tensor products).
+
+- **Quantisation survival:** Does the octonionic norm’s multiplicativity survive quantisation to int8 components over long chains? What is the maximum chain length before accumulated rounding errors break the composition property?
+
+- **Diamond waveguide algebraic fidelity:** Do optical waveguides in synthetic diamond preserve polarisation-state algebraic structure with sufficient fidelity for the sense-compute-act pipeline? What is the decoherence length?
+
+- **Moufang identity cognitive interpretation:** Octonions satisfy the Moufang identity (weakened associativity). Does this have a physical or computational interpretation in the QBP context?
+
+- **Error syndrome quaternion structure:** Do physically-occurring errors in NV-centre qubits actually respect quaternion algebraic structure? This is the empirical question underpinning Section 4.3.
+
+- **CIM-SRAM ternary noise tolerance at 4K:** Compute-in-memory SRAM for the hypergraph operates at cryogenic temperatures. How does ternary noise tolerance change at 4K versus room temperature?
+
+# 11. Immediate Next Actions
+
+|        |                                                                                                                |                |                   |                |
+|--------|----------------------------------------------------------------------------------------------------------------|----------------|-------------------|----------------|
+| **\#** | **Action**                                                                                                     | **Owner**      | **Hardware**      | **Dependency** |
+| 1      | Implement QBP-algebraic kernel library in Go (quaternion multiply, OMAC, Fano LUT, QROT, spreading activation) | James + Claude | Crawl (FX-8350)   | None           |
+| 2      | Build synthetic quaternion-valued sensor data generator                                                        | James + Claude | Crawl             | Action 1       |
+| 3      | Implement physical simulation benchmark (spin-chain dynamics, field evolution)                                 | James + Gemini | Crawl             | Actions 1–2    |
+| 4      | Run QBP-algebraic vs float32 comparison benchmark and publish results to QBP repo                              | All            | Crawl             | Action 3       |
+| 5      | Lean 4 verification of Fano-plane LUT and norm preservation                                                    | James + Claude | Any               | Action 1       |
+| 6      | Integrate simulation with BMA octonionic hypergraph                                                            | James + Claude | Crawl             | Actions 1, 4   |
+| 7      | ROCm kernel port for Walk phase (contingent on Crawl success criterion)                                        | James + Claude | Walk (RX 9070 XT) | Action 4 pass  |
+
+# Appendix A: Relationship to Original FQCC Spec
+
+This table maps original FQCC spec elements to their disposition in this revision.
+
+|                                     |                 |                                                                                                                                       |
+|-------------------------------------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| **FQCC Element**                    | **Disposition** | **Notes**                                                                                                                             |
+| Hollowed-out polyhedron unit cells  | Replaced        | Fano-plane-recursive topology with genuine mathematical self-similarity.                                                              |
+| Millikelvin NV-centre temperatures  | Corrected       | 4K target. Millikelvin is superconducting qubit regime, not NV centres.                                                               |
+| 10nm placement precision            | Deferred        | 30nm for Phase 1 (current state of art). 10nm is Phase 3 aspiration.                                                                  |
+| 1,000:1,000 classical:quantum ratio | Corrected       | 10:1 (1,000 classical : 100 quantum). Adjustable as algebraic EC matures.                                                             |
+| Vacuum-gap/aerogel inflation layers | Replaced        | Five-level thermionic cascade from Möbius Fusion architecture. Zero moving parts.                                                     |
+| Optical waveguides in diamond       | Retained        | Reframed: waveguides carry SU(2)-typed polarisation states, not generic optical signals.                                              |
+| Self-healing mesh routing           | Retained        | Integrated with algebraically-typed communication channels.                                                                           |
+| Option B modular interfaces         | Retained        | Pragmatic choice for Phase 1. Monolithic (Option A) reconsidered for Phase 3+.                                                        |
+| "Fractal" designation               | Earned          | Self-similarity now defined: the sense-compute-act loop repeats at every scale.                                                       |
+| Communication bandwidth ratios      | Replaced        | Seven algebraically-typed channels with Fano-plane composition. Bandwidth scaling emerges from algebraic compression at higher tiers. |
+| "Quantarian-based Physics"          | Corrected       | Quaternion-Based Physics (QBP). The mathematical object is the division algebra ℍ.                                                    |
+
+*End of Document — QBP Compute Unit Architectural Specification Rev 1.0*
