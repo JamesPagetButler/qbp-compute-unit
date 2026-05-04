@@ -8,7 +8,7 @@ import (
 	"kaiju/rendering"
 	"math"
 
-	"github.com/JamesPagetButler/qbp-emulator"
+	"github.com/JamesPagetButler/qbp-compute-unit/emulator"
 )
 
 // HurricaneMiltonGame implements the Kaiju 'Game' interface.

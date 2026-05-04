@@ -6,7 +6,7 @@ import (
 	"syscall/js"
 	"time"
 	"unsafe"
-	"github.com/JamesPagetButler/qbp-emulator"
+	"github.com/JamesPagetButler/qbp-compute-unit/emulator"
 )
 
 var cpu *emulator.CPU
