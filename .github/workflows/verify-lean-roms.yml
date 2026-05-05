@@ -1,0 +1,61 @@
+name: Verify Lean ROMs
+
+# Runs lean2rom -verify on every push and PR to ensure roms/ are in sync
+# with lean/QBP/Sedenion.lean. A checksum mismatch is a hard fail.
+#
+# Issue: https://github.com/JamesPagetButler/qbp-compute-unit/issues/7
+# Per: peer-review-005-stream-migration.md §4 M0.1 / M0.3 CI gate
+
+on:
+  push:
+    branches: ["main", "feat/**"]
+    paths:
+      - "lean/**"
+      - "roms/**"
+      - "cmd/lean2rom/**"
+      - "emulator/**"
+      - "Makefile"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "lean/**"
+      - "roms/**"
+      - "cmd/lean2rom/**"
+      - "emulator/**"
+      - "Makefile"
+
+jobs:
+  verify-lean-roms:
+    name: Verify ROM checksums match Lean source
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache-dependency-path: emulator/go.sum
+
+      - name: Build lean2rom
+        run: go build ./cmd/lean2rom
+
+      - name: Verify ROM checksums
+        run: make verify-roms
+
+      - name: Run emulator tests (includes TestSIMDConstantsMatchROM)
+        run: make test
+
+      - name: Run go vet
+        run: make vet
+
+      - name: Verify benchmark allocations
+        run: |
+          cd emulator
+          go test -bench=. -benchmem ./... | tee /tmp/bench.txt
+          # Fail if any benchmark reports >0 allocs/op (regression guard)
+          if grep -E '[0-9]+ allocs/op' /tmp/bench.txt | grep -v ' 0 allocs/op'; then
+            echo "FAIL: benchmark regression — non-zero allocations detected"
+            exit 1
+          fi
