@@ -22,7 +22,12 @@ const (
 // QW64 is a 64-bit hardware-accelerated quaternion (4x float64) used by the emulator for W8-W64 paths.
 type QW64 [4]float64
 
-// QWord is a high-precision quaternion representation used by the emulator for W128+ paths.
+// QW128 is a 128-bit hardware-accelerated quaternion (8x float64).
+// Layout: [W_hi, X_hi, Y_hi, Z_hi, W_lo, X_lo, Y_lo, Z_lo]
+// Note: Provides ~106 bits of mantissa via Double-Double arithmetic.
+type QW128 [8]float64
+
+// QWord is a high-precision quaternion representation used by the emulator for W256+ paths.
 type QWord struct {
 	W, X, Y, Z *big.Float
 }
