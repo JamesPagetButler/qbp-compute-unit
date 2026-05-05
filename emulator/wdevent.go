@@ -1,3 +1,9 @@
+// Package emulator provides the cycle-accurate execution model.
+//
+// NOTE: The WDEvent emission tap is strictly located at the ISA execution
+// boundary (in isa.go), not inside the mathematical AVX/scalar kernels.
+// This is an architectural invariant to ensure that structural execution
+// events are captured independently of math kernel implementations.
 package emulator
 
 // Port specifies whether the operation arrived via SSCI or VCIX.
@@ -17,10 +23,13 @@ const (
 	GeneralFullMultiply                // Full multiplication to verify ZD
 )
 
+// Opcode represents a specific execution instruction or Funct7 equivalent.
+type Opcode uint8
+
 // WDEvent is tapped at every algebraic crossing to feed the watchdog.
 type WDEvent struct {
 	Cycle      uint64    // Accelerator cycle of completion
-	Op         uint8     // The Funct7 opcode equivalent
+	Op         Opcode    // The Funct7 opcode equivalent
 	Port       Port      // Ingress port
 	FanoIndex  uint8     // Relevant Fano-plane index, if applicable
 	SignBit    bool      // Fano-plane sign bit, if applicable

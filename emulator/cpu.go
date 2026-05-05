@@ -2,6 +2,7 @@ package emulator
 
 import (
 	"fmt"
+	"sync/atomic"
 )
 
 // CPU represents the architectural state of the QBP Compute Unit.
@@ -20,6 +21,9 @@ type CPU struct {
 
 	// Watchdog channel for passive event emission (M0)
 	WatchdogChan chan WDEvent
+	
+	// Atomic counter for observability when the channel drops events
+	WatchdogDropCount uint64
 
 	// Gearbox for precision scaling
 	GB *Gearbox
@@ -95,6 +99,7 @@ func (c *CPU) emitWDEvent(evt WDEvent) {
 	case c.WatchdogChan <- evt:
 		// Emitted successfully
 	default:
-		// Channel full, drop event (passive mode behavior for M0)
+		// Channel full, drop event and increment observability counter
+		atomic.AddUint64(&c.WatchdogDropCount, 1)
 	}
 }

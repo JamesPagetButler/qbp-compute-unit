@@ -146,10 +146,11 @@ func (c *CPU) Step(word uint32) error {
 
 	// Passive emission for M0: capture basic event data and emit
 	evt := WDEvent{
-		Cycle:   c.Cycles,
-		Op:      inst.Funct7,
-		Port:    PortSSCI,
-		ZDClass: NotZD,
+		Cycle:     c.Cycles,
+		Op:        Opcode(inst.Funct7),
+		Port:      PortSSCI,
+		ZDClass:   NotZD,
+		AlgebraID: 0, // TODO(M1): populate from c.csr.AMODE
 	}
 	
 	if inst.Funct7 == Funct7FANO {
