@@ -67,3 +67,58 @@ func BenchmarkCPU_QNORM(b *testing.B) {
 		_ = cpu.Step(word)
 	}
 }
+
+func BenchmarkCPU_QMUL128(b *testing.B) {
+	cpu := NewCPU()
+	word := buildInst(Funct7QMUL, 3, 2, 4, 1) // W128 QMUL
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_ = cpu.Step(word)
+	}
+}
+
+func BenchmarkCPU_QADD128(b *testing.B) {
+	cpu := NewCPU()
+	word := buildInst(Funct7QADD, 3, 2, 4, 1) // W128 QADD
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_ = cpu.Step(word)
+	}
+}
+
+func BenchmarkCPU_QROT128(b *testing.B) {
+	cpu := NewCPU()
+	word := buildInst(Funct7QROT, 3, 2, 4, 1) // W128 QROT
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_ = cpu.Step(word)
+	}
+}
+
+func BenchmarkCPU_QCONJ128(b *testing.B) {
+	cpu := NewCPU()
+	word := buildInst(Funct7QCONJ, 0, 2, 4, 1) // W128 QCONJ
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_ = cpu.Step(word)
+	}
+}
+
+func BenchmarkCPU_QNORM128(b *testing.B) {
+	cpu := NewCPU()
+	word := buildInst(Funct7QNORM, 0, 2, 4, 1) // W128 QNORM
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_ = cpu.Step(word)
+	}
+}

@@ -11,7 +11,7 @@ import (
 // p = ai + bj + ck  => p' = ci + aj + bk
 func TestRotation120(t *testing.T) {
 	cpu := NewCPU()
-	cpu.SetWidth(W128) // Use high precision for rotation test
+	cpu.SetWidth(W256) // Use W256 to test the high-precision big.Float Gearbox path
 
 	// 1. Setup the rotation quaternion q in register q1
 	// q = 0.5 + 0.5i + 0.5j + 0.5k
@@ -27,10 +27,10 @@ func TestRotation120(t *testing.T) {
 	cpu.Q[2].Y.SetFloat64(2.0)
 	cpu.Q[2].Z.SetFloat64(3.0)
 
-	// 3. Execute QROT.128 q3, q1, q2
+	// 3. Execute QROT.256 q3, q1, q2
 	// p' = q * p * conj(q)
 	// Expected p' = 3.0i + 1.0j + 2.0k (cyclic permutation: x=c, y=a, z=b)
-	var word uint32 = OpcodeCustom0 | (3 << 7) | (4 << 12) | (1 << 15) | (2 << 20) | (Funct7QROT << 25)
+	var word uint32 = OpcodeCustom0 | (3 << 7) | (5 << 12) | (1 << 15) | (2 << 20) | (Funct7QROT << 25)
 
 	if err := cpu.Step(word); err != nil {
 		t.Fatalf("QROT failed: %v", err)
@@ -76,19 +76,19 @@ func TestConjugation_FastPath_W64(t *testing.T) {
 	}
 }
 
-// TestConjugation_HighPrec_W128 exercises the big.Float path used when
-// ActiveWidth > W64 (e.g. for sleep-cycle and constitutional verification).
-func TestConjugation_HighPrec_W128(t *testing.T) {
+// TestConjugation_HighPrec_W256 exercises the big.Float path used when
+// ActiveWidth > W128 (e.g. for sleep-cycle and constitutional verification).
+func TestConjugation_HighPrec_W256(t *testing.T) {
 	cpu := NewCPU()
-	cpu.SetWidth(W128)
+	cpu.SetWidth(W256)
 
 	cpu.Q[1].W.SetFloat64(1.0)
 	cpu.Q[1].X.SetFloat64(2.0)
 	cpu.Q[1].Y.SetFloat64(3.0)
 	cpu.Q[1].Z.SetFloat64(4.0)
 
-	// QCONJ q2, q1 with funct3=4 (W128)
-	var word uint32 = OpcodeCustom0 | (2 << 7) | (4 << 12) | (1 << 15) | (0 << 20) | (Funct7QCONJ << 25)
+	// QCONJ q2, q1 with funct3=5 (W256)
+	var word uint32 = OpcodeCustom0 | (2 << 7) | (5 << 12) | (1 << 15) | (0 << 20) | (Funct7QCONJ << 25)
 	if err := cpu.Step(word); err != nil {
 		t.Fatalf("QCONJ failed: %v", err)
 	}

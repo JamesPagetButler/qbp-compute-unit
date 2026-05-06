@@ -2,6 +2,7 @@ package emulator
 
 import (
 	"fmt"
+	"sync/atomic"
 )
 
 // CPU represents the architectural state of the QBP Compute Unit.
@@ -11,11 +12,18 @@ type CPU struct {
 	PC uint64    // Program Counter
 
 	// QBP Extension state
-	Q64 [32]QW64 // Hardware-accelerated fast path registers (W8-W64)
-	Q [32]QWord  // High-precision registers (W128+)
+	Q64  [32]QW64  // Hardware-accelerated fast path registers (W8-W64)
+	Q128 [32]QW128 // Hardware-accelerated fast path registers (W128 DD)
+	Q    [32]QWord // High-precision registers (W256+)
 	
 	// Q-Mem (Quaternion Memory) - Scalable storage for MuninnDB/Climate nodes
 	Memory []QWord
+
+	// Watchdog channel for passive event emission (M0)
+	WatchdogChan chan WDEvent
+	
+	// Atomic counter for observability when the channel drops events
+	WatchdogDropCount uint64
 
 	// Gearbox for precision scaling
 	GB *Gearbox
@@ -28,7 +36,8 @@ type CPU struct {
 // NewCPU creates a new CPU initialized at QW64 (default).
 func NewCPU() *CPU {
 	cpu := &CPU{
-		GB: NewGearbox(),
+		GB:           NewGearbox(),
+		WatchdogChan: make(chan WDEvent, 1024), // Buffered to prevent blocking in M0
 	}
 	// Initialize Q registers with current gearbox precision
 	prec := cpu.GB.Precision()
@@ -82,4 +91,15 @@ func (c *CPU) Run(program []uint32) error {
 func (c *CPU) DumpStatus() string {
 	return fmt.Sprintf("PC: 0x%X, Width: %v, Instrs: %d, Cycles: %d", 
 		c.PC, c.GB.ActiveWidth, c.Instructions, c.Cycles)
+}
+
+// emitWDEvent performs a non-blocking send of a watchdog event.
+func (c *CPU) emitWDEvent(evt WDEvent) {
+	select {
+	case c.WatchdogChan <- evt:
+		// Emitted successfully
+	default:
+		// Channel full, drop event and increment observability counter
+		atomic.AddUint64(&c.WatchdogDropCount, 1)
+	}
 }

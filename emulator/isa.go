@@ -66,6 +66,8 @@ func (c *CPU) Step(word uint32) error {
 	case Funct7QMUL:
 		if c.GB.ActiveWidth <= W64 {
 			qmul64(&c.Q64[inst.Rd], &c.Q64[inst.Rs1], &c.Q64[inst.Rs2])
+		} else if c.GB.ActiveWidth == W128 {
+			qmul128(&c.Q128[inst.Rd], &c.Q128[inst.Rs1], &c.Q128[inst.Rs2])
 		} else {
 			// q[rd] = q[rs1] * q[rs2]
 			c.GB.Mul(&c.Q[inst.Rd], &c.Q[inst.Rs1], &c.Q[inst.Rs2])
@@ -75,6 +77,8 @@ func (c *CPU) Step(word uint32) error {
 	case Funct7QADD:
 		if c.GB.ActiveWidth <= W64 {
 			qadd64(&c.Q64[inst.Rd], &c.Q64[inst.Rs1], &c.Q64[inst.Rs2])
+		} else if c.GB.ActiveWidth == W128 {
+			qadd128(&c.Q128[inst.Rd], &c.Q128[inst.Rs1], &c.Q128[inst.Rs2])
 		} else {
 			// Simple component-wise addition
 			prec := c.GB.Precision()
@@ -88,6 +92,8 @@ func (c *CPU) Step(word uint32) error {
 	case Funct7QROT:
 		if c.GB.ActiveWidth <= W64 {
 			qrot64(&c.Q64[inst.Rd], &c.Q64[inst.Rs1], &c.Q64[inst.Rs2])
+		} else if c.GB.ActiveWidth == W128 {
+			qrot128(&c.Q128[inst.Rd], &c.Q128[inst.Rs1], &c.Q128[inst.Rs2])
 		} else {
 			// q[rd] = q[rs1] * q[rs2] * conj(q[rs1])
 			c.GB.Rotate(&c.Q[inst.Rd], &c.Q[inst.Rs1], &c.Q[inst.Rs2])
@@ -97,6 +103,8 @@ func (c *CPU) Step(word uint32) error {
 	case Funct7QCONJ:
 		if c.GB.ActiveWidth <= W64 {
 			qconj64(&c.Q64[inst.Rd], &c.Q64[inst.Rs1])
+		} else if c.GB.ActiveWidth == W128 {
+			qconj128(&c.Q128[inst.Rd], &c.Q128[inst.Rs1])
 		} else {
 			// q[rd] = conj(q[rs1])
 			c.GB.Conj(&c.Q[inst.Rd], &c.Q[inst.Rs1])
@@ -111,6 +119,8 @@ func (c *CPU) Step(word uint32) error {
 			c.Q64[inst.Rd][1] = 0
 			c.Q64[inst.Rd][2] = 0
 			c.Q64[inst.Rd][3] = 0
+		} else if c.GB.ActiveWidth == W128 {
+			qnorm128(&c.Q128[inst.Rd], &c.Q128[inst.Rs1])
 		} else {
 			// q[rd].W = normsq(q[rs1])
 			c.GB.NormSq(c.Q[inst.Rd].W, &c.Q[inst.Rs1])
@@ -133,6 +143,22 @@ func (c *CPU) Step(word uint32) error {
 	default:
 		return fmt.Errorf("unimplemented funct7: %d", inst.Funct7)
 	}
+
+	// Passive emission for M0: capture basic event data and emit
+	evt := WDEvent{
+		Cycle:     c.Cycles,
+		Op:        Opcode(inst.Funct7),
+		Port:      PortSSCI,
+		ZDClass:   NotZD,
+		AlgebraID: 0, // TODO(M1): populate from c.csr.AMODE
+	}
+	
+	if inst.Funct7 == Funct7FANO {
+		evt.FanoIndex = uint8(c.X[inst.Rd])
+		evt.SignBit = int64(c.X[(inst.Rd+1)%32]) == -1
+	}
+	
+	c.emitWDEvent(evt)
 
 	return nil
 }

@@ -1,5 +1,9 @@
 package emulator
 
+// useAVX determines if hardware fast-paths are used.
+// It follows an all-or-nothing dispatch model: if true, all AVX operations are
+// used. If a specific AVX kernel is not yet implemented, it is explicitly
+// routed to a Stub that falls back to the scalar path.
 var useAVX = hasAVXAndFMA()
 
 // qmul64AVX computes the Hamilton product of a and b using AVX/FMA3, storing the result in dst.
@@ -60,4 +64,59 @@ func qnorm64(dst *float64, a *QW64) {
 		return
 	}
 	qnorm64Scalar(dst, a)
+}
+
+//go:noescape
+func qmul128AVX(dst, a, b *QW128)
+
+//go:noescape
+func qadd128AVX(dst, a, b *QW128)
+
+//go:noescape
+func qrot128Stub(dst, q, v *QW128)
+
+//go:noescape
+func qconj128AVX(dst, a *QW128)
+
+//go:noescape
+func qnorm128Stub(dst *QW128, a *QW128)
+
+func qmul128(dst, a, b *QW128) {
+	if useAVX {
+		qmul128AVX(dst, a, b)
+		return
+	}
+	qmul128Scalar(dst, a, b)
+}
+
+func qadd128(dst, a, b *QW128) {
+	if useAVX {
+		qadd128AVX(dst, a, b)
+		return
+	}
+	qadd128Scalar(dst, a, b)
+}
+
+func qrot128(dst, q, v *QW128) {
+	if useAVX {
+		qrot128Stub(dst, q, v)
+		return
+	}
+	qrot128Scalar(dst, q, v)
+}
+
+func qconj128(dst, a *QW128) {
+	if useAVX {
+		qconj128AVX(dst, a)
+		return
+	}
+	qconj128Scalar(dst, a)
+}
+
+func qnorm128(dst *QW128, a *QW128) {
+	if useAVX {
+		qnorm128Stub(dst, a)
+		return
+	}
+	qnorm128Scalar(dst, a)
 }
