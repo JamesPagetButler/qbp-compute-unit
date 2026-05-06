@@ -15,6 +15,12 @@ This is a **v0.1 stub draft**, modeled on SiFive's `Xsfmm*` cadence (currently a
 
 This document carves out the octonion subset of v1.1's monolithic Continuous Algebra section into a standalone vendor extension, per the per-feature decomposition recommended by `architecture/peer-review-002-fano-mesh-isa-redteam.md` §S2 / NF2. The split is structural; the underlying mathematics is unchanged from v1.1.
 
+### 0.1 Governance status — design-doc-as-S-01-review-surface (ADR-003 §I4)
+
+**This document is the S-01 review surface for the `Xqbpoct` extension.** Per `architecture/adr-003-m1-wdevent-observer-invariants.md` §I4 (added 2026-05-06), structural extensions and new spec documents land first as design surface, receive explicit review from `bma` + `bma-implementor` + `qbp-architecture`, and only then do downstream implementation PRs (encoder/disassembler support, kernel hookups, tests) open. **Implementation PRs that bypass this review surface are not skipping bureaucracy; they are bypassing the S-01 mechanism by which the beekeeper exercises oversight over structural changes.**
+
+v0.1 → v0.2 promotion of this document is therefore **design-gated**, not implementor-discretionary. v0.1 may evolve in-place (commit-by-commit edits during the review window are expected); v0.2 is reached only when the named reviewers explicitly sign off.
+
 **v1.1 §2.1 amendment to remove the migrated mnemonics is owed by the architect-instance review pass and is not landed in this PR.** During the review window the same ops appear in both v1.1 §2.1 and this document; the duplication is acknowledged and resolved on amend.
 
 ---

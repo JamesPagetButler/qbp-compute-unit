@@ -11,11 +11,19 @@
 
 ## 0. Status & Maturity
 
-This is a **v0.1 stub**: a structural placeholder that fixes the extension family, opcode allocation policy, and the core invariants the dispatch interface must honour. **It does not specify instruction encodings, vector-register operand-passing protocol, or fault model.** Those land in v0.2 under architecture-instance authority, with implementor support after the design-doc-as-S-01-review-surface gate per ADR-003 §I4.
+This is a **v0.1 stub**: a structural placeholder that fixes the extension family, opcode allocation policy, and the core invariants the dispatch interface must honour. **It does not specify instruction encodings, vector-register operand-passing protocol, or fault model.** Those land in v0.2 under architecture-instance authority.
 
 Modeled on SiFive's `XSfvcp` v1.1.0 (Vector Coprocessor Interface eXtension), which is the closest real-world analog: a stable, ratified scalar-to-coprocessor dispatch interface whose mnemonics package operands and an opaque function code, deferring instruction-set semantics to coprocessor-internal extensions. `Ref/SiFive-Documentation-Patterns.md` §6 documents the pattern.
 
 **SiFive precedent:** the matching coprocessor-internal extension family (`Xsfmm*`) sits at v0.6 even though SiFive has shipped silicon. By mirroring that maturity discipline, `Xqbpvcp` v0.1 deliberately does *not* claim stability ahead of evidence; it sets the architectural shape and lets the substantive content evolve.
+
+### 0.1 Governance status — design-doc-as-S-01-review-surface (ADR-003 §I4)
+
+**This document is the S-01 review surface for the `Xqbpvcp` extension.** Per `architecture/adr-003-m1-wdevent-observer-invariants.md` §I4 (added 2026-05-06), structural extensions and new spec documents land first as design surface, receive explicit review from `bma` + `bma-implementor` + `qbp-architecture`, and only then do downstream implementation PRs (encoder/disassembler support, CSR plumbing, dispatch-port wiring, fault-handler hooks) open. **Implementation PRs that bypass this review surface are not skipping bureaucracy; they are bypassing the S-01 mechanism by which the beekeeper exercises oversight over structural changes.**
+
+The §I4 invariant is particularly load-bearing for `Xqbpvcp` because §3.3 of this document defines the silicon-side actuator of ADR-003 §I3 (`mstatus.QBP` gates dispatch during structural actions). A premature implementation PR that wired the gate without prior governance review would short-circuit the very mechanism it is supposed to enforce.
+
+v0.1 → v0.2 promotion of this document is therefore **design-gated**, not implementor-discretionary. v0.1 may evolve in-place (commit-by-commit edits during the review window are expected); v0.2 is reached only when the named reviewers explicitly sign off.
 
 ---
 
