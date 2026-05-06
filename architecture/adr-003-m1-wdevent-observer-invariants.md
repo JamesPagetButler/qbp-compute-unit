@@ -49,6 +49,23 @@ The lock boundary must gate the observer **out for the full duration of any stru
 3. **`PromoteBatch` atomicity** (per wyrd-implementor's seq=5 (3)): non-atomic batch promotion creates the exact apparent-completion-without-completion window I3 prohibits. **PromoteBatch atomicity is an S-01 requirement, not a performance optimization.**
 4. **`Xqbpvcp` VCIX dispatch gating via `mstatus.QBP`** (silicon-side, per ADR-001 and bma seq=17): the natural hardware choke point for "no event tap during structural action."
 
+### I4 — Design-doc-as-S-01-review-surface
+
+(Added 2026-05-06 per bma seq=33 on `#live-test`; framing authored by bma.)
+
+> Design document must land and receive explicit review from bma + bma-implementor before any implementation PR opens. This is an S-01 requirement — the design doc is the review surface through which beekeeper-gated oversight operates before decisions are woven into running code.
+
+This is a governance invariant, not a process preference. Implementation PRs that bypass the design-doc review surface are not skipping bureaucracy; they are bypassing the S-01 mechanism by which the beekeeper exercises oversight over structural changes.
+
+**Operational application:**
+
+- wyrd `capability-enforcement.md` design doc lands first; gets explicit review from bma + bma-implementor + qbp-architecture; only then does the implementation PR open.
+- wyrd `bridge-batch.md` design doc lands first under the same discipline.
+- Future M1 design docs (e.g., WDEvent observer goroutine shape, Constitutional Audit interrupt actuator) follow the same pattern.
+- Doc headers should state the design-doc-first invariant explicitly so downstream contributors can see it without having to find ADR-003.
+
+**Counter-example (what I4 prohibits):** an implementation PR that says "design notes inline" or "the code is the spec." Even if such a PR is correct, it has skipped the review surface S-01 requires.
+
 ## Consequences
 
 ### Positive
@@ -79,9 +96,11 @@ This ADR is the citation reference for cross-instance work in M1. It does not by
 
 When BMA opens M1 work on the active observer, this ADR is the constraint set. bma-implementor confirms at design open.
 
-## Open question (deferred to wyrd-implementor's design doc)
+## Open questions
 
-**Read policy:** do reads require a `ReadCapability` (every read through a typed gate), or are reads unrestricted by default and only writes need capabilities? Architecture-side lean: **unrestricted reads, capability-gated writes** — matches `compute.CanSynthesize` semantics; the audit trail lives at the WDEvent layer and the mutation-side check, not the read layer; the WDEvent that triggered an observer read is itself audited, so re-auditing the read is redundant. Final decision deferred to wyrd-implementor's `capability-enforcement.md` draft.
+**Read policy** *(deferred to wyrd-implementor's `capability-enforcement.md` design doc):* do reads require a `ReadCapability` (every read through a typed gate), or are reads unrestricted by default and only writes need capabilities? Architecture-side lean: **unrestricted reads, capability-gated writes** — matches `compute.CanSynthesize` semantics; the audit trail lives at the WDEvent layer and the mutation-side check, not the read layer; the WDEvent that triggered an observer read is itself audited, so re-auditing the read is redundant. Confirmed at qbp-cu-walk seq=13/seq=14: wyrd-implementor closed Option A (unrestricted reads) in design doc v0.2.
+
+**Threshold function shape pinning** *(deferred to M1 opening with runtime ρ_net variance data):* bma seq=26 settled the shape as **hysteresis** (`ρ_interrupt_arm` > `ρ_interrupt_clear`, with gap calibrated against observed normal-operation variance, gap initially set conservatively wide to minimize false positives, tightened as the distribution is learned). The numerical thresholds themselves cannot be pinned until M1 generates runtime data; this open-question entry exists so a future reviewer cannot assume the thresholds were chosen arbitrarily — they are explicitly deferred to evidence. Tunable-via-params per the existing §9.3 Storage Sentinel discipline; not hardcoded.
 
 ## References
 
