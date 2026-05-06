@@ -1,0 +1,11 @@
+# lean2rom ROM checksum manifest
+# Generated: 2026-05-05T20:58:51Z
+# Source: lean/QBP/Sedenion.lean
+# Issue: https://github.com/JamesPagetButler/qbp-compute-unit/issues/7
+#
+# Format: <filename>  sha256: <hex>  source: <lean-symbol>
+#
+sedenion_signs.hex            sha256: 566dffb6547b4c0365b30fd14d08500f35a8ef6a4f84ec5597e1ea5124c6fac0  source: Sedenion.lean:mulSignData
+sedenion_idx.hex              sha256: d8a74248a335328b208abde827f75e625efb70886f4672daacee1307ad9855ca  source: Sedenion.lean:mulIdxData
+octonion_signs.hex            sha256: e6c0cbd309215c35e6c5f2022e7e0549bc8f2dd3a81f36d9dc79eda59d0c497b  source: Sedenion.lean:mulSignData (8×8 submatrix)
+octonion_idx.hex              sha256: bb18740f47f276481fd76242e3405d77f654898d9e186743127de7f93d4b4937  source: Sedenion.lean:mulIdxData (8×8 submatrix)
