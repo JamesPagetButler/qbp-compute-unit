@@ -6,7 +6,7 @@ import (
 
 func TestCPU_QMUL_QW1024(t *testing.T) {
 	cpu := NewCPU()
-	
+
 	// Set width to QW1024
 	cpu.SetWidth(W1024)
 	prec := cpu.GB.Precision()
@@ -45,7 +45,7 @@ func TestCPU_QMUL_QW1024(t *testing.T) {
 
 func TestCPU_GearboxShift(t *testing.T) {
 	cpu := NewCPU()
-	
+
 	// Default W64
 	if cpu.GB.ActiveWidth != W64 {
 		t.Errorf("Expected initial width W64, got %v", cpu.GB.ActiveWidth)

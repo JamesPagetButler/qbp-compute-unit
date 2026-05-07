@@ -22,11 +22,11 @@ func TestClimate_GlobalInit(t *testing.T) {
 	// Temp = 288.15 + 20 * cos(lat)
 	for i := 0; i < res*res*2; i++ {
 		node := cpu.GetClimateNode(i)
-		
+
 		// Get latitude from Z-component (z = sin(lat))
 		// For verification, we'll just check if Z is near 1.0 (Pole) or 0.0 (Equator)
 		z, _ := node.Pos.Z.Float64()
-		
+
 		// Very rough gradient: 300K at equator (Z=0), 250K at poles (Z=1)
 		temp := 300.0 - (math.Abs(z) * 50.0)
 		node.State.W.SetFloat64(temp)
@@ -36,7 +36,7 @@ func TestClimate_GlobalInit(t *testing.T) {
 	// Node 0 (South Pole, first in PopulateSphere loop)
 	southPole := cpu.GetClimateNode(0)
 	t.Logf("South Pole Position: %v, Temp: %v", southPole.Pos, southPole.State.W)
-	
+
 	// Equator Point (middle of the latitude loop)
 	equatorIdx := (res / 2) * (res * 2)
 	equator := cpu.GetClimateNode(equatorIdx)

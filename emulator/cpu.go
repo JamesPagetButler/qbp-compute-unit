@@ -8,20 +8,20 @@ import (
 // CPU represents the architectural state of the QBP Compute Unit.
 type CPU struct {
 	// Standard RISC-V state
-	X [32]uint64 // Integer registers
-	PC uint64    // Program Counter
+	X  [32]uint64 // Integer registers
+	PC uint64     // Program Counter
 
 	// QBP Extension state
 	Q64  [32]QW64  // Hardware-accelerated fast path registers (W8-W64)
 	Q128 [32]QW128 // Hardware-accelerated fast path registers (W128 DD)
 	Q    [32]QWord // High-precision registers (W256+)
-	
+
 	// Q-Mem (Quaternion Memory) - Scalable storage for MuninnDB/Climate nodes
 	Memory []QWord
 
 	// Watchdog channel for passive event emission (M0)
 	WatchdogChan chan WDEvent
-	
+
 	// Atomic counter for observability when the channel drops events
 	WatchdogDropCount uint64
 
@@ -89,7 +89,7 @@ func (c *CPU) Run(program []uint32) error {
 
 // DumpStatus returns a string representation of the current CPU state.
 func (c *CPU) DumpStatus() string {
-	return fmt.Sprintf("PC: 0x%X, Width: %v, Instrs: %d, Cycles: %d", 
+	return fmt.Sprintf("PC: 0x%X, Width: %v, Instrs: %d, Cycles: %d",
 		c.PC, c.GB.ActiveWidth, c.Instructions, c.Cycles)
 }
 

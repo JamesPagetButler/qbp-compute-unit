@@ -43,7 +43,7 @@ func ddMul(aHi, aLo, bHi, bLo float64) (pHi, pLo float64) {
 
 func qmul128Scalar(dst, a, b *QW128) {
 	// a: [w_hi, x_hi, y_hi, z_hi, w_lo, x_lo, y_lo, z_lo]
-	
+
 	// Term 1: a.W * b
 	t1wHi, t1wLo := ddMul(a[0], a[4], b[0], b[4])
 	t1xHi, t1xLo := ddMul(a[0], a[4], b[1], b[5])
@@ -85,7 +85,7 @@ func qmul128Scalar(dst, a, b *QW128) {
 	zHi, zLo = ddAdd(zHi, zLo, t3zHi, t3zLo)
 	zHi, zLo = ddAdd(zHi, zLo, t4zHi, t4zLo)
 
-	// Phase 5 Option B: Renormalize to canonical DD form 
+	// Phase 5 Option B: Renormalize to canonical DD form
 	// This restores strict associativity to within ε_DD for Capability.sandwich_mul
 	wHi, wLo = twoSum(wHi, wLo)
 	xHi, xLo = twoSum(xHi, xLo)
@@ -103,7 +103,7 @@ func qadd128Scalar(dst, a, b *QW128) {
 	dst[1], dst[5] = ddAdd(a[1], a[5], b[1], b[5])
 	dst[2], dst[6] = ddAdd(a[2], a[6], b[2], b[6])
 	dst[3], dst[7] = ddAdd(a[3], a[7], b[3], b[7])
-	
+
 	// Canonicalize
 	dst[0], dst[4] = twoSum(dst[0], dst[4])
 	dst[1], dst[5] = twoSum(dst[1], dst[5])

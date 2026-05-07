@@ -28,14 +28,14 @@ type Opcode uint8
 
 // WDEvent is tapped at every algebraic crossing to feed the watchdog.
 type WDEvent struct {
-	Cycle      uint64    // Accelerator cycle of completion
-	Op         Opcode    // The Funct7 opcode equivalent
-	Port       Port      // Ingress port
-	FanoIndex  uint8     // Relevant Fano-plane index, if applicable
-	SignBit    bool      // Fano-plane sign bit, if applicable
-	Associator [3]int8   // Residue of (a*b)*c - a*(b*c)
-	NormDelta  int32     // Norm preservation residue (fixed-point)
-	AlgebraID  uint8     // 0=H, 1=O, 2=C⊕H⊕M3(C), 3=Branch B
+	Cycle      uint64  // Accelerator cycle of completion
+	Op         Opcode  // The Funct7 opcode equivalent
+	Port       Port    // Ingress port
+	FanoIndex  uint8   // Relevant Fano-plane index, if applicable
+	SignBit    bool    // Fano-plane sign bit, if applicable
+	Associator [3]int8 // Residue of (a*b)*c - a*(b*c)
+	NormDelta  int32   // Norm preservation residue (fixed-point)
+	AlgebraID  uint8   // 0=H, 1=O, 2=C⊕H⊕M3(C), 3=Branch B
 
 	// Added per RV-Fano-Implementation-Refinements.md §2.3
 	ZDClass   ZDClass

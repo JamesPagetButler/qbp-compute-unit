@@ -1,34 +1,31 @@
 # lean2rom: Sign and Index ROM Extraction Pipeline
 
-**Date:** 2026-05-05
-**Issue:** [#7 lean2rom build pipeline](https://github.com/JamesPagetButler/qbp-compute-unit/issues/7)
-**Phase:** M0.1 (Authority Chain Hardening)
-**Status:** Implemented
+**Date:** 2026-05-06
+**Issue:** [#14 Unified ASM Migration](https://github.com/JamesPagetButler/qbp-compute-unit/issues/14) | [#13 QW128 Cross-check](https://github.com/JamesPagetButler/qbp-compute-unit/issues/13)
+**Phase:** M0.1b (Authority Chain Consolidation)
+**Status:** Completed
 
 ---
 
 ## Overview
 
 `lean2rom` is the build pipeline that extracts sign and index ROMs from the Lean source of truth
-(`lean/QBP/Sedenion.lean`) and emits hex files consumed by the simulator and (eventually) the RTL.
+(`lean/QBP/Sedenion.lean`) and emits hex files and assembly constants consumed by the emulator.
 
-This is M0.1 of the Stream A→B migration plan (peer-review-005). Its purpose is to make the
-authority chain explicit: sign tables come from a formally-specified algebraic source, not from
-hand-derivation. Once the ROMs are Lean-derived, drift between simulator, asm, and RTL becomes
-detectable at CI time rather than at runtime.
+This update (M0.1b) consolidates the authority chain by ensuring that all hardware-accelerated
+kernels (both QW64 and QW128) consume the same Lean-verified assembly constants, eliminating
+the risk of hand-derivation drift.
 
 ---
 
 ## Invocation
 
 ```bash
-# Regenerate all ROM files from Lean source
+# Regenerate all ROM files and assembly constants
 make sign-roms
 
-# Verify checksums without regenerating (CI gate)
+# Verify checksums and assembly consistency (CI gate)
 make verify-roms
-
-# Run all tests including the cross-check
 make test
 ```
 
@@ -47,142 +44,52 @@ cmd/lean2rom/main.go            ← extraction + validation + emission
         ├──► roms/sedenion_idx.hex         (256 entries × 4 bits)
         ├──► roms/octonion_signs.hex        (49 entries × 1 bit)
         ├──► roms/octonion_idx.hex          (64 entries × 3 bits)
-        ├──► roms/quaternion_signs.go       (Go constants, DO NOT HAND-EDIT)
-        ├──► emulator/asm/qmath_constants.s (asm constants, DO NOT HAND-EDIT)
+        ├──► roms/quaternion_signs.go       (Go constants)
+        ├──► emulator/qmath_constants.s     (asm constants, qbp_lean_ prefix)
         └──► roms/CHECKSUMS.lean-verified   (SHA-256 manifest)
 ```
 
 ---
 
-## Source of truth
+## Authority Chain Hardening
 
-**`lean/QBP/Sedenion.lean` is authoritative.** The Go computation in `cmd/lean2rom/main.go`
-is a verification cross-check and fallback, not the source.
+### Precision Independence
 
-Key declarations in `Sedenion.lean`:
-- `mulSignData : Array UInt8` — 225 entries (i,j in 1..15), sign bit of e_i · e_j
-- `mulIdxData : Array UInt8` — 256 entries (i,j in 0..15), index = i XOR j
+The sign masks for Hamilton product terms are mathematically independent of the carrier precision.
+The same signs derived from `Sedenion.lean` apply to:
+- `QMul64` (AVX1/FMA3 on `float64`)
+- `QMul128` (AVX1/FMA3 on double-double)
 
-Both are derived from the Cayley-Dickson doubling construction applied iteratively:
+Both kernels in `qmath_amd64.s` and `qmath_128_amd64.s` now link to the shared symbols in
+`emulator/qmath_constants.s`:
+- `qbp_lean_sign_x`
+- `qbp_lean_sign_y`
+- `qbp_lean_sign_z`
+- `qbp_lean_conj`
 
-```
-ℝ → ℂ → ℍ → 𝕆 → 𝕊
-```
+### Cross-check Test
 
-using the formula `(a,b)(c,d) = (ac − conj(d)b, da + b·conj(c))` (Schafer 1954).
+`emulator/lean_rom_consistency_test.go` implements `TestSIMDConstantsMatchROM`, which serves
+as the final verification gate.
 
----
-
-## Error modes
-
-### Lean toolchain missing
-
-If `lean` is not in `PATH`, `lean2rom` falls back to the native Go Cayley-Dickson derivation.
-
-```
-lean2rom: lean not in PATH; using Go derivation
-```
-
-The Go derivation is mathematically equivalent to the Lean source. The ROMs produced are
-identical. However, the authority chain is weaker: without Lean, the derivation is not
-formally verified. This mode is acceptable for development but should not be used in
-production CI.
-
-**To install Lean:** `curl https://elan.lean-lang.org/ | sh`
-
-### Lean source disagrees with derived (hard fail)
-
-If the Lean extraction produces tables that fail algebraic validation, `lean2rom` exits
-non-zero:
-
-```
-lean2rom: table validation: ZD count = N, want 42 (Cawagas 2009)
-```
-
-This is a hard fail. Do not proceed until the Lean source is corrected and re-derived.
-
-### Checksum mismatch (hard fail)
-
-If `make verify-roms` detects that `roms/*.hex` do not match the checksums in
-`CHECKSUMS.lean-verified`, it exits non-zero:
-
-```
-lean2rom: checksum mismatch (hard fail):
-  sedenion_signs.hex: got <hash>, want <hash>
-```
-
-This means someone modified ROM files outside of `make sign-roms`. Regenerate with
-`make sign-roms` and commit the result.
-
----
-
-## Algebraic guarantees encoded
-
-The validation pass in `cmd/lean2rom/main.go` asserts:
-
-1. **Entry counts**: 225 sedenion signs, 256 sedenion indices, 49 octonion signs, 64 octonion indices.
-2. **XOR-index lemma** (Moreno 1998): `idx(e_i · e_j) = i XOR j` for all i,j.
-3. **Quaternion sub-algebra**: e1·e2=+e3, e2·e3=+e1, e3·e1=+e2 (cyclic).
-4. **Imaginary unit squares**: e_k · e_k = −e_0 for k in 1..15.
-5. **42 cross-copy ZDs** (Cawagas 2009): exactly 42 unique unordered pairs (e_i+e_j)(e_k+e_l)=0
-   with i,k ∈ {1..7}, j,l ∈ {9..15}.
-
----
-
-## Regeneration policy
-
-**Only regenerate `roms/` when `lean/QBP/Sedenion.lean` changes.**
-
-The ROM files are committed to the repository so that:
-- CI can verify checksums without running Lean.
-- The RTL can load ROMs directly without needing the Lean toolchain.
-
-If you modify `Sedenion.lean`, run `make sign-roms` and commit the updated `roms/` files
-in the same PR.
+1.  **Direct Parser:** The test parses `emulator/qmath_constants.s` to extract the `DATA` blocks.
+2.  **Symmetric Verification:** It compares the parsed assembly values against the `roms/*.hex`
+    source-of-truth.
+3.  **Scalar Grounding:** It verifies that the ROM-derived sign table matches the scalar
+    Go implementation (`qmath_scalar.go`).
 
 ---
 
 ## Generated files — DO NOT HAND-EDIT
 
-The following files are generated by `lean2rom` and must not be hand-edited:
+The following files are generated by `lean2rom`:
+- `roms/quaternion_signs.go`
+- `emulator/qmath_constants.s`
+- `roms/CHECKSUMS.lean-verified`
 
-- `roms/quaternion_signs.go` — Go constants for the quaternion sign sub-table
-- `emulator/asm/qmath_constants.s` — Assembly sign mask constants (prefixed `lean_`)
-- `roms/CHECKSUMS.lean-verified` — SHA-256 manifest
-
-The existing `emulator/qmath_amd64.s` and `emulator/qmath_128_amd64.s` files are
-**not** generated by lean2rom. They use hand-derived constants. M0.2 will migrate
-those files to use the generated constants once `TestSIMDConstantsMatchROM` confirms
-agreement.
+Modification of these files without a corresponding change to `lean/QBP/Sedenion.lean` will
+be detected and failed by the CI pipeline.
 
 ---
 
-## Cross-check test
-
-`emulator/lean_rom_consistency_test.go` implements `TestSIMDConstantsMatchROM`.
-
-This test:
-1. Loads `roms/octonion_signs.hex`
-2. Extracts the quaternion sub-table (4×4 ℍ submatrix at indices 0..3)
-3. Compares against `y_sign_x`, `y_sign_y`, `y_sign_z` from `qmath_amd64.s`
-4. Compares against the scalar reference in `qmath_scalar.go`
-
-**Result (2026-05-05):** **MATCH** — all asm sign masks are Lean-correct.
-The existing hand-derived asm constants agree with the Cayley-Dickson derivation.
-Issue #6 (T3 peer-review-003 §3.5) is resolved by this test.
-
----
-
-## Attribution
-
-Per workspace standing rule, the following works are cited in this pipeline:
-
-- Furey, Günaydin & Gürsey, Dixon, Boyle & Farnsworth, Singh, Chamseddine & Connes,
-  Koide, Baez (2002) "The Octonions", Moreno (1998), Schafer (1954), Cawagas (2009).
-- The 42 ZD count is from Cawagas (2009).
-- The XOR-index lemma is from Moreno (1998).
-- The CD product formula is from Schafer (1954).
-
----
-
-*Status: IMPLEMENTED | Issue: #7 | Phase: M0.1 | Blocks: emulator/v0.1.0 tag*
+*Status: COMPLETED | Phase: M0.1b | Blocks: emulator/v0.1.0 tag*

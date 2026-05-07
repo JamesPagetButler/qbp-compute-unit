@@ -11,10 +11,10 @@ import (
 func TestHeadlessScout_ColoradoRiver(t *testing.T) {
 	cpu := NewCPU()
 	cpu.SetWidth(W128)
-	
+
 	// 1. Setup Locale: Upper Basin (Snow) to Lake Mead (River)
 	// Point A: Snow (Origin) - q1
-	cpu.Q[1].W.SetFloat64(0) // Time t=0
+	cpu.Q[1].W.SetFloat64(0)   // Time t=0
 	cpu.Q[1].X.SetFloat64(100) // Spatial X
 	cpu.Q[1].Y.SetFloat64(100) // Spatial Y
 	cpu.Q[1].Z.SetFloat64(50)  // Spatial Z (Elevation)
@@ -52,20 +52,23 @@ func TestHeadlessScout_ColoradoRiver(t *testing.T) {
 	// Calculate distance between Predicted (p) and Agent (q3)
 	distSq := new(big.Float).SetPrec(cpu.GB.Precision())
 	tmp := new(big.Float).SetPrec(cpu.GB.Precision())
-	
+
 	diffW := new(big.Float).Sub(p.W, cpu.Q[3].W)
 	diffX := new(big.Float).Sub(p.X, cpu.Q[3].X)
 	diffY := new(big.Float).Sub(p.Y, cpu.Q[3].Y)
 	diffZ := new(big.Float).Sub(p.Z, cpu.Q[3].Z)
 
 	distSq.Mul(diffW, diffW)
-	tmp.Mul(diffX, diffX); distSq.Add(distSq, tmp)
-	tmp.Mul(diffY, diffY); distSq.Add(distSq, tmp)
-	tmp.Mul(diffZ, diffZ); distSq.Add(distSq, tmp)
+	tmp.Mul(diffX, diffX)
+	distSq.Add(distSq, tmp)
+	tmp.Mul(diffY, diffY)
+	distSq.Add(distSq, tmp)
+	tmp.Mul(diffZ, diffZ)
+	distSq.Add(distSq, tmp)
 
 	// 5. Audit finding
 	t.Logf("Locale Intersection Check: distSq = %v", distSq)
-	
+
 	// Threshold check: if distSq < 1.0, they intersect.
 	if distSq.Cmp(new(big.Float).SetFloat64(1.0)) < 0 {
 		t.Logf("INSIGHT DISCOVERED: Active Agent (Forest) intersects Snowmelt world-line.")
