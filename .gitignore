@@ -1,0 +1,12 @@
+# Build artifacts — see issue #16
+# Precise patterns only; no aggressive globs (e.g. *.bin, cth/, cmd/*).
+
+# Go test binaries (any package; produced by `go test -c` and `go test`)
+*.test
+
+# WASM build outputs (visualizer entrypoint)
+cmd/wasm-visualizer/qbp.wasm
+
+# Compiled CLI binaries (per-cmd, by exact name — leaves source dirs tracked)
+cth/bin/
+cmd/hw-eval/hw-eval

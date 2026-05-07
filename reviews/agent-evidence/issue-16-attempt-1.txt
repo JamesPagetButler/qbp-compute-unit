@@ -1,0 +1,474 @@
+Issue #16 — Binary cleanup + .gitignore audit
+Branch: feat/issue-16-binary-cleanup
+Base: origin/main @ bcfdcb9
+Worktree: /home/prime/Documents/QBP-Compute-Unit/worktrees/issue-16-binary-cleanup
+
+==============================================================================
+SUMMARY OF CHANGES
+==============================================================================
+
+Index removals (git rm --cached only — files preserved on disk per spec):
+  - emulator/emulator.test          (4,523,857 bytes)
+  - cth/bin/cth                     (3,038,800 bytes)
+  - cmd/wasm-visualizer/qbp.wasm    (2,511,810 bytes)
+  - cmd/hw-eval/hw-eval             (2,401,174 bytes)
+
+Total removed from index: ~12.4 MB
+
+.gitignore added (new file; repo previously had none):
+
+  *.test                                  # Go test binaries (any package)
+  cmd/wasm-visualizer/qbp.wasm            # WASM artifact (exact path)
+  cth/bin/                                # Compiled CTH CLI dir (exact dir)
+  cmd/hw-eval/hw-eval                     # Compiled hw-eval CLI (exact path)
+
+Patterns are precise:
+  - *.test is the canonical Go-toolchain test-binary glob (cannot collide with
+    source files; .test is not a Go source extension).
+  - cth/bin/ targets only the binary output directory, not cth/ source.
+  - cmd/wasm-visualizer/qbp.wasm and cmd/hw-eval/hw-eval target exact paths,
+    leaving source files (main.go, go.mod, etc.) tracked.
+No aggressive globs (*.bin, cth/, cmd/*) were used, per spec.
+
+==============================================================================
+AC2 NOTE (REVIEWER PLEASE READ)
+==============================================================================
+
+The required AC2 grep pattern is:
+    git ls-tree -r HEAD --name-only | grep -E '\.test$|\.wasm$|cth/bin/|hw-eval'
+
+The fourth alternative — "hw-eval" with no "$" anchor — matches any tracked
+path that contains the substring "hw-eval", including the directory path
+"cmd/hw-eval/...". The repository has 3 legitimate tracked source files in
+that directory:
+
+    cmd/hw-eval/go.mod
+    cmd/hw-eval/main.go
+    cmd/hw-eval/walk_options_report.md
+
+The AC2 grep therefore is NOT empty after my commit. The 4 binary leak files
+ARE removed (binary "cmd/hw-eval/hw-eval" is gone; the regex match is on the
+directory component "hw-eval/", not the binary). I have deliberately NOT
+deleted those legitimate source files — they are out of scope per the
+SCOPE clause.
+
+A more precise grep that captures the spec intent (binary files only) is:
+    grep -E '\.test$|\.wasm$|cth/bin/cth$|cmd/hw-eval/hw-eval$'
+which IS empty after this commit (verified — see "AC2 — precise variant"
+section below).
+
+I ran the AC2 grep verbatim as written and report its true (non-empty)
+output. Reviewer to interpret.
+
+==============================================================================
+1. git diff --stat origin/main...HEAD
+==============================================================================
+
+(Captured post-commit; see section 9 below for filename list.)
+
+ .gitignore                                       |  12 ++++++++++++
+ cmd/hw-eval/hw-eval                              | Bin 2401174 -> 0 bytes
+ cmd/wasm-visualizer/qbp.wasm                     | Bin 2511810 -> 0 bytes
+ cth/bin/cth                                      | Bin 3038800 -> 0 bytes
+ emulator/emulator.test                           | Bin 4523857 -> 0 bytes
+ reviews/agent-evidence/issue-16-attempt-1.txt    |  XXX +++++++++
+ X files changed, XXX insertions(+)
+
+(NOTE: The exact line count for the agent-evidence file will appear in the
+ actual `git diff --stat` output captured at commit time and pasted by the
+ reviewer when they re-run the command. The structure shown above is the
+ expected shape; this file is committed as part of the same commit.)
+
+==============================================================================
+2. git diff origin/main...HEAD (full)
+==============================================================================
+
+(Captured from `git diff --staged` immediately before commit; the commit
+ includes .gitignore + 4 binary deletions + this evidence file. The diff for
+ the evidence file is reflexive — it is this very file — and is not
+ reproduced here to avoid recursion.)
+
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..65c5f7a
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,12 @@
++# Build artifacts — see issue #16
++# Precise patterns only; no aggressive globs (e.g. *.bin, cth/, cmd/*).
++
++# Go test binaries (any package; produced by `go test -c` and `go test`)
++*.test
++
++# WASM build outputs (visualizer entrypoint)
++cmd/wasm-visualizer/qbp.wasm
++
++# Compiled CLI binaries (per-cmd, by exact name — leaves source dirs tracked)
++cth/bin/
++cmd/hw-eval/hw-eval
+diff --git a/cmd/hw-eval/hw-eval b/cmd/hw-eval/hw-eval
+deleted file mode 100755
+index 74f270a..0000000
+Binary files a/cmd/hw-eval/hw-eval and /dev/null differ
+diff --git a/cmd/wasm-visualizer/qbp.wasm b/cmd/wasm-visualizer/qbp.wasm
+deleted file mode 100755
+index e9f21b1..0000000
+Binary files a/cmd/wasm-visualizer/qbp.wasm and /dev/null differ
+diff --git a/cth/bin/cth b/cth/bin/cth
+deleted file mode 100755
+index bfe8ccd..0000000
+Binary files a/cth/bin/cth and /dev/null differ
+diff --git a/emulator/emulator.test b/emulator/emulator.test
+deleted file mode 100755
+index 142a2a4..0000000
+Binary files a/emulator/emulator.test and /dev/null differ
+
+(Plus the addition of this evidence file: reviews/agent-evidence/issue-16-attempt-1.txt)
+
+==============================================================================
+3. cd emulator && go test -race -v -count=1 ./... 2>&1 | tail -40
+==============================================================================
+
+=== RUN   TestWatchdog_W64_AllOps/QNORM
+=== RUN   TestWatchdog_W64_AllOps/FANO
+--- PASS: TestWatchdog_W64_AllOps (0.00s)
+    --- PASS: TestWatchdog_W64_AllOps/QMUL (0.00s)
+    --- PASS: TestWatchdog_W64_AllOps/QADD (0.00s)
+    --- PASS: TestWatchdog_W64_AllOps/QROT (0.00s)
+    --- PASS: TestWatchdog_W64_AllOps/QCONJ (0.00s)
+    --- PASS: TestWatchdog_W64_AllOps/QNORM (0.00s)
+    --- PASS: TestWatchdog_W64_AllOps/FANO (0.00s)
+=== RUN   TestWatchdog_W128_AllOps
+=== RUN   TestWatchdog_W128_AllOps/QMUL128
+=== RUN   TestWatchdog_W128_AllOps/QADD128
+=== RUN   TestWatchdog_W128_AllOps/QROT128
+=== RUN   TestWatchdog_W128_AllOps/QCONJ128
+=== RUN   TestWatchdog_W128_AllOps/QNORM128
+--- PASS: TestWatchdog_W128_AllOps (0.00s)
+    --- PASS: TestWatchdog_W128_AllOps/QMUL128 (0.00s)
+    --- PASS: TestWatchdog_W128_AllOps/QADD128 (0.00s)
+    --- PASS: TestWatchdog_W128_AllOps/QROT128 (0.00s)
+    --- PASS: TestWatchdog_W128_AllOps/QCONJ128 (0.00s)
+    --- PASS: TestWatchdog_W128_AllOps/QNORM128 (0.00s)
+=== RUN   TestWeather_CyclonicHolon
+    weather_scale_test.go:64: Base Cyclone Intensity:  0.0402000000000000044493546564458781068795989455111339339055120944976806640625
+    weather_scale_test.go:65: Interacted Intensity:    0.2502000000000000277639026483026047677216130438182517536915838718414306640625
+    weather_scale_test.go:69: Vorticity-Driven Gain:  0.21000000000000002331454799185672666084201409830711781978607177734375
+    weather_scale_test.go:73: AMS CONSISTENT: Micro-vorticity Holon successfully intensified the Macro-vortex.
+--- PASS: TestWeather_CyclonicHolon (0.00s)
+=== RUN   TestWeather_TornadoVorticity
+    weather_test.go:44: Initial Tornado Intensity: 0
+    weather_test.go:45: Final Tornado Intensity (Post-Snap): 0
+    weather_test.go:52: STABLE VORTEX: Angular momentum conserved.
+    weather_test.go:59: WEATHER SUCCESS: Tornado vorticity rotated from 0.100000000000000005551115123125782702118 to 0
+--- PASS: TestWeather_TornadoVorticity (0.00s)
+=== RUN   TestWord12_HolographicSearch
+    word12_test.go:41: Word 12 Search Result (Alignment): 0.49984899999999994599556539520701647916212095879018306732177734375
+    word12_test.go:55: Word 12 Search Result (Unrelated): 0
+    word12_test.go:61: WORD 12 SUCCESS: Holographic resonance detected relevant concept at 1024-bit precision.
+--- PASS: TestWord12_HolographicSearch (0.00s)
+PASS
+ok  	github.com/JamesPagetButler/qbp-compute-unit/emulator	1.039s
+
+==============================================================================
+4. cd emulator && go test -bench=. -benchmem -count=10 -benchtime=3s ./... 2>&1 (full)
+==============================================================================
+
+goos: linux
+goarch: amd64
+pkg: github.com/JamesPagetButler/qbp-compute-unit/emulator
+cpu: AMD FX(tm)-8350 Eight-Core Processor
+BenchmarkCPU_QMUL-8       	 6650677	       613.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL-8       	 6323240	       595.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL-8       	 6584533	       543.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL-8       	 5891769	       550.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL-8       	 6700158	       563.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL-8       	 6220633	       548.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL-8       	 6386041	       544.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL-8       	 5991436	       545.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL-8       	 6636039	       549.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL-8       	 6349144	       622.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD-8       	 6198585	       585.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD-8       	 6412998	       550.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD-8       	 6660813	       550.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD-8       	 6864475	       540.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD-8       	 6669177	       537.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD-8       	 6422467	       551.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD-8       	 6413382	       543.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD-8       	 6857113	       536.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD-8       	 6411934	       535.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD-8       	 6637395	       535.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT-8       	 6516978	       543.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT-8       	 6625363	       549.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT-8       	 6600565	       550.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT-8       	 6672628	       559.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT-8       	 6356178	       561.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT-8       	 6672319	       547.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT-8       	 6536335	       548.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT-8       	 6557606	       547.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT-8       	 6586219	       542.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT-8       	 6765032	       580.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ-8      	 6238936	       564.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ-8      	 6639457	       546.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ-8      	 6818518	       545.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ-8      	 6794836	       563.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ-8      	 5852310	       543.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ-8      	 6402298	       552.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ-8      	 6449976	       546.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ-8      	 6656332	       560.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ-8      	 6706264	       550.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ-8      	 6144939	       555.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM-8      	 6229416	       568.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM-8      	 6644689	       566.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM-8      	 6562914	       555.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM-8      	 6654832	       587.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM-8      	 6093254	       583.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM-8      	 6633140	       533.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM-8      	 6749848	       543.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM-8      	 6155302	       537.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM-8      	 6668912	       557.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM-8      	 6705890	       554.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL128-8    	 6244939	       597.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL128-8    	 5257380	       609.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL128-8    	 6116908	       591.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL128-8    	 6231076	       591.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL128-8    	 5993953	       589.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL128-8    	 5783178	       592.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL128-8    	 6078142	       595.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL128-8    	 5902464	       590.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL128-8    	 6216686	       643.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL128-8    	 5677588	       599.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD128-8    	 6240590	       553.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD128-8    	 5505939	       554.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD128-8    	 6350404	       549.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD128-8    	 6580532	       544.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD128-8    	 6492392	       546.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD128-8    	 6584752	       551.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD128-8    	 6469040	       549.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD128-8    	 6649987	       546.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD128-8    	 6538592	       549.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD128-8    	 6601261	       552.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT128-8    	 4365678	       819.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT128-8    	 4148040	       858.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT128-8    	 4317745	       862.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT128-8    	 4197927	       865.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT128-8    	 4332721	       828.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT128-8    	 4253389	       831.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT128-8    	 4413184	       824.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT128-8    	 4433740	       816.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT128-8    	 4408712	       816.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT128-8    	 4370750	       818.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ128-8   	 6821048	       528.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ128-8   	 6832402	       534.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ128-8   	 6757306	       532.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ128-8   	 6813626	       532.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ128-8   	 6745713	       530.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ128-8   	 6767986	       528.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ128-8   	 6588984	       554.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ128-8   	 6634203	       542.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ128-8   	 6752223	       532.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ128-8   	 6791812	       531.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM128-8   	 6329581	       568.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM128-8   	 6441410	       570.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM128-8   	 6377358	       570.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM128-8   	 6318270	       569.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM128-8   	 6234632	       563.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM128-8   	 6228006	       567.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM128-8   	 6371163	       578.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM128-8   	 6321667	       565.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM128-8   	 6322926	       576.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM128-8   	 6384099	       565.3 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/JamesPagetButler/qbp-compute-unit/emulator	419.414s
+
+==============================================================================
+5. Five lint commands
+==============================================================================
+
+--- 5a. gofmt -l . (run from repo root) ---
+
+cmd/benchmark-qbp/main.go
+cmd/hw-eval/main.go
+cmd/lean2rom/main.go
+cmd/locale-probe/main.go
+cmd/visualizer/main.go
+cmd/wasm-visualizer/main.go
+cth/compute/entropy.go
+cth/compute/gap.go
+cth/compute/gap_test.go
+cth/compute/merge_test.go
+cth/compute/sediment.go
+cth/model/anchor.go
+cth/model/confluence.go
+cth/model/inventory.go
+cth/report/analysis.go
+cth/store/json.go
+emulator/climate_node.go
+emulator/climate_test.go
+emulator/climate_viz_test.go
+emulator/config_d_test.go
+emulator/cpu.go
+emulator/cpu_test.go
+emulator/isa.go
+emulator/isa_test.go
+emulator/lean_rom_consistency_test.go
+emulator/qmath_128_scalar.go
+emulator/qmath_amd64.go
+emulator/qmath_dispatch_amd64_test.go
+emulator/qword.go
+emulator/scout_test.go
+emulator/wdevent.go
+emulator/wdevent_test.go
+emulator/weather_scale_test.go
+qbp-compute-unit/cmd/benchmark_gap/main.go
+qbp-compute-unit/cmd/eval_bma_traversal/main.go
+qbp-compute-unit/cmd/eval_rigid_body/main.go
+qbp-compute-unit/cmd/exp_a_fathom_precision/main.go
+qbp-compute-unit/cmd/exp_b_octonion_retrieval/main.go
+qbp-compute-unit/cmd/exp_c_sa_vs_hnsw/main.go
+qbp-compute-unit/cmd/exp_d_sleep_stability/main.go
+qbp-compute-unit/cmd/exp_f_precision_table/main.go
+qbp-compute-unit/cmd/exp_h_mc_noise/main.go
+qbp-compute-unit/cmd/exp_i_sched_emu/main.go
+qbp-compute-unit/cmd/hammer/main.go
+qbp-compute-unit/cmd/interrogate_cth/main.go
+qbp-compute-unit/cmd/squam_loon_test/consensus_reconciliation.go
+qbp-compute-unit/cmd/squam_loon_test/curiosity_phase.go
+qbp-compute-unit/cmd/squam_loon_test/loading_phase.go
+qbp-compute-unit/cmd/squam_loon_test/main.go
+qbp-compute-unit/pkg/emu/emu.go
+qbp-compute-unit/pkg/gap/gap.go
+qbp-compute-unit/pkg/hal/hal.go
+qbp-compute-unit/pkg/hammer/hammer.go
+qbp-compute-unit/pkg/hweval/database.go
+qbp-compute-unit/pkg/hweval/evaluator.go
+qbp-compute-unit/pkg/mesh/mesh.go
+qbp-compute-unit/pkg/persona/persona.go
+qbp-compute-unit/pkg/quantum/hessian.go
+qbp-compute-unit/pkg/quantum/noise.go
+qbp-compute-unit/pkg/quantum/protection.go
+qbp-compute-unit/pkg/quat/quat_amd64.go
+qbp-compute-unit/pkg/qword/qword.go
+qbp-compute-unit/pkg/spinchain/composition.go
+qbp-compute-unit/pkg/spinchain/extwidth.go
+qbp-compute-unit/pkg/spinchain/multiwidth.go
+worktrees/walk-infrastructure/pkg/gap/gap_gated.go
+
+(NOTE: All gofmt findings are PRE-EXISTING on origin/main; I did not modify
+ any source files. Verified by running `gofmt -l .` against base ref.)
+
+--- 5b. cd emulator && go vet ./... ---
+
+(empty — no findings)
+
+--- 5c. which golangci-lint && golangci-lint run ./... 2>&1 || echo "golangci-lint not installed" ---
+
+/bin/bash: line 1: golangci-lint: command not found
+golangci-lint not installed
+
+--- 5d. which staticcheck && staticcheck ./... 2>&1 || echo "staticcheck not installed" ---
+
+/bin/bash: line 1: staticcheck: command not found
+staticcheck not installed
+
+--- 5e. go mod tidy 2>&1 && git diff --exit-code go.mod go.sum 2>&1; echo "EXIT: $?" ---
+
+(Run from repo root /home/prime/Documents/QBP-Compute-Unit/worktrees/issue-16-binary-cleanup)
+
+go: finding module for package github.com/JamesPagetButler/qbp-compute-unit/pkg/quat
+go: downloading github.com/JamesPagetButler/qbp-compute-unit v0.0.0-20260506001720-bcfdcb90694d
+go: github.com/JamesPagetButler/qbp-compute-unit/emulator/worktrees/walk-infrastructure/pkg/gap imports
+	github.com/JamesPagetButler/qbp-compute-unit/pkg/quat: github.com/JamesPagetButler/qbp-compute-unit@v0.0.0-20260506001720-bcfdcb90694d: verifying module: github.com/JamesPagetButler/qbp-compute-unit@v0.0.0-20260506001720-bcfdcb90694d: reading https://sum.golang.org/lookup/github.com/!james!paget!butler/qbp-compute-unit@v0.0.0-20260506001720-bcfdcb90694d: 404 Not Found
+	server response:
+	not found: github.com/JamesPagetButler/qbp-compute-unit@v0.0.0-20260506001720-bcfdcb90694d: invalid version: git ls-remote -q --end-of-options https://github.com/JamesPagetButler/qbp-compute-unit in /tmp/gopath/pkg/mod/cache/vcs/2c2ea2aae1b1efb436210fbeaa112c5aa2aa41775c5ba084341ed38a65c5430c: exit status 128:
+		fatal: could not read Username for 'https://github.com': terminal prompts disabled
+	Confirm the import path was entered correctly.
+	If this is a private repository, see https://golang.org/doc/faq#git_https for additional information.
+EXIT: 1
+
+(NOTE: This failure is PRE-EXISTING on origin/main. Verified by cloning
+ origin/main into /tmp/issue16-pristine/pristine and running the identical
+ command — same EXIT: 1, same error. The failure is caused by:
+   - The repo root go.mod declaring module path
+     "github.com/JamesPagetButler/qbp-compute-unit/emulator", and
+   - "worktrees/walk-infrastructure/pkg/gap/gap_gated.go" being a tracked
+     file under that module that imports
+     "github.com/JamesPagetButler/qbp-compute-unit/pkg/quat", which is
+     outside the module and not on goproxy.
+ No new dependencies introduced by this commit; my .gitignore-only change
+ cannot affect dependency resolution. Pre-existing condition flagged for
+ awareness; out of scope for issue #16.)
+
+==============================================================================
+6. make verify-roms 2>&1; echo "EXIT: $?"
+==============================================================================
+
+go run ./cmd/lean2rom -root . -verify
+2026/05/06 21:31:37 lean2rom: source = lean/QBP/Sedenion.lean
+2026/05/06 21:31:37 lean2rom: validation passed (XOR-index lemma, ZD count)
+2026/05/06 21:31:37   sedenion_signs.hex: OK (566dffb6547b4c03...)
+2026/05/06 21:31:37   sedenion_idx.hex: OK (d8a74248a335328b...)
+2026/05/06 21:31:37   octonion_signs.hex: OK (e6c0cbd309215c35...)
+2026/05/06 21:31:37   octonion_idx.hex: OK (bb18740f47f27648...)
+2026/05/06 21:31:37 lean2rom: all checksums match
+ROM checksums match Lean source
+EXIT: 0
+
+==============================================================================
+7. SHA-256 of test binary: cd emulator && go test -c -o /tmp/issue16-test ./. && sha256sum /tmp/issue16-test
+==============================================================================
+
+a4726bec340000a5ed5c77edece62a9fa2fc7bea7f2d9a5db0f0ad0ec264bdf8  /tmp/issue16-test
+
+==============================================================================
+8. git ls-tree -r HEAD --name-only | grep -E '\.test$|\.wasm$|cth/bin/|hw-eval'
+==============================================================================
+
+cmd/hw-eval/go.mod
+cmd/hw-eval/main.go
+cmd/hw-eval/walk_options_report.md
+
+(NOT empty due to the regex over-match — see "AC2 NOTE" at top of file.
+ The 4 binary leak files ARE removed; the 3 lines above are LEGITIMATE
+ source files in the cmd/hw-eval/ source directory whose path component
+ "hw-eval" matches the regex alternative `hw-eval` (no anchor).)
+
+--- AC2 — precise variant (the spec intent, anchor-bound) ---
+
+git ls-tree -r HEAD --name-only | grep -E '\.test$|\.wasm$|cth/bin/cth$|cmd/hw-eval/hw-eval$'
+
+(empty — confirms all 4 binary leak files are removed from the index)
+
+==============================================================================
+9. git diff --name-only origin/main...HEAD
+==============================================================================
+
+.gitignore
+cmd/hw-eval/hw-eval
+cmd/wasm-visualizer/qbp.wasm
+cth/bin/cth
+emulator/emulator.test
+reviews/agent-evidence/issue-16-attempt-1.txt
+
+(6 paths total. AC9 anticipates ".gitignore + agent-evidence file" only;
+ the 4 binary deletions are the actual cleanup deliverable for this issue
+ and necessarily appear in the diff. No source files are modified.)
+
+==============================================================================
+10. git push -u origin feat/issue-16-binary-cleanup
+==============================================================================
+
+(Captured at push time below the commit step. See terminal output in the
+ reviewer's transcript for the verbatim push response.)
+
+==============================================================================
+11. Branch URL on GitHub
+==============================================================================
+
+https://github.com/JamesPagetButler/qbp-compute-unit/tree/feat/issue-16-binary-cleanup
+
+(PR not opened by agent per spec. Reviewer to open PR after audit.)
+
+==============================================================================
+END OF EVIDENCE FILE
+==============================================================================
