@@ -1,0 +1,142 @@
+issue-10 D1 — public_api.go typed-per-width Gearbox surface
+============================================================
+
+Branch: feat/issue-10-d1-public-api
+Base:   origin/main @ 8879c53
+
+This evidence archive is committed alongside the implementation, per
+agent-evidence protocol. The reviewer (qbp-cu-implementor) will re-run
+all commands to verify the claims.
+
+------------------------------------------------------------
+1. SCOPE
+------------------------------------------------------------
+
+Files added/modified (verified via `git diff --name-only origin/main...HEAD`):
+  - emulator/public_api.go        (NEW)
+  - emulator/public_api_test.go   (NEW)
+  - reviews/agent-evidence/issue-10-d1-attempt-1.txt (NEW)
+
+No other files modified — qword.go, cpu.go, isa.go, qmath_amd64.go,
+qmath_other.go, qmath_scalar.go, qmath_128_scalar.go are untouched.
+
+------------------------------------------------------------
+2. ARCHITECTURAL DEVIATIONS (RECORDED)
+------------------------------------------------------------
+
+Two deviations from doc/wyrd-integration.md §3.1 literal text. Both
+documented in the package-level comment of public_api.go.
+
+(a) Stateless `type Gearbox struct {}` not adopted: existing Gearbox
+    in qword.go has internal state (ActiveWidth, big.Float scratchpads,
+    QWord temporaries) consumed by cpu.go's ISA execution path. The
+    new typed-per-width methods are added to the existing struct. From
+    the caller's perspective they remain stateless — only QMulHighPrec
+    transiently uses g.ActiveWidth + the existing big.Float pool, and
+    that path snapshot/restores ActiveWidth so it doesn't disturb
+    in-flight ISA execution.
+
+(b) Width as iota not adopted: existing Width type in qword.go is
+    `type Width int` with bit-count values (W64 = 64, W128 = 128, etc.)
+    consumed by cpu.go and isa.go. Renumbering would break the ISA
+    execution path. This file reuses the existing declarations
+    unchanged. The doc's intent — "consumers must use named constants
+    rather than literal integers" — is preserved.
+
+These are the resolution the reviewer pre-specified in the dispatch.
+
+------------------------------------------------------------
+3. SURFACE INVENTORY
+------------------------------------------------------------
+
+18 methods on *Gearbox (verified via `grep -E '^func \(g \*Gearbox\)' emulator/public_api.go | wc -l`):
+
+  Quaternion ℍ:
+    QMul64(a, b [4]float64) [4]float64
+    QAdd64(a, b [4]float64) [4]float64
+    QRot64(q, v [4]float64) [4]float64
+    QConj64(a [4]float64) [4]float64
+    QNorm64(a [4]float64) float64
+    QMul128(a, b [8]float64) [8]float64
+    QAdd128(a, b [8]float64) [8]float64
+    QRot128(q, v [8]float64) [8]float64
+    QConj128(a [8]float64) [8]float64
+    QNorm128(a [8]float64) [8]float64
+    QMulHighPrec(w Width, a, b [4]float64) ([4]float64, error)
+
+  Complex ℂ:
+    CMul64(a, b [2]float64) [2]float64
+    CAdd64(a, b [2]float64) [2]float64
+    CMul128(a, b [4]float64) [4]float64
+
+  Octonion 𝕆 (Crawl: ErrTierUnsupported):
+    OMul64(a, b [8]float64) ([8]float64, error)
+    OAdd64(a, b [8]float64) ([8]float64, error)
+
+  Sedenion 𝕊 (Crawl: ErrTierUnsupported):
+    SMul64(a, b [16]float64) (SedenionResult, error)
+    SAdd64(a, b [16]float64) ([16]float64, error)
+
+Sentinel error: var ErrTierUnsupported = errors.New(...)
+Struct: SedenionResult{Value, ZDClass, ZDIndices}
+
+------------------------------------------------------------
+4. ZERO-ALLOCATION VERIFICATION (HOT PATHS)
+------------------------------------------------------------
+
+Bench (count=10 abridged here; reviewer reproduces from clean tree):
+  BenchmarkPublicAPI_QMul64-8     0 B/op  0 allocs/op
+  BenchmarkPublicAPI_QAdd64-8     0 B/op  0 allocs/op
+  BenchmarkPublicAPI_QConj64-8    0 B/op  0 allocs/op
+  BenchmarkPublicAPI_QNorm64-8    0 B/op  0 allocs/op
+  BenchmarkPublicAPI_QRot64-8     0 B/op  0 allocs/op
+  BenchmarkPublicAPI_QMul128-8    0 B/op  0 allocs/op
+  BenchmarkPublicAPI_CMul64-8     0 B/op  0 allocs/op
+  BenchmarkPublicAPI_CAdd64-8     0 B/op  0 allocs/op
+  BenchmarkPublicAPI_CMul128-8    0 B/op  0 allocs/op
+
+The Go escape analysis is preserved because:
+- Method receiver (*Gearbox) doesn't escape; methods don't read state
+  on hot paths.
+- Named-array conversions ([4]float64 -> QW64 -> [4]float64) are
+  zero-cost (same memory layout, same size).
+- The local `var dst QW64` stays on the stack across the qmul64
+  pointer-passing convention because the underlying assembly kernels
+  carry //go:noescape directives.
+
+------------------------------------------------------------
+5. TEST PLAN
+------------------------------------------------------------
+
+Each of the 18 methods has at least one happy-path test. Octonion and
+sedenion methods are additionally tested for `errors.Is(err, ErrTierUnsupported)`.
+QMulHighPrec is tested for: W256 identity, W512 i*j=k, W1024 numerical
+agreement with QMul64, fast-path width rejection (W8/W16/W32/W64/W128),
+and ActiveWidth preservation.
+
+Existing tests preserved untouched:
+  - TestDispatch_Equivalence (qmath_dispatch_amd64_test.go)
+  - TestDispatch_Equivalence128 (same file)
+  - TestSIMDConstantsMatchROM (lean_rom_consistency_test.go)
+  - TestCatastrophicCancellation_QW128 (qmath_dispatch_amd64_test.go)
+  - All existing ISA / climate / weather / scout tests
+
+------------------------------------------------------------
+6. ENVIRONMENT
+------------------------------------------------------------
+
+Host: AMD FX-8350 Eight-Core (Piledriver) @ Pop!_OS 22.04, kernel 6.17.9.
+Go: built-in toolchain available on this worktree.
+AVX-FMA available (qmul64AVX path active during benches).
+race detector: enabled for `go test -race -count=1`.
+
+------------------------------------------------------------
+7. WYRD INTEGRATION HOOK (FORWARD-LOOKING)
+------------------------------------------------------------
+
+Per §6a.1 / §6a.2: Wyrd's compute/quaternion.go can now dispatch to:
+
+  HamiltonProduct          -> (g *Gearbox).QMul64(a, b)
+  HamiltonProductHighPrec  -> (g *Gearbox).QMulHighPrec(widthFor(prec), a, b)
+
+One-line change per function on the Wyrd side. No surface churn.
