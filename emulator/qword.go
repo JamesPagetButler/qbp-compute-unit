@@ -58,11 +58,11 @@ func (q QWord) String() string {
 
 // Gearbox manages the precision context and zero-allocation scratchpads.
 type Gearbox struct {
-	ActiveWidth Width
+	ActiveWidth    Width
 	t1, t2, t3, t4 *big.Float
 	rW, rX, rY, rZ *big.Float // Temp result scratchpads
-	tempRot     QWord         // Scratchpad for QROT
-	tempConj    QWord         // Scratchpad for QROT conjugate
+	tempRot        QWord      // Scratchpad for QROT
+	tempConj       QWord      // Scratchpad for QROT conjugate
 }
 
 // NewGearbox initializes the Gearbox with pre-allocated scratchpads to prevent GC thrashing.
@@ -70,16 +70,16 @@ func NewGearbox() *Gearbox {
 	prec := uint(64) // default W64 precision
 	return &Gearbox{
 		ActiveWidth: W64,
-		t1: new(big.Float).SetPrec(prec),
-		t2: new(big.Float).SetPrec(prec),
-		t3: new(big.Float).SetPrec(prec),
-		t4: new(big.Float).SetPrec(prec),
-		rW: new(big.Float).SetPrec(prec),
-		rX: new(big.Float).SetPrec(prec),
-		rY: new(big.Float).SetPrec(prec),
-		rZ: new(big.Float).SetPrec(prec),
-		tempRot: NewQWord(prec),
-		tempConj: NewQWord(prec),
+		t1:          new(big.Float).SetPrec(prec),
+		t2:          new(big.Float).SetPrec(prec),
+		t3:          new(big.Float).SetPrec(prec),
+		t4:          new(big.Float).SetPrec(prec),
+		rW:          new(big.Float).SetPrec(prec),
+		rX:          new(big.Float).SetPrec(prec),
+		rY:          new(big.Float).SetPrec(prec),
+		rZ:          new(big.Float).SetPrec(prec),
+		tempRot:     NewQWord(prec),
+		tempConj:    NewQWord(prec),
 	}
 }
 
@@ -179,10 +179,10 @@ func (g *Gearbox) Conj(dst, q *QWord) {
 func (g *Gearbox) Rotate(dst, q, v *QWord) {
 	// 1. Compute tempRot = q * v
 	g.Mul(&g.tempRot, q, v)
-	
+
 	// 2. Compute q* into tempConj
 	g.Conj(&g.tempConj, q)
-	
+
 	// 3. Compute dst = tempRot * qConj
 	g.Mul(dst, &g.tempRot, &g.tempConj)
 }
@@ -217,5 +217,5 @@ func (g *Gearbox) FanoLookup(i, j int) FanoEntry {
 	if res, ok := table[[2]int{i, j}]; ok {
 		return res
 	}
-	return FanoEntry{Index: int8((i + j) % 7) + 1, Sign: 1}
+	return FanoEntry{Index: int8((i+j)%7) + 1, Sign: 1}
 }

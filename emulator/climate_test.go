@@ -56,7 +56,7 @@ func TestClimate_HopfLocale(t *testing.T) {
 	eps := new(big.Float).SetFloat64(1e-15)
 	absZ := new(big.Float).Abs(cpu.Q[4].Z)
 	one := new(big.Float).SetFloat64(1.0)
-	
+
 	diff := new(big.Float).Sub(absZ, one)
 	if new(big.Float).Abs(diff).Cmp(eps) > 0 {
 		t.Errorf("POLE SINGULARITY DETECTED: North Pole Z-coord is %v, expected 1.0", cpu.Q[4].Z)

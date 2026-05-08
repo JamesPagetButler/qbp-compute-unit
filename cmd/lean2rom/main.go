@@ -12,7 +12,7 @@
 //	roms/octonion_signs.hex             49 entries × 1 bit
 //	roms/octonion_idx.hex               64 entries × 3 bits
 //	roms/quaternion_signs.go            Go constants citing this derivation
-//	emulator/asm/qmath_constants.s      Generated asm sign masks (DO NOT HAND-EDIT)
+//	emulator/qmath_constants.s          Generated asm sign masks (DO NOT HAND-EDIT)
 //	roms/CHECKSUMS.lean-verified        SHA-256 manifest
 //
 // Attribution:
@@ -143,13 +143,17 @@ func extractFromLean(root, leanPath string) (Tables, error) {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if strings.HasPrefix(line, `{"mulSignData":`) {
-			var m struct{ MulSignData []int `json:"mulSignData"` }
+			var m struct {
+				MulSignData []int `json:"mulSignData"`
+			}
 			if e := json.Unmarshal([]byte(line), &m); e == nil {
 				signData = m.MulSignData
 			}
 		}
 		if strings.HasPrefix(line, `{"mulIdxData":`) {
-			var m struct{ MulIdxData []int `json:"mulIdxData"` }
+			var m struct {
+				MulIdxData []int `json:"mulIdxData"`
+			}
 			if e := json.Unmarshal([]byte(line), &m); e == nil {
 				idxData = m.MulIdxData
 			}
@@ -429,8 +433,9 @@ func emitROMs(root string, tables Tables, src string) error {
 	if err := os.MkdirAll(romsDir, 0o755); err != nil {
 		return err
 	}
-	asmDir := filepath.Join(root, "emulator", "asm")
-	if err := os.MkdirAll(asmDir, 0o755); err != nil {
+	// Output to emulator/ directly, not emulator/asm/
+	emuDir := filepath.Join(root, "emulator")
+	if err := os.MkdirAll(emuDir, 0o755); err != nil {
 		return err
 	}
 
@@ -454,8 +459,8 @@ func emitROMs(root string, tables Tables, src string) error {
 		return fmt.Errorf("writing quaternion_signs.go: %w", err)
 	}
 
-	// Emit emulator/asm/qmath_constants.s
-	asmPath := filepath.Join(asmDir, "qmath_constants.s")
+	// Emit emulator/qmath_constants.s
+	asmPath := filepath.Join(emuDir, "qmath_constants.s")
 	if err := os.WriteFile(asmPath, buildQmathConstantsS(tables, src), 0o644); err != nil {
 		return fmt.Errorf("writing qmath_constants.s: %w", err)
 	}
@@ -640,9 +645,9 @@ func buildQuaternionSignsGo(tables Tables, src string) []byte {
 	fmt.Fprintf(&b, "// The following sign bits are extracted from QuaternionSignTable\n")
 	fmt.Fprintf(&b, "// and correspond to the sign-mask lanes in emulator/qmath_amd64.s:\n")
 	fmt.Fprintf(&b, "//\n")
-	fmt.Fprintf(&b, "//   y_sign_x: applied to a1 (e1/i) component across [W,X,Y,Z] lanes\n")
-	fmt.Fprintf(&b, "//   y_sign_y: applied to a2 (e2/j) component across [W,X,Y,Z] lanes\n")
-	fmt.Fprintf(&b, "//   y_sign_z: applied to a3 (e3/k) component across [W,X,Y,Z] lanes\n")
+	fmt.Fprintf(&b, "//   qbp_lean_sign_x: applied to a1 (e1/i) component across [W,X,Y,Z] lanes\n")
+	fmt.Fprintf(&b, "//   qbp_lean_sign_y: applied to a2 (e2/j) component across [W,X,Y,Z] lanes\n")
+	fmt.Fprintf(&b, "//   qbp_lean_sign_z: applied to a3 (e3/k) component across [W,X,Y,Z] lanes\n")
 	fmt.Fprintf(&b, "//\n")
 	fmt.Fprintf(&b, "// The asm shuffle for term k places b_{k^0},b_{k^1},b_{k^2},b_{k^3} in\n")
 	fmt.Fprintf(&b, "// positions [W,X,Y,Z]. The sign mask for term k in output component r is:\n")
@@ -657,86 +662,38 @@ func buildQuaternionSignsGo(tables Tables, src string) []byte {
 		if r > 0 {
 			fmt.Fprintf(&b, ", ")
 		}
-		// The asm applies sign_x to a1*shuffle_x(b). Shuffle_x = VSHUFPD $0x05 = swap within 128-bit lanes.
-		// For YMM layout [W,X,Y,Z] (indices 0,1,2,3 in 64-bit lanes):
-		// VSHUFPD $0x05 with same src: in 256-bit YMM, swaps pairs within each 128-bit lane:
-		// [b0,b1,b2,b3] → [b1,b0,b3,b2]
-		// So lane r of the shuffle is b_{r XOR 1} (within 128-bit lanes, pairs are 0-1 and 2-3).
-		// The product contribution at output component r from term a1:
-		// a1 * sign_x[r] * (shuffle_x(b))[r]
-		// This should equal sign16[1][r] * b_{1^r} (from the sign table: e1*e_r = sign16[1][r]*e_{1^r})
-		// The shuffle places b_{1^r} at lane r because:
-		//   For r=0 (W): want b1 (since e1*e0=+e1, output idx=1, contribution is a1*b0 at W=0... wait
-		// Let me re-derive carefully from scalar:
-		// W = a0*b0 - a1*b1 - a2*b2 - a3*b3
-		// Contribution of a1 to W: -a1*b1 = a1 * (-1) * b1
-		//   sign_x[W=0] = -1, and the shuffle puts b1 at position W (b_{1^0=1})
-		// X = ... +a1*b0 ...
-		// Contribution of a1 to X: +a1*b0 = a1 * (+1) * b0
-		//   sign_x[X=1] = +1, and shuffle puts b0 at position X (b_{1^1=0})
-		// Y = ... -a1*b3 ...
-		// Contribution of a1 to Y: -a1*b3 = a1 * (-1) * b3
-		//   sign_x[Y=2] = -1, and shuffle puts b3 at position Y (b_{1^2=3})
-		// Z = ... +a1*b2 ...
-		// Contribution of a1 to Z: +a1*b2 = a1 * (+1) * b2
-		//   sign_x[Z=3] = +1, and shuffle puts b2 at position Z (b_{1^3=2})
-		// These are: sign16[1][1]=-1, sign16[1][0]=+1, sign16[1][3]=?, sign16[1][2]=?
-		// sign16[1][3] (e1*e3=?): from table, e1*e3 = -e2 so sign=-1. But asm says sign_x[Y]=-1. ✓
-		// sign16[1][2] (e1*e2=?): e1*e2 = +e3 so sign=+1. But asm says sign_x[Z]=+1. ✓
-		// Wait: output Z=3 gets a1 * sign_x[3] * b_{1^3=2}
-		// e1*e2=+e3: so sign16[1][2]=+1 ✓
-		// sign_x = [-1, +1, -1, +1] but this is sign16[1][1], sign16[1][0], sign16[1][3], sign16[1][2]
-		// = [-1, +1, -(sign16[1][3]), +(sign16[1][2])]
-		// Hmm, r XOR 1 for [0,1,2,3] = [1,0,3,2]
-		// So sign_x[r] = sign16[1][r^1]? Let's check:
-		// r=0: sign16[1][1] = -1 ✓
-		// r=1: sign16[1][0] = +1 ✓
-		// r=2: sign16[1][3] = sign of e1*e3... we need this
-		// Actually from shuffle: shuffle_x(b)[r] = b_{r^1}
-		// Product contribution: a1 * sign_x[r] * b_{r^1}
-		// This must equal sign16[1][r^1] * a1 * b_{r^1} from the identity
-		// e1 * e_{r^1} = sign16[1][r^1] * e_{1^(r^1)}
-		// For this to contribute to output component r, we need 1^(r^1) = r, i.e., r^1^r = 1 ✓ (always)
-		// So sign_x[r] = sign16[1][r^1]
 		fmt.Fprintf(&b, "%+d", tables.sign16[1][r^1])
 	}
-	fmt.Fprintf(&b, "} // asm y_sign_x: should be [-1,+1,-1,+1]\n")
+	fmt.Fprintf(&b, "} // asm qbp_lean_sign_x: should be [-1,+1,-1,+1]\n")
 
 	fmt.Fprintf(&b, "\n// SignYSignY[r] = sign for e2 × e_{...} term, for lanes {W,X,Y,Z}\n")
 	fmt.Fprintf(&b, "var SignYSignY = [4]int8{")
-	// Term y (a2): shuffle_y = VPERM2F128 $0x01 which swaps 128-bit lanes: [b0,b1,b2,b3]→[b2,b3,b0,b1]
-	// shuffle_y(b)[r] = b_{r^2}
-	// sign_y[r] = sign16[2][r^2]
 	for r := 0; r < 4; r++ {
 		if r > 0 {
 			fmt.Fprintf(&b, ", ")
 		}
 		fmt.Fprintf(&b, "%+d", tables.sign16[2][r^2])
 	}
-	fmt.Fprintf(&b, "} // asm y_sign_y: should be [-1,+1,+1,-1]\n")
+	fmt.Fprintf(&b, "} // asm qbp_lean_sign_y: should be [-1,+1,+1,-1]\n")
 
 	fmt.Fprintf(&b, "\n// SignYSignZ[r] = sign for e3 × e_{...} term, for lanes {W,X,Y,Z}\n")
 	fmt.Fprintf(&b, "var SignYSignZ = [4]int8{")
-	// Term z (a3): shuffle_z = VPERM2F128 $0x01 then VSHUFPD $0x05
-	// = swap 128-bit lanes then swap within lanes = [b3,b2,b1,b0]
-	// shuffle_z(b)[r] = b_{r^3}
-	// sign_z[r] = sign16[3][r^3]
 	for r := 0; r < 4; r++ {
 		if r > 0 {
 			fmt.Fprintf(&b, ", ")
 		}
 		fmt.Fprintf(&b, "%+d", tables.sign16[3][r^3])
 	}
-	fmt.Fprintf(&b, "} // asm y_sign_z: should be [-1,-1,+1,+1]\n")
+	fmt.Fprintf(&b, "} // asm qbp_lean_sign_z: should be [-1,-1,+1,+1]\n")
 
 	return []byte(b.String())
 }
 
 // ── qmath_constants.s builder ──────────────────────────────────────────────────
 
-// buildQmathConstantsS emits emulator/asm/qmath_constants.s — the generated
+// buildQmathConstantsS emits emulator/qmath_constants.s — the generated
 // asm sign mask constants derived from the Lean sedenion tables.
-// DO NOT hand-edit this file; regenerate with 'make sign-roms'.
+// Symbols use the qbp_lean_ prefix and lack the Plan-9 private marker (<>).
 func buildQmathConstantsS(tables Tables, src string) []byte {
 	var b strings.Builder
 	fmt.Fprintf(&b, "#include \"textflag.h\"\n\n")
@@ -747,9 +704,14 @@ func buildQmathConstantsS(tables Tables, src string) []byte {
 	fmt.Fprintf(&b, "// Sign mask constants for the quaternion Hamilton product AVX kernel.\n")
 	fmt.Fprintf(&b, "// Derived from the 4×4 quaternion sub-table of mulSignData in Sedenion.lean.\n")
 	fmt.Fprintf(&b, "//\n")
-	fmt.Fprintf(&b, "// These constants are generated; the working asm (qmath_amd64.s) uses\n")
-	fmt.Fprintf(&b, "// hand-derived constants. M0.2 will migrate the working asm to use these.\n")
-	fmt.Fprintf(&b, "// TestSIMDConstantsMatchROM verifies agreement before migration.\n")
+	fmt.Fprintf(&b, "// These constants are generated and consumed directly by:\n")
+	fmt.Fprintf(&b, "//   - emulator/qmath_amd64.s     (QW64 fast path)\n")
+	fmt.Fprintf(&b, "//   - emulator/qmath_128_amd64.s (QW128 double-double; same masks, sign-bit\n")
+	fmt.Fprintf(&b, "//     XOR is precision-independent)\n")
+	fmt.Fprintf(&b, "//\n")
+	fmt.Fprintf(&b, "// Authority chain: Lean → ROM hex → this file → asm. Closed by issues #13/#14.\n")
+	fmt.Fprintf(&b, "// TestSIMDConstantsMatchROM parses this file at test time and verifies\n")
+	fmt.Fprintf(&b, "// byte-for-byte agreement with the Lean-derived ROM source-of-truth.\n")
 	fmt.Fprintf(&b, "//\n")
 	fmt.Fprintf(&b, "// Attribution: Schafer (1954), Moreno (1998), Cawagas (2009).\n")
 	fmt.Fprintf(&b, "\n")
@@ -783,10 +745,10 @@ func buildQmathConstantsS(tables Tables, src string) []byte {
 			if s < 0 {
 				mask = 0x8000000000000000
 			}
-			fmt.Fprintf(&b, "DATA lean_%s<>+0x%02x(SB)/8, $0x%016x // %s (%s)\n",
+			fmt.Fprintf(&b, "DATA qbp_lean_%s+0x%02x(SB)/8, $0x%016x // %s (%s)\n",
 				name, r*8, mask, laneNames[r], signStr(s))
 		}
-		fmt.Fprintf(&b, "GLOBL lean_%s<>(SB), RODATA, $32\n\n", name)
+		fmt.Fprintf(&b, "GLOBL qbp_lean_%s(SB), RODATA, $32\n\n", name)
 	}
 
 	emitMask("sign_x", signXLanes, "// a1 (e1/i) term sign mask")

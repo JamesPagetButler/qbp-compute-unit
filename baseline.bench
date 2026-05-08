@@ -1,0 +1,36 @@
+goos: linux
+goarch: amd64
+pkg: github.com/JamesPagetButler/qbp-compute-unit/emulator
+cpu: AMD FX(tm)-8350 Eight-Core Processor           
+BenchmarkCPU_QMUL-8       	 1964781	       589.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL-8       	 1848855	       638.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL-8       	 1992980	       606.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD-8       	 2002264	       598.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD-8       	 1988586	       605.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD-8       	 1966900	       616.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT-8       	 1936278	       614.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT-8       	 1968378	       611.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT-8       	 1967096	       621.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ-8      	 1785913	       596.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ-8      	 2009590	       580.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ-8      	 2065770	       600.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM-8      	 2024376	       603.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM-8      	 2013926	       602.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM-8      	 1985119	       669.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL128-8    	 1770090	       660.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL128-8    	 1833345	       664.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QMUL128-8    	 1832366	       652.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD128-8    	 1952367	       615.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD128-8    	 1939387	       616.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QADD128-8    	 1947086	       678.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT128-8    	 1329502	       911.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT128-8    	 1306468	       920.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QROT128-8    	 1303633	       895.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ128-8   	 2038893	       593.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ128-8   	 2038880	       595.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QCONJ128-8   	 1889080	       604.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM128-8   	 1806498	       640.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM128-8   	 1872711	       633.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCPU_QNORM128-8   	 1896028	       635.2 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/JamesPagetButler/qbp-compute-unit/emulator	55.737s

@@ -38,7 +38,7 @@ func TestRotation120(t *testing.T) {
 
 	// 4. Verify results
 	eps := new(big.Float).SetFloat64(1e-15)
-	
+
 	check := func(name string, got *big.Float, want float64) {
 		wantF := new(big.Float).SetFloat64(want)
 		diff := new(big.Float).Sub(got, wantF)

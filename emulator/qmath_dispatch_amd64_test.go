@@ -213,9 +213,9 @@ func TestCatastrophicCancellation_QW128(t *testing.T) {
 	a := QW128{1.0, 0, 0, 0, 1e-16, 0, 0, 0}
 	b := QW128{-1.0, 0, 0, 0, 1e-16, 0, 0, 0}
 	var got QW128
-	
+
 	qadd128Scalar(&got, &a, &b)
-	
+
 	// FastTwoSum will normalize: hi = 2e-16, lo = 0
 	if got[0] != 2e-16 || got[4] != 0.0 {
 		t.Errorf("Catastrophic cancellation failed: got %v", got)
@@ -250,7 +250,7 @@ func TestCatastrophicCancellation_QW128_Multiply(t *testing.T) {
 
 	a := QW128{1.0, 1e-16, 1e-16, 1e-16, 1e-16, 0, 0, 0}
 	b := QW128{1.0, -1e-16, -1e-16, -1e-16, 1e-16, 0, 0, 0}
-	
+
 	var avx, scalar QW128
 	qmul128AVX(&avx, &a, &b)
 	qmul128Scalar(&scalar, &a, &b)

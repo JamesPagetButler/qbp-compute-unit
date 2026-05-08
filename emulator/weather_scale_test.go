@@ -21,7 +21,7 @@ func TestWeather_CyclonicHolon(t *testing.T) {
 	// 2. Define three Micro-Vortices (Tornado-scale) in q1, q2, q3
 	// These are "Small but Intense" bursts of vorticity.
 	vortices := []struct {
-		reg uint8
+		reg     uint8
 		x, y, z float64
 	}{
 		{1, 0.05, 0.0, 0.1},
@@ -48,7 +48,7 @@ func TestWeather_CyclonicHolon(t *testing.T) {
 	// q12 = QNORM(q10) [Base Intensity]
 	// q13 = QADD(q10, q11) [Interacted Vortex]
 	// q14 = QNORM(q13) [Final Intensity]
-	
+
 	normBase := uint32(OpcodeCustom0 | (12 << 7) | (5 << 12) | (10 << 15) | (0 << 20) | (Funct7QNORM << 25))
 	cpu.Step(normBase)
 

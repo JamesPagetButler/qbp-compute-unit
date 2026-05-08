@@ -52,14 +52,22 @@ func (c *CPU) Step(word uint32) error {
 
 	// Update width based on Funct3 (Gearbox shift)
 	switch inst.Funct3 {
-	case 0: c.SetWidth(W8)
-	case 1: c.SetWidth(W16)
-	case 2: c.SetWidth(W32)
-	case 3: c.SetWidth(W64)
-	case 4: c.SetWidth(W128)
-	case 5: c.SetWidth(W256)
-	case 6: c.SetWidth(W512)
-	case 7: c.SetWidth(W1024)
+	case 0:
+		c.SetWidth(W8)
+	case 1:
+		c.SetWidth(W16)
+	case 2:
+		c.SetWidth(W32)
+	case 3:
+		c.SetWidth(W64)
+	case 4:
+		c.SetWidth(W128)
+	case 5:
+		c.SetWidth(W256)
+	case 6:
+		c.SetWidth(W512)
+	case 7:
+		c.SetWidth(W1024)
 	}
 
 	switch inst.Funct7 {
@@ -152,12 +160,12 @@ func (c *CPU) Step(word uint32) error {
 		ZDClass:   NotZD,
 		AlgebraID: 0, // TODO(M1): populate from c.csr.AMODE
 	}
-	
+
 	if inst.Funct7 == Funct7FANO {
 		evt.FanoIndex = uint8(c.X[inst.Rd])
 		evt.SignBit = int64(c.X[(inst.Rd+1)%32]) == -1
 	}
-	
+
 	c.emitWDEvent(evt)
 
 	return nil

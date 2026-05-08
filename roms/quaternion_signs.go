@@ -24,19 +24,19 @@ var QuaternionSignTable = [4][4]int8{
 // The following sign bits are extracted from QuaternionSignTable
 // and correspond to the sign-mask lanes in emulator/qmath_amd64.s:
 //
-//   y_sign_x: applied to a1 (e1/i) component across [W,X,Y,Z] lanes
-//   y_sign_y: applied to a2 (e2/j) component across [W,X,Y,Z] lanes
-//   y_sign_z: applied to a3 (e3/k) component across [W,X,Y,Z] lanes
+//   qbp_lean_sign_x: applied to a1 (e1/i) component across [W,X,Y,Z] lanes
+//   qbp_lean_sign_y: applied to a2 (e2/j) component across [W,X,Y,Z] lanes
+//   qbp_lean_sign_z: applied to a3 (e3/k) component across [W,X,Y,Z] lanes
 //
 // The asm shuffle for term k places b_{k^0},b_{k^1},b_{k^2},b_{k^3} in
 // positions [W,X,Y,Z]. The sign mask for term k in output component r is:
 //   SignForAsmMask[k][r] = sign16[k][k^r]
 
 // SignYSignX[r] = sign of e1 × e_{1 XOR r} for r in {0,1,2,3} → lanes {W,X,Y,Z}
-var SignYSignX = [4]int8{-1, +1, -1, +1} // asm y_sign_x: should be [-1,+1,-1,+1]
+var SignYSignX = [4]int8{-1, +1, -1, +1} // asm qbp_lean_sign_x: should be [-1,+1,-1,+1]
 
 // SignYSignY[r] = sign for e2 × e_{...} term, for lanes {W,X,Y,Z}
-var SignYSignY = [4]int8{-1, +1, +1, -1} // asm y_sign_y: should be [-1,+1,+1,-1]
+var SignYSignY = [4]int8{-1, +1, +1, -1} // asm qbp_lean_sign_y: should be [-1,+1,+1,-1]
 
 // SignYSignZ[r] = sign for e3 × e_{...} term, for lanes {W,X,Y,Z}
-var SignYSignZ = [4]int8{-1, -1, +1, +1} // asm y_sign_z: should be [-1,-1,+1,+1]
+var SignYSignZ = [4]int8{-1, -1, +1, +1} // asm qbp_lean_sign_z: should be [-1,-1,+1,+1]

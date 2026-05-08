@@ -11,7 +11,7 @@ func buildInstForTest(funct7, rs2, rs1, funct3, rd uint32) uint32 {
 
 func TestWatchdog_PassiveEmissionCount(t *testing.T) {
 	cpu := NewCPU()
-	
+
 	ops := []uint32{
 		buildInstForTest(Funct7QMUL, 3, 2, 3, 1),
 		buildInstForTest(Funct7QADD, 3, 2, 3, 1),
@@ -20,13 +20,13 @@ func TestWatchdog_PassiveEmissionCount(t *testing.T) {
 		buildInstForTest(Funct7QNORM, 0, 2, 3, 1),
 		buildInstForTest(Funct7FANO, 3, 2, 3, 1),
 	}
-	
+
 	for _, word := range ops {
 		if err := cpu.Step(word); err != nil {
 			t.Fatalf("unexpected error during Step: %v", err)
 		}
 	}
-	
+
 	// Drain channel and count
 	count := 0
 	for {
@@ -56,19 +56,19 @@ func TestWatchdog_W64_AllOps(t *testing.T) {
 		{"QNORM", Funct7QNORM},
 		{"FANO", Funct7FANO},
 	}
-	
+
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Clear channel
 			for len(cpu.WatchdogChan) > 0 {
 				<-cpu.WatchdogChan
 			}
-			
+
 			word := buildInstForTest(tc.funct7, 3, 2, 3, 1) // W64
 			if err := cpu.Step(word); err != nil {
 				t.Fatalf("unexpected error during Step: %v", err)
 			}
-			
+
 			select {
 			case evt := <-cpu.WatchdogChan:
 				if evt.Op != Opcode(tc.funct7) {
@@ -96,18 +96,18 @@ func TestWatchdog_W128_AllOps(t *testing.T) {
 		{"QCONJ128", Funct7QCONJ},
 		{"QNORM128", Funct7QNORM},
 	}
-	
+
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			for len(cpu.WatchdogChan) > 0 {
 				<-cpu.WatchdogChan
 			}
-			
+
 			word := buildInstForTest(tc.funct7, 3, 2, 4, 1) // W128
 			if err := cpu.Step(word); err != nil {
 				t.Fatalf("unexpected error during Step: %v", err)
 			}
-			
+
 			select {
 			case evt := <-cpu.WatchdogChan:
 				if evt.Op != Opcode(tc.funct7) {

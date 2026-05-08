@@ -42,11 +42,11 @@ func TestConfigD_StatorArm(t *testing.T) {
 	// 5. Calculate Deflection Displacement: d = q4 - q1
 	// We use QADD with a negative q1 to simulate subtraction (noting QADD is implemented)
 	// For simplicity in this test, we'll manually check the delta.
-	
+
 	// Rotated X should be slightly less than 200, Y should be non-zero
 	// At 1 degree, delta Y = 200 * sin(1 deg) = 200 * 0.01745 = 3.49mm
 	// We check if this exceeds the 0.5mm bearing gap tolerance.
-	
+
 	deltaY := new(big.Float).Sub(cpu.Q[4].Y, cpu.Q[1].Y)
 	limit := new(big.Float).SetFloat64(0.5)
 

@@ -1,12 +1,5 @@
 #include "textflag.h"
 
-// Constants for sign flipping during conjugations
-DATA y128_conj<>+0(SB)/8, $0x0000000000000000
-DATA y128_conj<>+8(SB)/8, $0x8000000000000000
-DATA y128_conj<>+16(SB)/8, $0x8000000000000000
-DATA y128_conj<>+24(SB)/8, $0x8000000000000000
-GLOBL y128_conj<>(SB), RODATA, $32
-
 // func qconj128AVX(dst, a *QW128)
 TEXT ·qconj128AVX(SB), NOSPLIT, $0-16
 	MOVQ dst+0(FP), AX
@@ -15,7 +8,7 @@ TEXT ·qconj128AVX(SB), NOSPLIT, $0-16
 	VMOVUPD 0(BX), Y0
 	VMOVUPD 32(BX), Y1
 
-	VMOVUPD y128_conj<>(SB), Y2
+	VMOVUPD qbp_lean_conj(SB), Y2
 	VXORPD Y2, Y0, Y3
 	VXORPD Y2, Y1, Y4
 
@@ -66,24 +59,6 @@ TEXT ·qadd128AVX(SB), NOSPLIT, $0-24
 	VZEROUPPER
 	RET
 
-DATA y128_sign_x<>+0(SB)/8, $0x8000000000000000 // W (-)
-DATA y128_sign_x<>+8(SB)/8, $0x0000000000000000 // X (+)
-DATA y128_sign_x<>+16(SB)/8, $0x8000000000000000 // Y (-)
-DATA y128_sign_x<>+24(SB)/8, $0x0000000000000000 // Z (+)
-GLOBL y128_sign_x<>(SB), RODATA, $32
-
-DATA y128_sign_y<>+0(SB)/8, $0x8000000000000000 // W (-)
-DATA y128_sign_y<>+8(SB)/8, $0x0000000000000000 // X (+)
-DATA y128_sign_y<>+16(SB)/8, $0x0000000000000000 // Y (+)
-DATA y128_sign_y<>+24(SB)/8, $0x8000000000000000 // Z (-)
-GLOBL y128_sign_y<>(SB), RODATA, $32
-
-DATA y128_sign_z<>+0(SB)/8, $0x8000000000000000 // W (-)
-DATA y128_sign_z<>+8(SB)/8, $0x8000000000000000 // X (-)
-DATA y128_sign_z<>+16(SB)/8, $0x0000000000000000 // Y (+)
-DATA y128_sign_z<>+24(SB)/8, $0x0000000000000000 // Z (+)
-GLOBL y128_sign_z<>(SB), RODATA, $32
-
 // func qmul128AVX(dst, a, b *QW128)
 TEXT ·qmul128AVX(SB), NOSPLIT, $0-24
 	MOVQ dst+0(FP), AX
@@ -122,7 +97,7 @@ TEXT ·qmul128AVX(SB), NOSPLIT, $0-24
 	VBROADCASTSD 8(BX), Y8    // A.X_hi
 	VBROADCASTSD 40(BX), Y9   // A.X_lo
 
-	VMOVUPD y128_sign_x<>(SB), Y14
+	VMOVUPD qbp_lean_sign_x(SB), Y14
 	VXORPD Y14, Y8, Y8
 	VXORPD Y14, Y9, Y9
 
@@ -160,7 +135,7 @@ TEXT ·qmul128AVX(SB), NOSPLIT, $0-24
 	VBROADCASTSD 16(BX), Y8   // A.Y_hi
 	VBROADCASTSD 48(BX), Y9   // A.Y_lo
 
-	VMOVUPD y128_sign_y<>(SB), Y14
+	VMOVUPD qbp_lean_sign_y(SB), Y14
 	VXORPD Y14, Y8, Y8
 	VXORPD Y14, Y9, Y9
 
@@ -200,7 +175,7 @@ TEXT ·qmul128AVX(SB), NOSPLIT, $0-24
 	VBROADCASTSD 24(BX), Y8   // A.Z_hi
 	VBROADCASTSD 56(BX), Y9   // A.Z_lo
 
-	VMOVUPD y128_sign_z<>(SB), Y14
+	VMOVUPD qbp_lean_sign_z(SB), Y14
 	VXORPD Y14, Y8, Y8
 	VXORPD Y14, Y9, Y9
 
