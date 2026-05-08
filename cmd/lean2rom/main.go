@@ -143,13 +143,17 @@ func extractFromLean(root, leanPath string) (Tables, error) {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if strings.HasPrefix(line, `{"mulSignData":`) {
-			var m struct{ MulSignData []int `json:"mulSignData"` }
+			var m struct {
+				MulSignData []int `json:"mulSignData"`
+			}
 			if e := json.Unmarshal([]byte(line), &m); e == nil {
 				signData = m.MulSignData
 			}
 		}
 		if strings.HasPrefix(line, `{"mulIdxData":`) {
-			var m struct{ MulIdxData []int `json:"mulIdxData"` }
+			var m struct {
+				MulIdxData []int `json:"mulIdxData"`
+			}
 			if e := json.Unmarshal([]byte(line), &m); e == nil {
 				idxData = m.MulIdxData
 			}
@@ -700,9 +704,14 @@ func buildQmathConstantsS(tables Tables, src string) []byte {
 	fmt.Fprintf(&b, "// Sign mask constants for the quaternion Hamilton product AVX kernel.\n")
 	fmt.Fprintf(&b, "// Derived from the 4×4 quaternion sub-table of mulSignData in Sedenion.lean.\n")
 	fmt.Fprintf(&b, "//\n")
-	fmt.Fprintf(&b, "// These constants are generated; the working asm (qmath_amd64.s) uses\n")
-	fmt.Fprintf(&b, "// hand-derived constants. M0.2 will migrate the working asm to use these.\n")
-	fmt.Fprintf(&b, "// TestSIMDConstantsMatchROM verifies agreement before migration.\n")
+	fmt.Fprintf(&b, "// These constants are generated and consumed directly by:\n")
+	fmt.Fprintf(&b, "//   - emulator/qmath_amd64.s     (QW64 fast path)\n")
+	fmt.Fprintf(&b, "//   - emulator/qmath_128_amd64.s (QW128 double-double; same masks, sign-bit\n")
+	fmt.Fprintf(&b, "//     XOR is precision-independent)\n")
+	fmt.Fprintf(&b, "//\n")
+	fmt.Fprintf(&b, "// Authority chain: Lean → ROM hex → this file → asm. Closed by issues #13/#14.\n")
+	fmt.Fprintf(&b, "// TestSIMDConstantsMatchROM parses this file at test time and verifies\n")
+	fmt.Fprintf(&b, "// byte-for-byte agreement with the Lean-derived ROM source-of-truth.\n")
 	fmt.Fprintf(&b, "//\n")
 	fmt.Fprintf(&b, "// Attribution: Schafer (1954), Moreno (1998), Cawagas (2009).\n")
 	fmt.Fprintf(&b, "\n")

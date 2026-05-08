@@ -7,9 +7,14 @@
 // Sign mask constants for the quaternion Hamilton product AVX kernel.
 // Derived from the 4×4 quaternion sub-table of mulSignData in Sedenion.lean.
 //
-// These constants are generated; the working asm (qmath_amd64.s) uses
-// hand-derived constants. M0.2 will migrate the working asm to use these.
-// TestSIMDConstantsMatchROM verifies agreement before migration.
+// These constants are generated and consumed directly by:
+//   - emulator/qmath_amd64.s     (QW64 fast path)
+//   - emulator/qmath_128_amd64.s (QW128 double-double; same masks, sign-bit
+//     XOR is precision-independent)
+//
+// Authority chain: Lean → ROM hex → this file → asm. Closed by issues #13/#14.
+// TestSIMDConstantsMatchROM parses this file at test time and verifies
+// byte-for-byte agreement with the Lean-derived ROM source-of-truth.
 //
 // Attribution: Schafer (1954), Moreno (1998), Cawagas (2009).
 
