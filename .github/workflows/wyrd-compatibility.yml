@@ -17,15 +17,19 @@
 #   JamesPagetButler/wyrd). Until issue #15 resolves —
 #     option A: make both repos public, OR
 #     option B: provision WYRD_PAT as a repo secret —
-#   every step in this workflow except the first (skip notice) is guarded
-#   on `if: ${{ secrets.WYRD_PAT != '' }}`. When the secret is absent, the
-#   job runs but every real step is skipped — the job reports success and
-#   does not block PR merge. When #15 lands and the secret is provisioned,
-#   the guards flip true and the canary activates automatically. No YAML
-#   edit needed at that point.
+#   the first step (preflight) reads the secret into an env var and emits
+#   a step output `has_pat=true|false`. All subsequent steps gate on that
+#   step output. When WYRD_PAT is unset, the preflight step prints a
+#   ::notice::, all real-work steps skip, and the job ends green.
+#   When #15 resolves and the secret is provisioned, the preflight emits
+#   has_pat=true and the canary activates automatically. No YAML edit
+#   needed at that point.
 #
-#   (`secrets.*` is not allowed in job-level `if` per GitHub Actions context
-#    availability rules — must be guarded at step level.)
+#   GitHub Actions context-availability rules:
+#   `secrets.*` is NOT allowed in `if` conditionals (job-level OR step-level)
+#   per the official docs. It is allowed in `env`, `with`, and `run`. The
+#   preflight pattern below converts the secret-presence check into a step
+#   output, which IS allowed in subsequent step-level `if` expressions.
 
 name: Wyrd Compatibility Check
 
@@ -45,19 +49,27 @@ jobs:
       GOFLAGS: "-mod=mod"
 
     steps:
-      - name: Skip notice (when WYRD_PAT unset)
-        if: ${{ secrets.WYRD_PAT == '' }}
+      - name: Preflight — check WYRD_PAT availability
+        id: preflight
+        env:
+          WYRD_PAT: ${{ secrets.WYRD_PAT }}
         run: |
-          echo "::notice title=Wyrd Compatibility Check skipped::WYRD_PAT secret is not provisioned (issue #15 unresolved). The cross-repo canary requires read access to the Wyrd private repo. When #15 resolves and the secret is provisioned, this canary activates automatically."
+          if [ -n "$WYRD_PAT" ]; then
+            echo "has_pat=true" >> "$GITHUB_OUTPUT"
+            echo "WYRD_PAT is provisioned; canary will run."
+          else
+            echo "has_pat=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Wyrd Compatibility Check skipped::WYRD_PAT secret is not provisioned (issue #15 unresolved). The cross-repo canary requires read access to the Wyrd private repo. When #15 resolves and the secret is provisioned, this canary activates automatically."
+          fi
 
       - name: Checkout qbp-compute-unit (this repo)
-        if: ${{ secrets.WYRD_PAT != '' }}
+        if: steps.preflight.outputs.has_pat == 'true'
         uses: actions/checkout@v4
         with:
           path: qbp-compute-unit
 
       - name: Checkout Wyrd (private — requires WYRD_PAT, see issue #15)
-        if: ${{ secrets.WYRD_PAT != '' }}
+        if: steps.preflight.outputs.has_pat == 'true'
         uses: actions/checkout@v4
         with:
           repository: JamesPagetButler/wyrd
@@ -65,26 +77,26 @@ jobs:
           path: wyrd
 
       - name: Set up Go (version pinned by Wyrd's go.mod)
-        if: ${{ secrets.WYRD_PAT != '' }}
+        if: steps.preflight.outputs.has_pat == 'true'
         uses: actions/setup-go@v5
         with:
           go-version-file: wyrd/go.mod
 
       - name: Pin Wyrd's emulator import to local checkout
-        if: ${{ secrets.WYRD_PAT != '' }}
+        if: steps.preflight.outputs.has_pat == 'true'
         run: |
           cd wyrd
           go mod edit -replace=github.com/JamesPagetButler/qbp-compute-unit/emulator=../qbp-compute-unit/emulator
           go mod tidy || true
 
       - name: Run Wyrd compute tests against local emulator
-        if: ${{ secrets.WYRD_PAT != '' }}
+        if: steps.preflight.outputs.has_pat == 'true'
         run: |
           cd wyrd
           go test -race -count=1 ./compute/...
 
       - name: Sanity build (catches unused imports / link breakage)
-        if: ${{ secrets.WYRD_PAT != '' }}
+        if: steps.preflight.outputs.has_pat == 'true'
         run: |
           cd wyrd
           go build ./...
