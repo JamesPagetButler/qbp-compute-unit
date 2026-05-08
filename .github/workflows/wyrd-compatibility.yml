@@ -1,0 +1,80 @@
+# Wyrd Compatibility Check — cross-repo canary for the QBP-CU public API.
+#
+# Purpose:
+#   Build the Wyrd repo against this repo's `emulator` package on every push
+#   and pull request. Catches breaking changes to the public API exposed at
+#   `github.com/JamesPagetButler/qbp-compute-unit/emulator` before they hit
+#   Wyrd consumers.
+#
+# Spec:
+#   doc/wyrd-integration.md §5.1 (Cross-repo build verification).
+#   Issue: https://github.com/JamesPagetButler/qbp-compute-unit/issues/10 (D2).
+#
+# Auth gating (issue #15):
+#   The Wyrd repo (https://github.com/JamesPagetButler/wyrd) is private as of
+#   2026-05-07. The cross-repo checkout therefore requires the `WYRD_PAT`
+#   repository secret (a Personal Access Token with read access to
+#   JamesPagetButler/wyrd). Until issue #15 resolves —
+#     option A: make both repos public, OR
+#     option B: provision WYRD_PAT as a repo secret —
+#   the job below has a `if: secrets.WYRD_PAT != ''` guard that causes the
+#   entire canary to be SKIPPED (clean green CI) when the secret is absent.
+#   When #15 lands and the secret is provisioned, the guard evaluates true
+#   and the canary activates automatically. No YAML edit needed at that point.
+
+name: Wyrd Compatibility Check
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  build-wyrd-against-emulator:
+    name: Build Wyrd against this repo's emulator package
+    runs-on: ubuntu-latest
+
+    # Skip the entire canary when WYRD_PAT is not provisioned (issue #15
+    # unresolved). A skipped job is reported as success on the merge gate;
+    # when WYRD_PAT lands, this guard evaluates true and the canary activates
+    # automatically — no YAML change required at that point.
+    if: ${{ secrets.WYRD_PAT != '' }}
+
+    env:
+      # Allow the local `replace` directive to bypass go.sum verification for
+      # the qbp-compute-unit/emulator module pulled from the sibling checkout.
+      GOFLAGS: "-mod=mod"
+
+    steps:
+      - name: Checkout qbp-compute-unit (this repo)
+        uses: actions/checkout@v4
+        with:
+          path: qbp-compute-unit
+
+      - name: Checkout Wyrd (private — requires WYRD_PAT, see issue #15)
+        uses: actions/checkout@v4
+        with:
+          repository: JamesPagetButler/wyrd
+          token: ${{ secrets.WYRD_PAT }}
+          path: wyrd
+
+      - name: Set up Go (version pinned by Wyrd's go.mod)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: wyrd/go.mod
+
+      - name: Pin Wyrd's emulator import to local checkout
+        run: |
+          cd wyrd
+          go mod edit -replace=github.com/JamesPagetButler/qbp-compute-unit/emulator=../qbp-compute-unit/emulator
+          go mod tidy || true
+
+      - name: Run Wyrd compute tests against local emulator
+        run: |
+          cd wyrd
+          go test -race -count=1 ./compute/...
+
+      - name: Sanity build (catches unused imports / link breakage)
+        run: |
+          cd wyrd
+          go build ./...
