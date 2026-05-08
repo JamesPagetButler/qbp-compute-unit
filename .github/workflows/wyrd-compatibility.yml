@@ -17,10 +17,15 @@
 #   JamesPagetButler/wyrd). Until issue #15 resolves —
 #     option A: make both repos public, OR
 #     option B: provision WYRD_PAT as a repo secret —
-#   the job below has a `if: secrets.WYRD_PAT != ''` guard that causes the
-#   entire canary to be SKIPPED (clean green CI) when the secret is absent.
-#   When #15 lands and the secret is provisioned, the guard evaluates true
-#   and the canary activates automatically. No YAML edit needed at that point.
+#   every step in this workflow except the first (skip notice) is guarded
+#   on `if: ${{ secrets.WYRD_PAT != '' }}`. When the secret is absent, the
+#   job runs but every real step is skipped — the job reports success and
+#   does not block PR merge. When #15 lands and the secret is provisioned,
+#   the guards flip true and the canary activates automatically. No YAML
+#   edit needed at that point.
+#
+#   (`secrets.*` is not allowed in job-level `if` per GitHub Actions context
+#    availability rules — must be guarded at step level.)
 
 name: Wyrd Compatibility Check
 
@@ -34,24 +39,25 @@ jobs:
     name: Build Wyrd against this repo's emulator package
     runs-on: ubuntu-latest
 
-    # Skip the entire canary when WYRD_PAT is not provisioned (issue #15
-    # unresolved). A skipped job is reported as success on the merge gate;
-    # when WYRD_PAT lands, this guard evaluates true and the canary activates
-    # automatically — no YAML change required at that point.
-    if: ${{ secrets.WYRD_PAT != '' }}
-
     env:
       # Allow the local `replace` directive to bypass go.sum verification for
       # the qbp-compute-unit/emulator module pulled from the sibling checkout.
       GOFLAGS: "-mod=mod"
 
     steps:
+      - name: Skip notice (when WYRD_PAT unset)
+        if: ${{ secrets.WYRD_PAT == '' }}
+        run: |
+          echo "::notice title=Wyrd Compatibility Check skipped::WYRD_PAT secret is not provisioned (issue #15 unresolved). The cross-repo canary requires read access to the Wyrd private repo. When #15 resolves and the secret is provisioned, this canary activates automatically."
+
       - name: Checkout qbp-compute-unit (this repo)
+        if: ${{ secrets.WYRD_PAT != '' }}
         uses: actions/checkout@v4
         with:
           path: qbp-compute-unit
 
       - name: Checkout Wyrd (private — requires WYRD_PAT, see issue #15)
+        if: ${{ secrets.WYRD_PAT != '' }}
         uses: actions/checkout@v4
         with:
           repository: JamesPagetButler/wyrd
@@ -59,22 +65,26 @@ jobs:
           path: wyrd
 
       - name: Set up Go (version pinned by Wyrd's go.mod)
+        if: ${{ secrets.WYRD_PAT != '' }}
         uses: actions/setup-go@v5
         with:
           go-version-file: wyrd/go.mod
 
       - name: Pin Wyrd's emulator import to local checkout
+        if: ${{ secrets.WYRD_PAT != '' }}
         run: |
           cd wyrd
           go mod edit -replace=github.com/JamesPagetButler/qbp-compute-unit/emulator=../qbp-compute-unit/emulator
           go mod tidy || true
 
       - name: Run Wyrd compute tests against local emulator
+        if: ${{ secrets.WYRD_PAT != '' }}
         run: |
           cd wyrd
           go test -race -count=1 ./compute/...
 
       - name: Sanity build (catches unused imports / link breakage)
+        if: ${{ secrets.WYRD_PAT != '' }}
         run: |
           cd wyrd
           go build ./...
