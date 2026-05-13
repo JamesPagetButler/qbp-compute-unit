@@ -6,7 +6,7 @@
 **Companion references:**
 - [`Ref/RISC-V-Policies-and-Best-Practices.md`](../Ref/RISC-V-Policies-and-Best-Practices.md) — RISC-V conventions
 - [`Ref/SiFive-Documentation-Patterns.md`](../Ref/SiFive-Documentation-Patterns.md) — vendor doc patterns
-- [`spec/QBP-RISCV-ISA-Spec-v1.0.md`](../spec/QBP-RISCV-ISA-Spec-v1.0.md) — the spec under proposed revision
+- [`spec/QBP-RISCV-ISA-Spec-v1.1.md`](../spec/QBP-RISCV-ISA-Spec-v1.1.md) — the spec under proposed revision
 - [`doc/QBP-ISA-Refinement-Report.md`](../doc/QBP-ISA-Refinement-Report.md) — context document Gemini was given
 - [`doc/Hardware-Strategy.md`](../doc/Hardware-Strategy.md) — Path 1/2/3 hardware roadmap
 
@@ -302,7 +302,7 @@ If Gemini wants to bring this back, these are the artifacts that would make it r
 
 - [`Ref/RISC-V-Policies-and-Best-Practices.md`](../Ref/RISC-V-Policies-and-Best-Practices.md) — RISC-V maturity workflow, naming convention, vendor-extension policy, Vector-extension configuration template, custom opcode-space rules.
 - [`Ref/SiFive-Documentation-Patterns.md`](../Ref/SiFive-Documentation-Patterns.md) — SiFive doc taxonomy, Xsf* extension catalog, versioning maturity pattern, VCIX coprocessor-interface model.
-- [`spec/QBP-RISCV-ISA-Spec-v1.0.md`](../spec/QBP-RISCV-ISA-Spec-v1.0.md) — the spec under proposed revision.
+- [`spec/QBP-RISCV-ISA-Spec-v1.1.md`](../spec/QBP-RISCV-ISA-Spec-v1.1.md) — the spec under proposed revision.
 - [`doc/QBP-ISA-Refinement-Report.md`](../doc/QBP-ISA-Refinement-Report.md) — context document Gemini was given.
 - [`doc/Hardware-Strategy.md`](../doc/Hardware-Strategy.md) — Crawl/Walk/Run/Glide hardware roadmap.
 - [`doc/BMA-Emulator-Integration.md`](../doc/BMA-Emulator-Integration.md) — BMA cognitive-mode-to-precision mapping.

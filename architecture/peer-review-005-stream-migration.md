@@ -8,7 +8,7 @@
 - [`Ref/RISC-V-Policies-and-Best-Practices.md`](../Ref/RISC-V-Policies-and-Best-Practices.md)
 - [`Ref/SiFive-Documentation-Patterns.md`](../Ref/SiFive-Documentation-Patterns.md)
 - [`spec/QBP-RISCV-ISA-Spec-v1.1.md`](../spec/QBP-RISCV-ISA-Spec-v1.1.md) — Stream A v1.1
-- [`archive_build/docs/RV-Fano-Implementation-Refinements.md`](../archive_build/docs/RV-Fano-Implementation-Refinements.md) — Stream B authoritative
+- [`Archive/RV-Fano-Implementation-Refinements.md`](../Archive/RV-Fano-Implementation-Refinements.md) — Stream B authoritative
 - [`Archive/QBP-Node-Spec-v0.1-Parts-0-and-1.md`](../Archive/QBP-Node-Spec-v0.1-Parts-0-and-1.md) — Phasing/deferred-decisions philosophy
 - [`Archive/QBP-Node-Spec-v0.1-Part-2.md`](../Archive/QBP-Node-Spec-v0.1-Part-2.md) — Crawl-phase deliverable inventory
 - [`architecture/peer-review-002-fano-mesh-isa-redteam.md`](peer-review-002-fano-mesh-isa-redteam.md) — Conventions audit
@@ -18,7 +18,7 @@
 
 ## 1. Executive Summary
 
-Stream A (the `Xqbp*` vendor-prefix-conformant flat ISA at v1.1) and Stream B (the mode-aware RV-Fano Layer 0/1/2 ISA captured in `archive_build/docs/RV-Fano-Implementation-Refinements.md`) are **two views of the same machine in progress**, not competing alternatives.
+Stream A (the `Xqbp*` vendor-prefix-conformant flat ISA at v1.1) and Stream B (the mode-aware RV-Fano Layer 0/1/2 ISA captured in `Archive/RV-Fano-Implementation-Refinements.md`) are **two views of the same machine in progress**, not competing alternatives.
 
 Stream A is the surface form a RISC-V toolchain needs to see. Stream B is the underlying machine model the QBP physics actually requires. The migration question is not "which wins" but "how do they merge while preserving working artifacts."
 
@@ -57,7 +57,7 @@ Net benefit: Stream B silicon spec is ready when Run-α opens. No flag day. Auth
 
 ### 2.3 What Stream B has that addresses the gaps
 
-Per `archive_build/docs/RV-Fano-Implementation-Refinements.md`:
+Per `Archive/RV-Fano-Implementation-Refinements.md`:
 
 - **Mode transition state machine** with five fault codes (0x10–0x14): `ILLEGAL_DECRYSTALLISATION`, `PSEL_TIMEOUT`, `BSEL_TIMEOUT`, `BUS_STATE_NONZERO`, `MALFORMED_BASIS_SUM`
 - **`ZDCHK.SYM` two-stage check**: 4-bit XOR filter (1 cycle) + 4 sign-ROM lookups + 2 comparisons (3 cycles) — 7 cycles end-to-end vs 28 for full ZDCHK
@@ -263,7 +263,7 @@ These four steps cost approximately **three weeks** total. They unblock Phase M1
 
 ## 9. References
 
-- [`archive_build/docs/RV-Fano-Implementation-Refinements.md`](../archive_build/docs/RV-Fano-Implementation-Refinements.md) — Stream B authoritative source
+- [`Archive/RV-Fano-Implementation-Refinements.md`](../Archive/RV-Fano-Implementation-Refinements.md) — Stream B authoritative source
 - [`spec/QBP-RISCV-ISA-Spec-v1.1.md`](../spec/QBP-RISCV-ISA-Spec-v1.1.md) — Stream A authoritative source
 - [`Archive/QBP-Node-Spec-v0.1-Parts-0-and-1.md`](../Archive/QBP-Node-Spec-v0.1-Parts-0-and-1.md) — Phasing model + deferred-decisions
 - [`Archive/QBP-Node-Spec-v0.1-Part-2.md`](../Archive/QBP-Node-Spec-v0.1-Part-2.md) — Crawl deliverables incl. lean2rom and CIM Level-1

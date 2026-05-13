@@ -113,21 +113,22 @@ package emulator
 
 // Width is the precision selector (matches funct3 in the QBP RISC-V ISA).
 //
-// Note on numbering: Width is a Go iota-based enum (W8 = 0, W16 = 1, …),
-// not a count of bits. The numeric values match the funct3 encoding in
-// the QBP RISC-V ISA spec §1.3. Consumers MUST use the named constants
-// rather than literal integers.
-type Width uint8
+// Note on numbering: Width values are the component bit-counts
+// (W8 = 8 … W1024 = 1024), matching the existing emulator/qword.go
+// definition consumed by cpu.go's ISA execution path. Consumers MUST
+// address Width via named constants; the underlying integer values are
+// implementation detail and may change without ABI break.
+type Width int
 
 const (
-    W8   Width = iota // 32-bit packed: 4 × int8
-    W16              // 64-bit packed: 4 × int16
-    W32              // 128-bit packed: 4 × float32
-    W64              // 256-bit packed: 4 × float64
-    W128             // 512-bit packed: 4 × double-double (8 × float64 internally)
-    W256             // 1024-bit packed: software fallback (math/big.Float)
-    W512             // 2048-bit: software fallback
-    W1024            // 4096-bit: software fallback
+    W8    Width = 8    // 32-bit packed: 4 × int8
+    W16   Width = 16   // 64-bit packed: 4 × int16
+    W32   Width = 32   // 128-bit packed: 4 × float32
+    W64   Width = 64   // 256-bit packed: 4 × float64
+    W128  Width = 128  // 512-bit packed: 4 × double-double (8 × float64 internally)
+    W256  Width = 256  // 1024-bit packed: software fallback (math/big.Float)
+    W512  Width = 512  // 2048-bit: software fallback
+    W1024 Width = 1024 // 4096-bit: software fallback
 )
 
 // Gearbox is the precision-and-algebra dispatcher. Construct with NewGearbox.
