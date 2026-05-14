@@ -52,7 +52,10 @@ The Markdown corpus is the authoritative source for current architectural decisi
 |---|---|
 | `adr-001-stream-a-as-surface-stream-b-as-machine-model.md` | T1 closure — Stream A is the RISC-V surface form; Stream B is the underlying machine model |
 | `adr-002-package-layout-emulator-stays-for-m0-m1.md` | T2 closure — existing `emulator/` layout retained for M0/M1; package reorg deferred |
+| `adr-004-m1-gearbox-state-model.md` | LATE-4 closure (closeout Q4=A) — M1 Gearbox direction: CSR-bound stateful + QW8 peripheral surface + goroutine-pair concurrent dispatch with `OnSeam(callback)` per A18 §3 |
 | `peer-review-001.md` | Red Team audit of "Algebraic Sovereignty" (Apr 2026) — sovereignty over fidelity, not scale |
+| `peer-review-002-fano-mesh-isa-redteam.md` | Red Team audit of QBP RISC-V ISA v2.0 (Fano-mesh integration) plan — vendor-prefix conformance (NF1), `Xqbpvcp` / `Xqbpmesh` decomposition (NF2), Run-α premature-optimisation finding |
+| `peer-review-005-stream-migration.md` | M0→M3 phased migration plan — Stream A v1.x (surface) + Stream B v2.0 (machine model); M0 cohort gates; Walk-α absorption-estimate; CIM Level-1 promotion gate |
 
 ### `reviews/` — PR-scoped audits
 
@@ -64,6 +67,8 @@ The Markdown corpus is the authoritative source for current architectural decisi
 
 | File | Description |
 |---|---|
+| `wyrd-integration.md` | **v0.2 surface spec** — typed-per-width Gearbox API; Q1/Q2/Q3 architecture-locked (canonical import path, Gearbox/Accelerator separation, Tier ⊥ Width orthogonality) |
+| `wyrd-substrate-guarantees.md` | **v0.1.0-rc1 substrate contract** — four-lens guarantees (Robust / Efficient / Precise / Accurate); six known-risk surfaces; concrete Wyrd PR #2 swap contract; Walk-α audit deferred to `v0.2.0-rc1` |
 | `BMA-Emulator-Integration.md` | 8 precision levels; cognitive-mode → QW mapping; benchmark + integration story |
 | `Hardware-Strategy.md` | Three Walk-phase upgrade paths (Threadripper / 9900X / RISC-V ASIC) |
 | `QBP-ISA-Refinement-Report.md` | M0 ISA gap analysis — input to Gemini's v1.1 work |
@@ -71,6 +76,27 @@ The Markdown corpus is the authoritative source for current architectural decisi
 | `lean2rom.md` | M0.1 invocation, error modes, regeneration policy |
 | `briefing_xqbp_cognitive_stack.md` | Cognitive-stack onboarding |
 | `CLAUDE-GEMINI-PROTOCOL.md`, `CLAUDE-RESTART-CONTEXT.md`, `GEMINI-CONTEXT.md` | Multi-instance coordination protocols |
+
+### `Ref/` — Authoritative reference docs
+
+| File | Description |
+|---|---|
+| `RISC-V-Policies-and-Best-Practices.md` | RISC-V International ratified-maturity workflow; vendor-prefix policy; custom opcode-space rules; V-extension configuration template |
+| `SiFive-Documentation-Patterns.md` | SiFive `Xsf*` extension catalog; VCIX coprocessor-interface model; versioning maturity ladder |
+
+### `Archive/` — Migration-artifact docs (Stream B + Node Spec)
+
+| File | Description |
+|---|---|
+| `RV-Fano-Implementation-Refinements.md` | Stream B authoritative source — Layer 0/1/2 mode-aware RV-Fano ISA; ZDCHK.SYM; sign-ROM extraction from `Sedenion.lean` |
+| `QBP-Node-Spec-v0.1-Parts-0-and-1.md` | Phasing model + deferred-decisions philosophy |
+| `QBP-Node-Spec-v0.1-Part-2.md` | Crawl-phase deliverable inventory (incl. `lean2rom` + CIM Level-1) |
+
+### Root-level
+
+| File | Description |
+|---|---|
+| `CHANGELOG.md` | Release-candidate entry under `v0.1.0-rc1` covering the M0 cohort (12 PRs); follow-up sections under `Unreleased` track M1+ work |
 
 ## Hardware Progression
 
