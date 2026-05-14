@@ -15,7 +15,7 @@ Two parallel ISA documents exist for the QBP Compute Unit, with incompatible mne
 | Stream | Mnemonic style | Source | Structure |
 |---|---|---|---|
 | **A** | `qbp.qmul.w`, `qbp.qrot.w`, `qbp.fano` | [`spec/QBP-RISCV-ISA-Spec-v1.1.md`](../spec/QBP-RISCV-ISA-Spec-v1.1.md) | Flat per-instruction, width via funct3 |
-| **B** | `QPERM`, `AMODE`, `BSEL`, `PSEL`, `ZDCHK.SYM`, `OMUL`, `SMUL` | [`archive_build/docs/RV-Fano-Implementation-Refinements.md`](../archive_build/docs/RV-Fano-Implementation-Refinements.md) | Layer 0/1/2 compositional, mode-stateful |
+| **B** | `QPERM`, `AMODE`, `BSEL`, `PSEL`, `ZDCHK.SYM`, `OMUL`, `SMUL` | [`Archive/RV-Fano-Implementation-Refinements.md`](../Archive/RV-Fano-Implementation-Refinements.md) | Layer 0/1/2 compositional, mode-stateful |
 
 These represent **different machine models**, not different views of the same ISA. Stream A is RISC-V vendor-conformant (vendor prefix, custom-0/1/2 opcode allocation, X-extension naming); Stream B is physics-faithful (algebraic mode awareness, sedenion zero-divisor detection, Fano-line structural addressing, Lean-as-authority sign tables).
 
@@ -87,7 +87,7 @@ The Stream B v2.0 spec drafting is a Walk-α deliverable per peer-review-005 §4
 - [`peer-review-002-fano-mesh-isa-redteam.md`](peer-review-002-fano-mesh-isa-redteam.md) — RISC-V conventions audit (NF1/NF2/NF3)
 - [`peer-review-003-qbp-node-spec-crawl.md`](peer-review-003-qbp-node-spec-crawl.md) §2 T1 — Tension that prompted this ADR
 - [`spec/QBP-RISCV-ISA-Spec-v1.1.md`](../spec/QBP-RISCV-ISA-Spec-v1.1.md) — Stream A authoritative source
-- [`archive_build/docs/RV-Fano-Implementation-Refinements.md`](../archive_build/docs/RV-Fano-Implementation-Refinements.md) — Stream B authoritative source
+- [`Archive/RV-Fano-Implementation-Refinements.md`](../Archive/RV-Fano-Implementation-Refinements.md) — Stream B authoritative source
 - [`Ref/RISC-V-Policies-and-Best-Practices.md`](../Ref/RISC-V-Policies-and-Best-Practices.md) §1 — Maturity workflow that drives the v1.x cleanup-only policy
 
 ---
