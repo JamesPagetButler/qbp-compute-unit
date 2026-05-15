@@ -270,6 +270,30 @@ QBP-CU plugin writes the memory window verbatim; alignment per the spec.
 
 `riscv-arch-test` runs **nightly** (alongside Tier B Spike co-sim per §2.7). Same workflow file; same JSON report format consumed by a downstream reviewer-facing summary.
 
+### 3.6 Two-layer credibility model: base-ISA + Xqbp Lean extraction
+
+(Added per `@qbp-architecture` S-01 structural-change review on this PR.)
+
+The verification surface this document commits to covers **only one of the two layers** the federation needs for full emulator credibility. The complete picture:
+
+| Layer | What it verifies | How | Where it lives |
+|---|---|---|---|
+| **L1: Base-ISA conformance** | RV64I instruction semantics match the RISC-V reference | Spike co-sim (§2) + riscv-arch-test (§3) | **This document; this PR's implementation sequence** |
+| **L2: Xqbp-extension conformance** | `Xqbpquat` / `Xqbpoct` / `Xqbpvcp` instructions match their algebraic specification | Spec 9.2 §3 mode (b) — Lean extraction-and-execute (each QBP-extension instruction carries a Lean theorem; extraction produces executable form; runs against this emulator) | Federation Lean Promotion Protocol; not this document |
+
+**Why naming the L2 layer matters here:** §4.5's "default: corpus restricts to base-ISA" tells the reader how Spike *avoids* QBP extensions, but doesn't tell the reader how QBP-extension correctness gets verified at all. Without naming L2 in this document, a reader could conclude that QBP-extension correctness is unverified — when the actual federation answer is "verified through a different substrate (Spec 9.2 §3 mode (b))."
+
+**Boundary contract.** This document's verification strategy (L1) and the federation Lean promotion gate (L2) are **complementary, not overlapping**:
+- L1 catches divergence between this emulator and the RISC-V reference on base-ISA instructions. It does not address Xqbp correctness.
+- L2 catches divergence between this emulator's Xqbp-instruction execution and the Lean-specified algebraic semantics. It does not address base-ISA correctness.
+- A regression in either layer is a federation-level credibility gap. Together, the two layers give end-to-end coverage.
+
+**Hooks into L2** (filed as [housekeeping issue #37](https://github.com/JamesPagetButler/qbp-compute-unit/issues/37) for v0.2):
+- Compute Manifest records `LastPassingTierA` + `LastPassingTierB` substrate-credibility-window timestamps that the L2 promotion gate consumes.
+- An L2 candidate Lean theorem cannot promote against an emulator commit that lacks a recent (≤72h) passing Tier B.
+
+The hook implementation lives at the L2 side (federation Lean promotion infrastructure); this document declares the contract from the L1 side. Closes `@qbp-architecture` S-01 structural-change review concern (3).
+
 ---
 
 ## 4. Open questions (deferred for §I4 reviewer input)
