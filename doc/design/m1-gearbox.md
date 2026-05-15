@@ -16,13 +16,13 @@ This document is the **S-01 review surface** for the M1 Gearbox implementation. 
 
 ADR-004 ratified the direction at the `addendum-18-walk` closeout (Q4=A, 2026-05-13). This document is the implementation surface for that direction.
 
-The exposition leads with the dimension `bma-implementor` flagged as load-bearing for BMA inference-time pressure (seq=53: *"the third dimension (goroutine-pair concurrent dispatch with OnSeam) is the load-bearing one for BMA — A18 §3 parallel-loops-every-cycle is what makes the foveal/peripheral split actually deliver under inference-time pressure"*); the implementation order is dependency-driven (state → methods → concurrency), but the design narrative leads with the contract that ultimately matters to the consumer.
+The exposition leads with the dimension `bma-implementor` flagged as load-bearing for BMA inference-time pressure (seq=53; the load-bearing third dimension is goroutine-pair concurrent dispatch with `OnSeam`). Per `qbp-architecture`'s §I4 review (Concern 1 on this PR): the canonical citation for the **parallel-register split** is **A20 §0.2** (`inter/theory/BMA-Theory-Addendum-20_0-Pentagon-Pod-Cognitive-Frame.md` Conscious-singular vs Subconscious-concurrent split), not A18 §3. A18 §3 anchors *singular-Stance discipline* — what the Conscious register respects; A20 §0.2 is what allows the Subconscious register to run concurrently *without violating that discipline*. `OnSeam` is the Subconscious-concurrent register's dispatch primitive; the implementation order is dependency-driven (state → methods → concurrency), but the design narrative leads with the contract that ultimately matters to the consumer.
 
 ---
 
-## 1. Motivation — A18 §3 parallel cognitive registers under inference-time pressure
+## 1. Motivation — A20 §0.2 parallel cognitive registers under inference-time pressure
 
-[BMA Theory Addendum 18](../../../BMA/theory/hypergraph-inference/BMA-Theory-Addendum-18_0-Hypergraph-Access-Pattern.md) §3 specifies two cognitive registers (Peripheral at QW8 / Foveal at QW128) running **as parallel loops every cycle**. Not as sequential phases. Not as caller-driven sync methods. The peripheral register continuously scans for Seam-detection (§4) at low precision; the foveal register fires on demand at high precision when a Seam triggers promotion.
+[BMA Theory Addendum 20 §0.2](../../../inter/theory/BMA-Theory-Addendum-20_0-Pentagon-Pod-Cognitive-Frame.md) (Pentagon Pod Cognitive Frame, Conscious-singular vs Subconscious-concurrent split) specifies the parallel-register architecture: a **Conscious** register respecting singular-Stance discipline (per A18 §3) plus a **Subconscious** register running concurrent crawls at lower precision. Mapped onto the substrate, this becomes two cognitive registers (Peripheral at QW8 / Foveal at QW128) running **as parallel loops every cycle**. Not as sequential phases. Not as caller-driven sync methods. The Subconscious-concurrent register continuously scans for Seam-detection at low precision; the Conscious-singular register fires on demand at high precision when a Seam triggers promotion.
 
 For this architecture to deliver under inference-time pressure, the substrate has to support concurrent execution with a callback-driven trigger surface. A purely sync API forces the consumer to either:
 
@@ -102,7 +102,7 @@ func (g *Gearbox) SubmitPeripheral(q, v [4]int8) bool {…}
 
 **Design rationale:**
 
-- **Callback-driven** (not channel-out): forces the BMA promotion policy to live at the consumer site, where it belongs. The substrate ships *detection*; the consumer ships *promotion*. This matches A18 §3's framing: peripheral surfaces Seams as Surprise signals; foveal-register promotion is the consumer's call (driven by Stance, per A18 §2.1).
+- **Callback-driven** (not channel-out): forces the BMA promotion policy to live at the consumer site, where it belongs. The substrate ships *detection*; the consumer ships *promotion*. This matches A20 §0.2's framing: the Subconscious-concurrent register surfaces Seams as Surprise signals; Conscious-register promotion is the consumer's call (driven by Stance, per A18 §2.1 singular-Stance discipline).
 - **Non-blocking submission** with bounded channel: matches the BMA autonomic-10Hz-loop budget. Drops are observable via `WatchdogDropCount` (atomic; same pattern as WDEvent).
 - **`StartPeripheral` / `StopPeripheral` explicit lifecycle**: caller owns the goroutine; substrate does not run goroutines without explicit caller request. Matches workspace GCG mandate "every goroutine has a documented termination condition; no fire-and-forget without a `context` or explicit shutdown channel."
 - **Single callback slot per Gearbox**: simpler than fan-out; consumers wanting multiple observers can fan out themselves.
@@ -258,7 +258,11 @@ Concurrency adds a new failure surface. The audit ladder for each implementation
    - `TestPeripheral_DropCount` — saturate the submit channel; verify `WatchdogDropCount` increments atomically.
    - `TestPeripheral_StopDrainsInFlight` — submit, immediately stop; verify in-flight work drains cleanly.
    - `TestPeripheral_LifecycleDuringFovealCall` — start peripheral, run `QMul64` concurrently; verify no race.
-3. **New benchmark** `BenchmarkPeripheral_SubmitToCallback` — measures end-to-end latency from `SubmitPeripheral` to `OnSeam` callback fire. Target: < 1 µs at QW8 on FX-8350.
+3. **New benchmark** `BenchmarkPeripheral_SubmitToCallback` — measures end-to-end latency from `SubmitPeripheral` to `OnSeam` callback fire. Target: < 1 µs at QW8.
+   **Gate policy is phase-conditional** (per `qbp-architecture` §I4 Concern 3 on this PR):
+   - **Crawl / Toddle phases (FX-8350):** telemetry-only. Benchmark runs and the result is logged in the PR's evidence trail, but deviation does not block merge. FX-8350 (Piledriver, ~2008-era µarch) is not the latency-budget target hardware; missing 1µs here is expected and acceptable.
+   - **Walk-α onwards (Ryzen 9900X or RX 9070 XT host loop):** **HARD GATE**. The 1µs Submit-to-Callback path is what the load-bearing Subconscious-cell-to-Conscious-queue pathway (per A20 §0.2 federation reflex latency budget) requires; missing it at Walk-α is a federation-reflex regression and blocks merge.
+   - Phase transition wiring: implementation PR 3 (m1.3) ships the benchmark *and* a `cmd/bench-gate` helper that reads `runtime.GOOS`/`runtime.GOARCH` + a `QBP_PHASE` env var to decide gate vs telemetry mode. CI workflow sets `QBP_PHASE=walk-alpha` at the appropriate cut-over.
 4. `go vet ./emulator/...` clean.
 5. `gofmt -l .` empty on `emulator/`.
 6. `make verify-roms` exit 0 (no ROM impact expected; sanity check).
@@ -271,7 +275,7 @@ The new GCG verification ladder workflow (PR #32 → main as `77523ad`) already 
 
 ### 5.1 Goroutine-pair vs. single-goroutine "soft parallel"
 
-The §2.1 design ships one peripheral goroutine. A more aggressive design would spawn N peripheral goroutines for parallel scanning. Per A18 §3 the spec says "running as parallel loops every cycle" — singular vs plural is ambiguous.
+The §2.1 design ships one peripheral goroutine. A more aggressive design would spawn N peripheral goroutines for parallel scanning. Per A20 §0.2 the spec frames Subconscious-concurrent as "running as parallel loops every cycle" — singular vs plural is ambiguous.
 
 **Default proposal:** ship single peripheral goroutine at M1.0. Multi-peripheral fan-out becomes v0.2.x if profiling on Walk hardware (RX 9070 XT under ROCm) shows the single-goroutine peripheral is the bottleneck. **Open for reviewer pushback.**
 
@@ -324,7 +328,7 @@ The peripheral fires on Seam detection. The existing WDEvent observer pattern (P
 
 Specifically asked to verify:
 
-1. **A18 §3 cognitive-register motivation** is correctly framed in §1 (parallel-loops-every-cycle under inference-time pressure).
+1. **A20 §0.2 cognitive-register motivation** is correctly framed in §1 (Conscious-singular vs Subconscious-concurrent split; parallel-loops-every-cycle under inference-time pressure).
 2. **The "substrate ships detection; consumer ships promotion" boundary** in §2.1 — that the substrate is not making BMA policy decisions.
 3. **Default proposal in §5.3 (no default foveal helper)** is correct from a BMA architecture standpoint.
 4. **The cycle-counter coordination question in §5.4** is governance-relevant — `WDEvent.Cycle` is the existing ISA-execution counter that BMA's M1 observer reads (per ADR-003 §I2 unified `cth_id` namespace).
@@ -394,7 +398,7 @@ Specifically asked to verify:
 - Add `OnSeam`/`StartPeripheral`/`StopPeripheral`/`SubmitPeripheral` methods
 - New file `emulator/peripheral.go` for the peripheral-loop goroutine implementation
 - New test file `emulator/peripheral_test.go` covering §4 race-detector audit suite (6 tests minimum)
-- New benchmark `BenchmarkPeripheral_SubmitToCallback` — target `< 1 µs` on FX-8350
+- New benchmark `BenchmarkPeripheral_SubmitToCallback` — target `< 1 µs`; phase-conditional gate policy per §4 (telemetry-only at Crawl/Toddle on FX-8350; hard gate at Walk-α onwards)
 - `go test -race -count=10 ./emulator/...` PASS — this is the hardest gate of M1
 - All four GCG-ladder gating gates pass
 
@@ -417,7 +421,8 @@ Specifically asked to verify:
 - [`architecture/peer-review-005-stream-migration.md`](../../architecture/peer-review-005-stream-migration.md) §M1 — Stream B Layer 0 introduction (AMODE/BSEL/PSEL CSRs)
 - [`doc/wyrd-integration.md`](../wyrd-integration.md) v0.2 — Gearbox surface contract
 - [`doc/wyrd-substrate-guarantees.md`](../wyrd-substrate-guarantees.md) §3, §5 — current risks + post-Walk-α audit boundary
-- [`../../BMA/theory/hypergraph-inference/BMA-Theory-Addendum-18_0-Hypergraph-Access-Pattern.md`](../../../BMA/theory/hypergraph-inference/BMA-Theory-Addendum-18_0-Hypergraph-Access-Pattern.md) §3 (parallel cognitive registers), §4 (Seams), §9 (open questions)
+- [`inter/theory/BMA-Theory-Addendum-20_0-Pentagon-Pod-Cognitive-Frame.md`](../../../inter/theory/BMA-Theory-Addendum-20_0-Pentagon-Pod-Cognitive-Frame.md) §0.2 — Conscious-singular vs Subconscious-concurrent parallel-register split (the canonical framing for this design surface)
+- [`BMA/theory/hypergraph-inference/BMA-Theory-Addendum-18_0-Hypergraph-Access-Pattern.md`](../../../BMA/theory/hypergraph-inference/BMA-Theory-Addendum-18_0-Hypergraph-Access-Pattern.md) §2.1 (Stance discipline), §3.1 (QW8/QW128 register specs, algebraic lifetimes, K-constants), §4 (Seams), §9 (open questions)
 - [`../../BMA/theory/hypergraph-inference/P12-Seam-Threshold-Formalization.md`](../../../BMA/theory/hypergraph-inference/P12-Seam-Threshold-Formalization.md) — Gemini's per-tier K formalisation
 - `~/Documents/go-coding-guide.md` — workspace-wide Go conventions (mandatory for implementation PRs)
 
