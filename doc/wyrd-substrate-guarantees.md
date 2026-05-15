@@ -167,6 +167,16 @@ supported. Wyrd consumers wanting octonion or sedenion algebras today should fal
 through to a software path on the consumer side and revisit when the Crawl-phase
 tier-promotion lands.
 
+### 3.7 Substrate-credibility-window is finite
+
+Source: [`doc/design/m1-verification.md`](design/m1-verification.md) §3.6 (two-layer credibility model). Companion housekeeping tracker: [#37](https://github.com/JamesPagetButler/qbp-compute-unit/issues/37).
+
+The L2 substrate-tier Lean promotion gate per [Spec 9.2 §3 mode (b)](../../inter/spec/BMA-Spec-Addendum-9_2-Federation-Lean-Promotion-Protocol.md) depends on a recent passing Tier B cosim run (riscv-arch-test ≥95% pass + Spike RV64I divergence-clean). The substrate-credibility-window (proposed 72h, matching BMA's 72h continuous-operation gate per Step 8) means an emulator commit older than the window cannot serve as L2 promotion substrate without re-running Tier B.
+
+**Mitigation at v0.1.0-rc1:** Tier B is M1-era infrastructure (cosim PR cycle, gated on PR #35 implementation), not yet running. Until Tier B lands, L2 promotion is unavailable; consumers fall back to L1 base-ISA-only credibility plus manual Lean review. This is acceptable for the Crawl phase where no substrate-tier Lean theorems with executable extraction exist yet — there is nothing to promote through the L2 gate, so the window cannot bind.
+
+**Promotion path at Walk-α:** Tier B runs nightly per `m1-verification.md` §5 PR 3 scope. The substrate-credibility-window becomes a live constraint at that point. The [Compute Manifest](../../inter/spec/BMA-Spec-Addendum-9_2-Federation-Lean-Promotion-Protocol.md) (Wyrd-owned per Spec 9.2 §4) records `LastPassingTierB` per Spec 9.2 §4; consumers consult it before invoking L2 promotion. The wiring (`emulator/cosim/manifest.go` emitting `ComputeManifestEntry` on Tier B success) lands as a follow-up issue gated on the m1.3 cosim PR cycle — tracked at [#37](https://github.com/JamesPagetButler/qbp-compute-unit/issues/37).
+
 ---
 
 ## 4. What Wyrd consumers can rely on
@@ -182,6 +192,8 @@ Concrete contract for Wyrd PR #2 wiring:
 4. **No Lean theorem update** required in `Wyrd.Foundations` or `Wyrd.Capability`. The algebraic-contract anchors cite the operation (Hamilton product over ℍ), not the implementation backend (the AVX kernel vs the inline pure-Go).
 
 5. **API stability through the v0.1.x series.** Breaking changes move to v0.2.0 with explicit migration notes; ADR-004's M1 additions are guaranteed additive.
+
+6. **L2 substrate-tier Lean promotion gate (Walk-α onwards; not active at v0.1.x).** Wyrd consumers needing substrate-tier Lean promotion per [Spec 9.2 §3 mode (b)](../../inter/spec/BMA-Spec-Addendum-9_2-Federation-Lean-Promotion-Protocol.md) MUST consult the Compute Manifest's `LastPassingTierB` field. If `time.Since(LastPassingTierB) > 72h`, the L2 promotion gate blocks until next green Tier B run (see §3.7). **v0.1.x consumers do not yet need this check** — no Tier B infrastructure is live; the promotion path activates at Walk-α with Tier B cosim activation. Tracked at [#37](https://github.com/JamesPagetButler/qbp-compute-unit/issues/37); manifest emission wiring follows in m1.3 cosim PR cycle.
 
 ---
 

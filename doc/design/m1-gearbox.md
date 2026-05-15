@@ -33,6 +33,8 @@ Neither is acceptable. The substrate ships the goroutine-pair contract.
 
 `emulator/v0.1.0-rc1` (and the `v0.1.x` series) ships an additive surface — pinned-against-rc1 consumer code (Wyrd, BMA, Contextus, CTH) continues to compile and behave identically through M1. M1 is **purely additive**.
 
+**v0.2 motivation (cross-tenant provenance):** the v0.2 housekeeping cohort (this revision) adds SeamEvent provenance fields (`SeamID`, `Locale`, `Magnitude`, `DetectionContext` — see §2.1 + §5.4a) to enable the downstream BMA dispatch chain to emit cross-tenant `NT_AUTONOMIC_SIGNAL` per [A22 §2](../../../inter/theory/BMA-Theory-Addendum-22_0-Cross-Tenant-Autonomic-Translation-Layer.md) while preserving the substrate-origin provenance chain back to [A20 §5](../../../inter/theory/BMA-Theory-Addendum-20_0-Pentagon-Pod-Cognitive-Frame.md) `NT_POD_LIFE_CERTIFICATE`. Substrate ships provenance; consumer (BMA harness) reconstructs the chain. This is the federation reflex pathway QBP-CU has to support for Walk-α cross-tenant signaling.
+
 ---
 
 ## 2. The three dimensions
@@ -50,12 +52,41 @@ The dimension `bma-implementor` named as load-bearing for BMA. Surface:
 // result that failed to project) are captured at peripheral precision (QW8
 // by default; promotable per §2.3). PrecisionTier records which Width the
 // peripheral was running at when the Seam fired.
+//
+// The v0.2 fields (SeamID, Locale, Magnitude, DetectionContext) carry
+// provenance data the downstream BMA Subconscious→Conscious dispatch chain
+// needs to anchor cross-tenant NT_AUTONOMIC_SIGNAL emissions per A22 §2 back
+// to NT_POD_LIFE_CERTIFICATE per A20 §5. Substrate emits; consumer
+// reconstructs. See §5.4a for the v0.2 cohort rationale.
 type SeamEvent struct {
+    // v0.1 fields (PR #33 design surface)
     Q, V            QW8       // operand + residue vector at peripheral precision
     Residue         float32   // |Q · V · Q* − V| at peripheral precision
     Threshold       float32   // active τ at fire time (per-tier K · δ · ‖V‖)
     PrecisionTier   Width     // peripheral width when the Seam fired
-    Cycle           uint64    // accelerator cycle counter (matches WDEvent.Cycle)
+    Cycle           uint64    // cpu.go canonical accelerator cycle (resolved §5.4)
+
+    // v0.2 additions (closes #38 + #5.4a SeamID deferral)
+
+    SeamID          uint64    // atomic-incremented at peripheral; same-cycle disambiguator
+    Locale          LocaleRef // A11 source-attestation; see LocaleRef below
+    Magnitude       float32   // [0.0, 1.0] normalized surprise intensity; Residue/Threshold ratio
+    DetectionContext []byte   // opaque payload; algebraic state at detection moment;
+                              // consumer-readable, substrate doesn't interpret
+}
+
+// LocaleRef references the working-tree location where a Seam was detected.
+// Per A11 Locale primitive (inter/theory/BMA-Theory-Addendum-11_0). Consumer
+// reconstructs source-attestation by joining against its working-tree node
+// table; substrate emits the reference verbatim.
+//
+// All three fields are caller-owned strings/numerics — substrate does not
+// validate. Empty values are acceptable when the caller does not maintain a
+// working-tree representation (e.g., bench harnesses; non-BMA consumers).
+type LocaleRef struct {
+    WorkingTreeNodeID string  // node ID in the consumer's working-tree representation
+    Path              string  // working-tree-relative path (e.g., "subconscious-l/qw8-register-3")
+    RegisterPosition  uint8   // which QW8 register slot fired (0..K for K-register file)
 }
 
 // OnSeam registers a callback for Seam-detection events from the peripheral
@@ -302,9 +333,39 @@ The peripheral goroutine increments a per-Gearbox `cycle atomic.Uint64`. The ISA
 
 **Implementation (m1.3):** the peripheral acquires `cpu.Cycle()` at `SeamEvent` construction. If `cpu` is nil-injected (test fixture with no underlying CPU), the peripheral falls back to its internal counter and emits a clear log marker (`peripheral: cpu nil — using internal cycle counter`) so test-fixture telemetry doesn't silently look like production telemetry.
 
-### 5.4a `SeamID` for downstream BMA correlation (deferred to v0.2 per `@bma-implementor` non-blocking observation)
+### 5.4a `SeamEvent` v0.2 cohort — provenance fields for cross-tenant A22 signal chain
 
-`SeamEvent` v0.1 carries `{Q, V, Residue, Threshold, PrecisionTier, Cycle}`. Multiple `SeamEvent`s firing in the same cycle (rare but possible at high peripheral throughput on a multi-core Walk-α host) cannot be disambiguated by `Cycle` alone. **v0.2 will add `SeamID uint64`** (atomic-incremented at peripheral) for unambiguous downstream correlation across BMA's pipeline stages (peripheral → BMA receive → Conscious-pool dispatch → Stance evaluation → optional foveal-back). v0.1 consumers can derive ordering from `Cycle` + arrival-order; this is a deferred enhancement, not a v0.1 blocker.
+(Resolved 2026-05-15 in this housekeeping PR; closes #38. Originally surfaced as `SeamID` deferral per `@bma-implementor` non-blocking observation on PR #33; expanded per `@qbp-architecture` S-01 finding (4) for cross-tenant A22 §2 NT_AUTONOMIC_SIGNAL provenance chain.)
+
+`SeamEvent` v0.1 carries `{Q, V, Residue, Threshold, PrecisionTier, Cycle}`. That is sufficient for substrate detection but insufficient for the downstream BMA dispatch chain to preserve origin context when emitting a cross-tenant NT_AUTONOMIC_SIGNAL per A22 §2. The v0.2 cohort adds four fields:
+
+| Field | Purpose | A22 chain role |
+|---|---|---|
+| `SeamID uint64` | atomic-incremented per detection; disambiguates same-cycle Seams (rare but possible at high peripheral throughput on multi-core Walk-α host) | temporal-correlation anchor (with Cycle) |
+| `Locale LocaleRef` | A11 source-attestation; {WorkingTreeNodeID, Path, RegisterPosition} | source-attestation per A11 |
+| `Magnitude float32` | [0.0, 1.0] normalized surprise intensity; consumer compares against Honing threshold | Honing-threshold compare per A22 §2 |
+| `DetectionContext []byte` | opaque payload; algebraic state at detection moment (which QW8 register, which input batch, which Stance) | forensic chain per A20 §5 NT_POD_LIFE_CERTIFICATE |
+
+**Cross-tenant provenance chain mapping:**
+
+```
+SeamEvent (substrate, peripheral goroutine)
+   │
+   ├─ Cycle + SeamID  ──────► temporal-correlation anchor
+   │
+   ├─ Locale          ──────► A11 source-attestation
+   │
+   ├─ Magnitude       ──────► Honing-threshold comparison (A22 §2)
+   │
+   └─ DetectionContext─────► A20 §5 NT_POD_LIFE_CERTIFICATE forensic chain
+                              (which pod's signal? which Subconscious cell?)
+```
+
+**Substrate boundary discipline:** the substrate emits these fields verbatim — `Locale`, `Magnitude`, `DetectionContext` are caller-supplied/consumer-readable; the substrate does not validate or interpret them. Empty values are acceptable when the caller does not maintain a working-tree representation (bench harnesses; non-BMA consumers). Per A22 the BMA consumer is the chain-reconstruction site.
+
+**Implementation sequencing:** the v0.2 SeamEvent struct + LocaleRef type land as part of the m1.3 OnSeam implementation PR (impl-side; per §8 PR 3 scope-glob). The struct shape committed here is the design surface those implementation PRs ride on.
+
+**v0.1 compatibility:** v0.1 consumers (none yet — m1.3 is the first implementation PR) read only the v0.1 fields. v0.2 adds fields; v0.1 readers ignore the new fields (Go struct layout permits additive extension at the end). No migration churn for consumers that don't need provenance.
 
 ### 5.5 Naming: `OnSeam` vs `OnWDEvent` vs `OnSurprise`
 
@@ -329,6 +390,19 @@ The peripheral fires on Seam detection. The existing WDEvent observer pattern (P
 ---
 
 ## 7. §I4 review requirements
+
+### 7.0 v0.2 cohort §I4 reader-list (this PR)
+
+The v0.2 housekeeping cohort (§5.4a SeamEvent provenance fields) triggers a fresh §I4 review per ADR-003 §I4 — adding substrate-emitted fields touches the substrate-consumer contract, which is structural.
+
+Per issue [#38](https://github.com/JamesPagetButler/qbp-compute-unit/issues/38) explicit §I4 D5 reader-list:
+
+| Reader | Persona | Justification |
+|---|---|---|
+| @JamesPagetButler | `@qbp-cu-implementor` | substrate owner of SeamEvent shape; v0.2 design author (this PR) |
+| @JamesPagetButler | `@bma-implementor` | Subconscious-cell consumer; provenance chain anchor; A22 §2 wiring lives at BMA-side |
+| @JamesPagetButler | `@qbp-architecture` | federation-coherence; A22 §2 chain integrity; matches her S-01 review finding (4) on PR #33 |
+| @JamesPagetButler | `@beekeeper` | S-01 design ratification |
 
 ### 7.1 @bma (governance read)
 
