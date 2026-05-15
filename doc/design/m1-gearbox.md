@@ -294,11 +294,17 @@ Argument against: foveal-promotion *policy* is BMA's, not the substrate's. A def
 
 **Default proposal:** **NO default foveal helper at M1.0.** Substrate ships detection; consumer ships dispatch. BMA wires its own foveal-policy in its consumer code (BMA #117 hypergraph query consumer path). **Open for reviewer pushback.**
 
-### 5.4 Cycle-counter coordination with `cpu.go` ISA execution
+### 5.4 Cycle-counter coordination with `cpu.go` ISA execution — RESOLVED
 
 The peripheral goroutine increments a per-Gearbox `cycle atomic.Uint64`. The ISA execution path in `cpu.go` also increments `cpu.Cycles`. Are these the same counter or separate?
 
-**Default proposal:** separate. Peripheral cycle counter measures peripheral-register iterations; cpu.go cycle counter measures ISA instructions. Both report in `SeamEvent.Cycle` and `WDEvent.Cycle` respectively, with distinct semantics. **Open for reviewer pushback.**
+**Resolution (per `@bma-implementor` §I4 read on this PR, Q4 position):** `SeamEvent.Cycle` reflects the **`cpu.go` canonical accelerator cycle** (matching `WDEvent.Cycle`) — *not* the `peripheralState.cycle` internal counter. Rationale: cross-event correlation across `SeamEvent` + `WDEvent` depends on a single-source-of-truth cycle. The peripheral keeps its own internal `cycle atomic.Uint64` for diagnostics, but the value exposed via `SeamEvent.Cycle` is `cpu.Cycle()`.
+
+**Implementation (m1.3):** the peripheral acquires `cpu.Cycle()` at `SeamEvent` construction. If `cpu` is nil-injected (test fixture with no underlying CPU), the peripheral falls back to its internal counter and emits a clear log marker (`peripheral: cpu nil — using internal cycle counter`) so test-fixture telemetry doesn't silently look like production telemetry.
+
+### 5.4a `SeamID` for downstream BMA correlation (deferred to v0.2 per `@bma-implementor` non-blocking observation)
+
+`SeamEvent` v0.1 carries `{Q, V, Residue, Threshold, PrecisionTier, Cycle}`. Multiple `SeamEvent`s firing in the same cycle (rare but possible at high peripheral throughput on a multi-core Walk-α host) cannot be disambiguated by `Cycle` alone. **v0.2 will add `SeamID uint64`** (atomic-incremented at peripheral) for unambiguous downstream correlation across BMA's pipeline stages (peripheral → BMA receive → Conscious-pool dispatch → Stance evaluation → optional foveal-back). v0.1 consumers can derive ordering from `Cycle` + arrival-order; this is a deferred enhancement, not a v0.1 blocker.
 
 ### 5.5 Naming: `OnSeam` vs `OnWDEvent` vs `OnSurprise`
 
@@ -368,6 +374,7 @@ Specifically asked to verify:
 - Add `mu sync.RWMutex` field on `Gearbox`; rewire existing methods to `RLock`/`Lock` per discipline in §2.1
 - Update existing fast-path methods (`QMul64`, `QMul128`, etc.) to check AMODE: AMODE=0 unchanged; AMODE=1 trap with `ErrTierUnsupported`; AMODE>=2 trap with `ErrAMODEReserved`
 - New tests: `TestCSR_AMODESetGet`, `TestCSR_AMODEValidation`, `TestCSR_BSELValidation`, `TestCSR_PSELValidation`, `TestGearbox_BackwardsCompatAMODE0`
+- **New benchmark baseline:** `BenchmarkGearbox_QMul64_AMODE0` (per `@wyrd-implementor` §I4 read on this PR) — records pre-M1 hot-path cost so the added uncontested-RLock-acquisition + AMODE-check cost is detectable as regression on future PRs. Hot-path-discipline-class concern for Wyrd's `compute/laplacian.go` N-edge build path.
 - Existing tests pass unchanged (no regression)
 - All four GCG-ladder gating gates pass
 
