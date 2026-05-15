@@ -82,11 +82,23 @@ type SeamEvent struct {
 //
 // All three fields are caller-owned strings/numerics — substrate does not
 // validate. Empty values are acceptable when the caller does not maintain a
-// working-tree representation (e.g., bench harnesses; non-BMA consumers).
+// per-Seam working-tree representation. For BMA-side consumers this should
+// normally be populated; for substrate consumers that do not produce Seams
+// from cognitive working-tree state (bench harnesses; substrate-only
+// tenants; upstream-of-BMA reflexes with a different addressing scheme),
+// the fields can be empty.
+//
+// RegisterPosition is substrate-implementation-defined: at v0.2 it indexes
+// the M1 Gearbox QW8 register file (0..K); for non-emulator substrates
+// (silicon, GPU-accelerator per Compute Manifest substrate.kind enum) the
+// register-position semantics may differ (e.g., GPU thread-block index).
+// Consumers needing portable interpretation consult the Compute Manifest's
+// substrate.kind. Formal substrate-portability addressed at v0.3+ when
+// non-emulator substrates land.
 type LocaleRef struct {
     WorkingTreeNodeID string  // node ID in the consumer's working-tree representation
     Path              string  // working-tree-relative path (e.g., "subconscious-l/qw8-register-3")
-    RegisterPosition  uint8   // which QW8 register slot fired (0..K for K-register file)
+    RegisterPosition  uint8   // substrate-implementation-defined; v0.2: QW8 register file slot (0..K)
 }
 
 // OnSeam registers a callback for Seam-detection events from the peripheral
@@ -361,7 +373,11 @@ SeamEvent (substrate, peripheral goroutine)
                               (which pod's signal? which Subconscious cell?)
 ```
 
-**Substrate boundary discipline:** the substrate emits these fields verbatim — `Locale`, `Magnitude`, `DetectionContext` are caller-supplied/consumer-readable; the substrate does not validate or interpret them. Empty values are acceptable when the caller does not maintain a working-tree representation (bench harnesses; non-BMA consumers). Per A22 the BMA consumer is the chain-reconstruction site.
+**Substrate boundary discipline:** the substrate emits these fields verbatim — `Locale`, `Magnitude`, `DetectionContext` are caller-supplied/consumer-readable; the substrate does not validate or interpret them. Empty values are acceptable when the caller does not maintain a per-Seam working-tree representation (bench harnesses; substrate-only tenants; upstream-of-BMA reflexes with a different addressing scheme). For BMA-side consumers `Locale` should normally be populated. Per A22 §2 the BMA consumer is the chain-reconstruction site.
+
+**Cross-tenant origin attribution (clarification per `@qbp-implementor` consultative F1):** when a Seam fires on a node imported from the Wyrd graph (e.g., an `NT_SIGNAL` hyperedge minted by a QBP scout-daemon), the v0.2 `Locale.WorkingTreeNodeID` references the BMA-side working-tree node that held the imported signal at peripheral-scan time — not the originating Wyrd graph node. Cross-tenant origin attribution back to the QBP-scout-minted Wyrd node is reconstructed by the BMA consumer joining `Locale.WorkingTreeNodeID` against its working-tree-node → Wyrd-graph-node back-pointer table. The substrate does not see Wyrd graph state directly.
+
+**`DetectionContext` schema discipline (per `@bma-implementor` + `@qbp-architecture` non-blocking observations):** at v0.2 the payload format is co-designed between substrate emitter (m1.3 OnSeam impl PR) and the BMA harness consumer; both ship simultaneously, so a version tag is not load-bearing yet. v0.3+ when independent evolution begins (likely Walk-α as QBP-CU Gearbox iterations diverge from BMA harness iterations), the impl PR should reserve the first byte of `DetectionContext` as a schema-version tag so consumers can dispatch parsers correctly across versions. Tracked as a v0.3 housekeeping follow-up; not blocking the v0.2 design surface.
 
 **Implementation sequencing:** the v0.2 SeamEvent struct + LocaleRef type land as part of the m1.3 OnSeam implementation PR (impl-side; per §8 PR 3 scope-glob). The struct shape committed here is the design surface those implementation PRs ride on.
 
