@@ -198,10 +198,10 @@ This matches issue #18's "Decide: does this gate every PR or run nightly? Probab
 Minimal changes; the cosim harness is mostly **passive** (instruments existing fetch-decode-execute paths):
 
 1. Add a `CommitChan chan CommitRecord` (buffered, capacity 4096) optional output on `CPU` — set non-nil to enable commit logging.
-2. After each instruction's execution path, if `CommitChan != nil`, emit `CommitRecord{PC, Insn, RegWrite, NewValue, CSRWrites...}`.
+2. After each instruction's execution path, if `CommitChan != nil`, emit `CommitRecord{PC, Insn, RegWrite, NewValue, CSRWrites...}`. The nil-check is explicit: the implementation idiom is `if c.CommitChan != nil { c.CommitChan <- record }`, **not** an unguarded send on a potentially-nil channel (Go's nil-channel-send semantics block forever; that is not a fast-path guard). Per `@bma-implementor` §I4 read on this PR.
 3. Cosim harness consumes the channel; closes it when its expected commit count is met.
 
-Hot-path zero-alloc guarantee preserved: `CommitRecord` is a value type sized for inline copy; channel send on a nil channel is a fast guard.
+Hot-path zero-alloc guarantee preserved: `CommitRecord` is a value type sized for inline copy; the `if c.CommitChan != nil` branch is well-predicted on the production path (channel always nil) and compiles to a single load + compare + branch.
 
 ---
 
@@ -359,6 +359,7 @@ Three handling options:
 - Add `reviews/cosim-divergence-template.md` — structured report format
 - Add `cmd/cosim-report/main.go` — automated `gh issue create` on nightly failure
 - Add cron-triggered CI job `cosim-tier-b-nightly`
+- **On-demand `TIER` workflow input** (per `@bma-implementor` §I4 read on this PR): the nightly workflow accepts `workflow_dispatch` with input `tier ∈ {a, b, both}`, allowing developers to run Tier B on-demand from a PR when touching ISA-load-bearing code paths. Default is `b` (matches cron). `tier=both` runs A then B; `tier=a` is the same surface PR-gating already runs.
 - All four GCG-ladder gating gates pass
 
 **Scope-glob:** `emulator/cosim/**`, `cmd/cosim-report/**`, `reviews/cosim-divergence-template.md`, `.github/workflows/cosim-nightly.yml`. Nothing else.
