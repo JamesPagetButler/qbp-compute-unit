@@ -43,7 +43,7 @@ func ConfirmatoryInfo(a model.Anchor) float64 {
 	}
 }
 
-// InputEntropy computes the bit cost of a dimensionless constant known 
+// InputEntropy computes the bit cost of a dimensionless constant known
 // to n significant figures (Definition 7).
 func InputEntropy(significantFigures int) float64 {
 	if significantFigures <= 0 {
@@ -60,7 +60,7 @@ func AxiomEntropy(a model.Anchor) float64 {
 	return a.ResidualEntropyBits
 }
 
-// PredictionEntropyInheritance calculates the inherited entropy for a Tier 3 
+// PredictionEntropyInheritance calculates the inherited entropy for a Tier 3
 // anchor given its weakest upstream link and edge fidelity (Definition 7).
 func PredictionEntropyInheritance(weakestLinkEntropy float64, edgeFidelity float64) float64 {
 	if edgeFidelity <= 0 {
@@ -69,7 +69,7 @@ func PredictionEntropyInheritance(weakestLinkEntropy float64, edgeFidelity float
 	if edgeFidelity >= 1.0 {
 		return weakestLinkEntropy
 	}
-	
+
 	// entropy = η(weakest) + (1-μ) * log2(1/μ)
 	leakage := (1.0 - edgeFidelity) * math.Log2(1.0/edgeFidelity)
 	return weakestLinkEntropy + leakage

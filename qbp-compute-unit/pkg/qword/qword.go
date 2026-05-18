@@ -41,19 +41,19 @@
 //
 // INSTRUCTION SET (Run-phase RISC-V) — scalable by default:
 //
-//   QMUL.8   rd, rs1, rs2    ; QW8 quaternion multiply (32-bit)
-//   QMUL.16  rd, rs1, rs2    ; QW16 quaternion multiply (64-bit)
-//   QMUL.32  rd, rs1, rs2    ; QW32 quaternion multiply (128-bit)
-//   QMUL.64  rd, rs1, rs2    ; QW64 quaternion multiply (256-bit)
-//   QMUL.128 rd, rs1, rs2    ; QW128 quaternion multiply (512-bit) ← starting point
-//   QMUL.256 rd, rs1, rs2    ; QW256 quaternion multiply (1024-bit)
+//	QMUL.8   rd, rs1, rs2    ; QW8 quaternion multiply (32-bit)
+//	QMUL.16  rd, rs1, rs2    ; QW16 quaternion multiply (64-bit)
+//	QMUL.32  rd, rs1, rs2    ; QW32 quaternion multiply (128-bit)
+//	QMUL.64  rd, rs1, rs2    ; QW64 quaternion multiply (256-bit)
+//	QMUL.128 rd, rs1, rs2    ; QW128 quaternion multiply (512-bit) ← starting point
+//	QMUL.256 rd, rs1, rs2    ; QW256 quaternion multiply (1024-bit)
 //
-//   OMAC.8   rd, rs1, rs2    ; OW8 octonionic MAC (64-bit)
-//   OMAC.16  rd, rs1, rs2    ; OW16 octonionic MAC (128-bit)
-//   OMAC.128 rd, rs1, rs2    ; OW128 octonionic MAC (1024-bit)
+//	OMAC.8   rd, rs1, rs2    ; OW8 octonionic MAC (64-bit)
+//	OMAC.16  rd, rs1, rs2    ; OW16 octonionic MAC (128-bit)
+//	OMAC.128 rd, rs1, rs2    ; OW128 octonionic MAC (1024-bit)
 //
-//   QROT.128 rd, rs1, rs2    ; QW128 rotation (physics-grade starting point)
-//   FANO     rd, rs1, rs2    ; Width-independent (always 7×7 → index+sign)
+//	QROT.128 rd, rs1, rs2    ; QW128 rotation (physics-grade starting point)
+//	FANO     rd, rs1, rs2    ; Width-independent (always 7×7 → index+sign)
 //
 // The FANO instruction is width-independent — it only determines which
 // component index and sign to use. The multiply-add units scale with width.

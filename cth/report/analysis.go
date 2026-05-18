@@ -9,10 +9,10 @@ import (
 // FullAnalysis aggregates every compute result for a single inventory.
 // Build it with Analyse, then pass to Dashboard or MarkdownReport.
 type FullAnalysis struct {
-	Rho          float64
-	RhoDetail    compute.NetCompressionDetail
-	Sensitivity  [3]float64 // [halfH, baseH, doubleH]
-	SensRatio    float64
+	Rho         float64
+	RhoDetail   compute.NetCompressionDetail
+	Sensitivity [3]float64 // [halfH, baseH, doubleH]
+	SensRatio   float64
 
 	Eddies       []compute.EddyRanking
 	BridgeNodes  []compute.BridgeNode

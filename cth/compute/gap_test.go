@@ -22,17 +22,17 @@ func TestGapCalculations(t *testing.T) {
 		t.Fatalf("Load failed: %v", err)
 	}
 
-	// In minimal.json: 
+	// In minimal.json:
 	// MEAS-1 depends on PR-1 (proven). Path length 1.
 	// IN-1 depends on nothing.
 	// Wait, minimal.json chains:
 	// CH-1: AX-1 -> PR-1
 	// CH-2: PR-1 -> MEAS-1
-	
+
 	// We need a path from an input to a proven anchor.
-	// Let's modify the inventory in-memory for testing if needed, 
+	// Let's modify the inventory in-memory for testing if needed,
 	// but let's check current state.
-	
+
 	gap, nearest := WeightedGap("MEAS-1", inv)
 	if gap != 1.0 || nearest != "PR-1" {
 		t.Errorf("WeightedGap(MEAS-1) = %v, %s; want 1.0, PR-1", gap, nearest)
@@ -43,7 +43,7 @@ func TestGapCalculations(t *testing.T) {
 	if prox != 0 {
 		t.Errorf("EddyProximity(IN-1) = %v; want 0 (no path to proven)", prox)
 	}
-	
+
 	// Test Ranking
 	rankings := RankEddies(inv)
 	if len(rankings) != 1 {

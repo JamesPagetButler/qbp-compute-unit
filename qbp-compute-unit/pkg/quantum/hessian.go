@@ -49,7 +49,7 @@ func ConstructHessianCode() *Code {
 	var logs []Pauli
 
 	// 12 stabilizers for k = 16 - 12 = 4 logical qubits.
-	
+
 	// 8 local stabilizers (2 per block)
 	for i := 0; i < 4; i++ {
 		qO := uint(4 * i)
@@ -57,7 +57,7 @@ func ConstructHessianCode() *Code {
 		sZ := Pauli(1<<(16+qO) | 1<<(16+qO+1) | 1<<(16+qO+2) | 1<<(16+qO+3))
 		stabs = append(stabs, sX, sZ)
 	}
-	
+
 	// 4 cross-block stabilizers to reduce k from 8 to 4
 	for i := 0; i < 4; i++ {
 		qO1 := uint(4 * i)
@@ -75,7 +75,7 @@ func ConstructHessianCode() *Code {
 		lX := Pauli(1<<qO | 1<<(qO+2))
 		// lZ = Z_qO | Z_qO+1
 		lZ := Pauli(1<<(16+qO) | 1<<(16+qO+1))
-		
+
 		logs = append(logs, lX, lZ)
 	}
 

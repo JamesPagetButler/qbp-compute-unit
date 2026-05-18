@@ -141,13 +141,13 @@ func QNormSq(q quat.Quat) float64 {
 // This is the default backend and is always available.
 type CrawlBackend struct{}
 
-func (CrawlBackend) Name() string        { return "Crawl (Pure Go)" }
-func (CrawlBackend) Phase() Phase        { return PhaseCrawl }
-func (CrawlBackend) Available() bool     { return true } // always available
+func (CrawlBackend) Name() string                  { return "Crawl (Pure Go)" }
+func (CrawlBackend) Phase() Phase                  { return PhaseCrawl }
+func (CrawlBackend) Available() bool               { return true } // always available
 func (CrawlBackend) QMUL(a, b quat.Quat) quat.Quat { return quat.Mul(a, b) }
 func (CrawlBackend) QROT(q, v quat.Quat) quat.Quat { return quat.Rotate(q, v) }
-func (CrawlBackend) FANO(i, j int) fano.Entry       { return fano.Lookup(i, j) }
-func (CrawlBackend) QNormSq(q quat.Quat) float64    { return quat.NormSq(q) }
+func (CrawlBackend) FANO(i, j int) fano.Entry      { return fano.Lookup(i, j) }
+func (CrawlBackend) QNormSq(q quat.Quat) float64   { return quat.NormSq(q) }
 
 // ─── Walk backend (stub — implemented when ROCm/AVX available) ─────
 
@@ -174,8 +174,8 @@ func (WalkBackend) Available() bool {
 }
 func (WalkBackend) QMUL(a, b quat.Quat) quat.Quat { return quat.Mul(a, b) } // placeholder
 func (WalkBackend) QROT(q, v quat.Quat) quat.Quat { return quat.Rotate(q, v) }
-func (WalkBackend) FANO(i, j int) fano.Entry       { return fano.Lookup(i, j) }
-func (WalkBackend) QNormSq(q quat.Quat) float64    { return quat.NormSq(q) }
+func (WalkBackend) FANO(i, j int) fano.Entry      { return fano.Lookup(i, j) }
+func (WalkBackend) QNormSq(q quat.Quat) float64   { return quat.NormSq(q) }
 
 // ─── Run backend (stub — for custom RISC-V) ───────────────────────
 
@@ -183,13 +183,13 @@ func (WalkBackend) QNormSq(q quat.Quat) float64    { return quat.NormSq(q) }
 // On non-RISC-V systems, it falls back to CrawlBackend.
 type RunBackend struct{}
 
-func (RunBackend) Name() string    { return "Run (RISC-V QMUL.128)" }
-func (RunBackend) Phase() Phase    { return PhaseRun }
-func (RunBackend) Available() bool { return false } // until RISC-V hardware exists
+func (RunBackend) Name() string                  { return "Run (RISC-V QMUL.128)" }
+func (RunBackend) Phase() Phase                  { return PhaseRun }
+func (RunBackend) Available() bool               { return false } // until RISC-V hardware exists
 func (RunBackend) QMUL(a, b quat.Quat) quat.Quat { return quat.Mul(a, b) }
 func (RunBackend) QROT(q, v quat.Quat) quat.Quat { return quat.Rotate(q, v) }
-func (RunBackend) FANO(i, j int) fano.Entry       { return fano.Lookup(i, j) }
-func (RunBackend) QNormSq(q quat.Quat) float64    { return quat.NormSq(q) }
+func (RunBackend) FANO(i, j int) fano.Entry      { return fano.Lookup(i, j) }
+func (RunBackend) QNormSq(q quat.Quat) float64   { return quat.NormSq(q) }
 
 // ─── Auto-select the best available backend ────────────────────────
 

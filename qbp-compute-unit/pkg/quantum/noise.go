@@ -130,9 +130,9 @@ func (c *Code) EnumerateSingleErrors() (l1, l2, l3 int, escaped []Pauli) {
 	// 48 single-qubit Pauli errors (X, Y, Z on each of 16 qubits).
 	for q := 0; q < 16; q++ {
 		for _, e := range []Pauli{
-			Pauli(1 << uint(q)),                       // X
-			Pauli(1<<uint(q) | 1<<uint(q+16)),         // Y
-			Pauli(1 << uint(q+16)),                    // Z
+			Pauli(1 << uint(q)),               // X
+			Pauli(1<<uint(q) | 1<<uint(q+16)), // Y
+			Pauli(1 << uint(q+16)),            // Z
 		} {
 			if c.Syndrome(e) != 0 {
 				l3++

@@ -22,7 +22,7 @@ func TestMergeProgrammes(t *testing.T) {
 	merged, report := MergeProgrammes(invA, invB)
 
 	// 3. Verify report
-	// QBP and QBP-Quantum in my testdata don't share IDs yet, 
+	// QBP and QBP-Quantum in my testdata don't share IDs yet,
 	// so shared should be 0 unless I update them.
 	if len(report.SharedAnchorIDs) != 0 {
 		t.Errorf("expected 0 shared anchors, got %d", len(report.SharedAnchorIDs))
@@ -37,14 +37,14 @@ func TestMergeProgrammes(t *testing.T) {
 	invA.Axioms[0].ID = "SHARED-1"
 	invA.Axioms[0].Tier = 1
 	invB.Axioms[0].ID = "SHARED-1"
-	invB.Axioms[0].Tier = 0 // Tier 0 is "more trustworthy" in enum? 
+	invB.Axioms[0].Tier = 0 // Tier 0 is "more trustworthy" in enum?
 	// Wait, Tier 0 (Axiom) < Tier 1 (Proof) numerically. Min(0, 1) = 0.
-	
+
 	merged2, report2 := MergeProgrammes(invA, invB)
 	if len(report2.SharedAnchorIDs) != 1 {
 		t.Errorf("expected 1 shared anchor after injection, got %d", len(report2.SharedAnchorIDs))
 	}
-	
+
 	// Find the shared anchor in merged2
 	found := false
 	for _, a := range merged2.Axioms {

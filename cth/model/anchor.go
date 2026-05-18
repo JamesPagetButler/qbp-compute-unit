@@ -29,7 +29,7 @@ const (
 type Provenance string
 
 const (
-	Theoretical Provenance = "T" // Theoretical derivation
+	Theoretical  Provenance = "T" // Theoretical derivation
 	Experimental Provenance = "E" // Experimental measurement
 	Input        Provenance = "I" // Irreducible input
 )

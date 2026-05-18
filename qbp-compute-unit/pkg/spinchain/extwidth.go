@@ -21,8 +21,8 @@ type ExtendedWidthResult struct {
 	MaxDepth1e12 float64 // compositions before 1e-12 drift
 
 	// Physical interpretation
-	TimeAtGHz    float64 // seconds of continuous operation at 1 GHz
-	Description  string
+	TimeAtGHz   float64 // seconds of continuous operation at 1 GHz
+	Description string
 }
 
 // RunExtendedWidthAnalysis combines empirical measurement (for float32/64)
@@ -87,7 +87,7 @@ func RunExtendedWidthAnalysis() []ExtendedWidthResult {
 		for i := 0; i < n; i++ {
 			q = mul(q, rot)
 		}
-		nsq := float64(q.W*q.W+q.X*q.X+q.Y*q.Y+q.Z*q.Z)
+		nsq := float64(q.W*q.W + q.X*q.X + q.Y*q.Y + q.Z*q.Z)
 		drift := math.Abs(1.0 - nsq)
 		dpo := drift / float64(n)
 
@@ -120,7 +120,9 @@ func RunExtendedWidthAnalysis() []ExtendedWidthResult {
 		qz := new(big.Float).SetPrec(prec)
 
 		tmp := make([]*big.Float, 16)
-		for i := range tmp { tmp[i] = new(big.Float).SetPrec(prec) }
+		for i := range tmp {
+			tmp[i] = new(big.Float).SetPrec(prec)
+		}
 		nW := new(big.Float).SetPrec(prec)
 		nX := new(big.Float).SetPrec(prec)
 		nY := new(big.Float).SetPrec(prec)
@@ -130,7 +132,10 @@ func RunExtendedWidthAnalysis() []ExtendedWidthResult {
 		for iter := 0; iter < n; iter++ {
 			bigQuatMul(qw, qx, qy, qz, cosH, sinC, sinC, sinC,
 				tmp, nW, nX, nY, nZ, prec)
-			qw.Copy(nW); qx.Copy(nX); qy.Copy(nY); qz.Copy(nZ)
+			qw.Copy(nW)
+			qx.Copy(nX)
+			qy.Copy(nY)
+			qz.Copy(nZ)
 		}
 		elapsed := time.Since(start)
 
@@ -169,7 +174,9 @@ func RunExtendedWidthAnalysis() []ExtendedWidthResult {
 		qz := new(big.Float).SetPrec(prec)
 
 		tmp := make([]*big.Float, 16)
-		for i := range tmp { tmp[i] = new(big.Float).SetPrec(prec) }
+		for i := range tmp {
+			tmp[i] = new(big.Float).SetPrec(prec)
+		}
 		nW := new(big.Float).SetPrec(prec)
 		nX := new(big.Float).SetPrec(prec)
 		nY := new(big.Float).SetPrec(prec)
@@ -179,7 +186,10 @@ func RunExtendedWidthAnalysis() []ExtendedWidthResult {
 		for iter := 0; iter < n; iter++ {
 			bigQuatMul(qw, qx, qy, qz, cosH, sinC, sinC, sinC,
 				tmp, nW, nX, nY, nZ, prec)
-			qw.Copy(nW); qx.Copy(nX); qy.Copy(nY); qz.Copy(nZ)
+			qw.Copy(nW)
+			qx.Copy(nX)
+			qy.Copy(nY)
+			qz.Copy(nZ)
 		}
 		elapsed := time.Since(start)
 
@@ -322,20 +332,40 @@ func bigQuatMul(qw, qx, qy, qz, rw, rx, ry, rz *big.Float,
 	tmp []*big.Float, nW, nX, nY, nZ *big.Float, prec uint) {
 
 	// nW = qw*rw - qx*rx - qy*ry - qz*rz
-	tmp[0].Mul(qw, rw); tmp[1].Mul(qx, rx); tmp[2].Mul(qy, ry); tmp[3].Mul(qz, rz)
-	nW.Sub(tmp[0], tmp[1]); nW.Sub(nW, tmp[2]); nW.Sub(nW, tmp[3])
+	tmp[0].Mul(qw, rw)
+	tmp[1].Mul(qx, rx)
+	tmp[2].Mul(qy, ry)
+	tmp[3].Mul(qz, rz)
+	nW.Sub(tmp[0], tmp[1])
+	nW.Sub(nW, tmp[2])
+	nW.Sub(nW, tmp[3])
 
 	// nX = qw*rx + qx*rw + qy*rz - qz*ry
-	tmp[4].Mul(qw, rx); tmp[5].Mul(qx, rw); tmp[6].Mul(qy, rz); tmp[7].Mul(qz, ry)
-	nX.Add(tmp[4], tmp[5]); nX.Add(nX, tmp[6]); nX.Sub(nX, tmp[7])
+	tmp[4].Mul(qw, rx)
+	tmp[5].Mul(qx, rw)
+	tmp[6].Mul(qy, rz)
+	tmp[7].Mul(qz, ry)
+	nX.Add(tmp[4], tmp[5])
+	nX.Add(nX, tmp[6])
+	nX.Sub(nX, tmp[7])
 
 	// nY = qw*ry - qx*rz + qy*rw + qz*rx
-	tmp[8].Mul(qw, ry); tmp[9].Mul(qx, rz); tmp[10].Mul(qy, rw); tmp[11].Mul(qz, rx)
-	nY.Sub(tmp[8], tmp[9]); nY.Add(nY, tmp[10]); nY.Add(nY, tmp[11])
+	tmp[8].Mul(qw, ry)
+	tmp[9].Mul(qx, rz)
+	tmp[10].Mul(qy, rw)
+	tmp[11].Mul(qz, rx)
+	nY.Sub(tmp[8], tmp[9])
+	nY.Add(nY, tmp[10])
+	nY.Add(nY, tmp[11])
 
 	// nZ = qw*rz + qx*ry - qy*rx + qz*rw
-	tmp[12].Mul(qw, rz); tmp[13].Mul(qx, ry); tmp[14].Mul(qy, rx); tmp[15].Mul(qz, rw)
-	nZ.Add(tmp[12], tmp[13]); nZ.Sub(nZ, tmp[14]); nZ.Add(nZ, tmp[15])
+	tmp[12].Mul(qw, rz)
+	tmp[13].Mul(qx, ry)
+	tmp[14].Mul(qy, rx)
+	tmp[15].Mul(qz, rw)
+	nZ.Add(tmp[12], tmp[13])
+	nZ.Sub(nZ, tmp[14])
+	nZ.Add(nZ, tmp[15])
 }
 
 // bigNormDrift computes |1 - ||q||²| for a big.Float quaternion.
@@ -343,9 +373,12 @@ func bigNormDrift(qw, qx, qy, qz *big.Float, prec uint) float64 {
 	nsq := new(big.Float).SetPrec(prec)
 	t := new(big.Float).SetPrec(prec)
 	nsq.Mul(qw, qw)
-	t.Mul(qx, qx); nsq.Add(nsq, t)
-	t.Mul(qy, qy); nsq.Add(nsq, t)
-	t.Mul(qz, qz); nsq.Add(nsq, t)
+	t.Mul(qx, qx)
+	nsq.Add(nsq, t)
+	t.Mul(qy, qy)
+	nsq.Add(nsq, t)
+	t.Mul(qz, qz)
+	nsq.Add(nsq, t)
 	one := new(big.Float).SetPrec(prec).SetFloat64(1.0)
 	diff := new(big.Float).SetPrec(prec).Sub(nsq, one)
 	drift, _ := diff.Abs(diff).Float64()
