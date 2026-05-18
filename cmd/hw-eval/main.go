@@ -26,7 +26,7 @@ func generateReport(ownedGPUs int) {
 
 	fmt.Fprintf(out, "# Walk Phase Hardware Options Comparison\n\n")
 	fmt.Fprintf(out, "This report compares the four evaluated hardware paths for the QBP Compute Unit, factoring in your existing inventory (%d owned RX 9070 XT).\n\n", ownedGPUs)
-	
+
 	fmt.Fprintf(out, "| Mode | Target CPU | Est. Cost | System TDP | Est. Throughput (QMULs/sec) | Energy Efficiency (Joules/QMUL) | Cost Efficiency (USD per Billion QMULs/s) |\n")
 	fmt.Fprintf(out, "| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n")
 

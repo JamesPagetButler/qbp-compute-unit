@@ -3,10 +3,12 @@
 package quat
 
 // mulAVX is implemented in quat_amd64.s using AVX instructions.
+//
 //go:noescape
 func mulAVX(q, r, res *Quat)
 
 // mulAccumAVX is implemented in quat_amd64.s using AVX instructions.
+//
 //go:noescape
 func mulAccumAVX(dest, q, r *Quat)
 

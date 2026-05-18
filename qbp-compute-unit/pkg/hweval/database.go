@@ -12,16 +12,16 @@ const (
 )
 
 type Component struct {
-	ID           string
-	Category     PartCategory
-	Name         string
-	Cost         float64 // USD
-	TDPWatts     float64
-	AVX512       bool // Or 512-bit Vector extension for RISC-V
-	Cores        int
-	ClockGHz     float64
-	MemChannels  int
-	Notes        string
+	ID          string
+	Category    PartCategory
+	Name        string
+	Cost        float64 // USD
+	TDPWatts    float64
+	AVX512      bool // Or 512-bit Vector extension for RISC-V
+	Cores       int
+	ClockGHz    float64
+	MemChannels int
+	Notes       string
 }
 
 // Catalog represents the 2026 available hardware parts
@@ -29,7 +29,7 @@ var Catalog = []Component{
 	// x86 CPUs
 	{ID: "cpu-tr-9000wx", Category: CPU, Name: "AMD Ryzen Threadripper PRO 9000 WX-Series", Cost: 4999.00, TDPWatts: 350.0, AVX512: true, Cores: 64, ClockGHz: 5.0, MemChannels: 8, Notes: "Massive QW128 parallelism"},
 	{ID: "cpu-r9-9900x", Category: CPU, Name: "AMD Ryzen 9 9900X", Cost: 499.00, TDPWatts: 120.0, AVX512: true, Cores: 12, ClockGHz: 5.0, MemChannels: 2, Notes: "Excellent AVX-512 cost/power ratio"},
-	
+
 	// RISC-V CPUs
 	{ID: "cpu-sifive-p870", Category: CPU, Name: "SiFive Performance P870 64-Core (RV64GCV)", Cost: 1500.00, TDPWatts: 120.0, AVX512: true, Cores: 64, ClockGHz: 2.5, MemChannels: 4, Notes: "RISC-V Beast Mode Server"},
 	{ID: "cpu-sifive-x390", Category: CPU, Name: "SiFive Intelligence X390 16-Core (RV64GCV)", Cost: 350.00, TDPWatts: 35.0, AVX512: true, Cores: 16, ClockGHz: 2.0, MemChannels: 2, Notes: "Optimized Edge Node"},

@@ -7,11 +7,11 @@ import (
 type BuildMode string
 
 const (
-	ModeBruteForce      BuildMode = "bruteforce"
-	ModeEfficiency      BuildMode = "efficiency"
-	ModeServer          BuildMode = "server"
-	ModeRiscvBeast      BuildMode = "riscv-beast"
-	ModeRiscvOptimized  BuildMode = "riscv-optimized"
+	ModeBruteForce     BuildMode = "bruteforce"
+	ModeEfficiency     BuildMode = "efficiency"
+	ModeServer         BuildMode = "server"
+	ModeRiscvBeast     BuildMode = "riscv-beast"
+	ModeRiscvOptimized BuildMode = "riscv-optimized"
 )
 
 type SelectedPart struct {
@@ -21,11 +21,11 @@ type SelectedPart struct {
 }
 
 type BuildReport struct {
-	Mode         BuildMode
-	Parts        []SelectedPart
-	TotalCost    float64
-	TotalTDP     float64
-	CPU          Component // Reference to CPU for performance math
+	Mode      BuildMode
+	Parts     []SelectedPart
+	TotalCost float64
+	TotalTDP  float64
+	CPU       Component // Reference to CPU for performance math
 }
 
 func getComponent(id string) Component {
@@ -45,7 +45,7 @@ func Evaluate(mode BuildMode, ownedGPUs int) BuildReport {
 
 	addPart := func(id string, qty int, owned int) {
 		comp := getComponent(id)
-		
+
 		if comp.Category == CPU {
 			report.CPU = comp
 		}
@@ -56,13 +56,13 @@ func Evaluate(mode BuildMode, ownedGPUs int) BuildReport {
 		}
 
 		cost := comp.Cost * float64(chargeableQty)
-		
+
 		report.Parts = append(report.Parts, SelectedPart{
 			Component: comp,
 			Quantity:  qty,
 			Cost:      cost,
 		})
-		
+
 		report.TotalCost += cost
 		report.TotalTDP += comp.TDPWatts * float64(qty)
 	}

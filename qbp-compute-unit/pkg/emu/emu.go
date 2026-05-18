@@ -118,21 +118,21 @@ func (wc WidthCode) String() string {
 type Instruction struct {
 	Op    Op
 	Width WidthCode
-	Rd    uint8 // destination register
-	Rs1   uint8 // source register 1
-	Rs2   uint8 // source register 2
+	Rd    uint8  // destination register
+	Rs1   uint8  // source register 1
+	Rs2   uint8  // source register 2
 	Raw   uint32 // raw 32-bit encoding
 }
 
 // Encode produces the 32-bit RISC-V instruction word.
 func (inst Instruction) Encode() uint32 {
 	var w uint32
-	w |= uint32(OpcodeCustom0)            // bits 6:0
-	w |= uint32(inst.Rd) << 7             // bits 11:7
-	w |= uint32(inst.Width) << 12         // bits 14:12 (funct3)
-	w |= uint32(inst.Rs1) << 15           // bits 19:15
-	w |= uint32(inst.Rs2) << 20           // bits 24:20
-	w |= uint32(inst.Op) << 25            // bits 31:25 (funct7)
+	w |= uint32(OpcodeCustom0)    // bits 6:0
+	w |= uint32(inst.Rd) << 7     // bits 11:7
+	w |= uint32(inst.Width) << 12 // bits 14:12 (funct3)
+	w |= uint32(inst.Rs1) << 15   // bits 19:15
+	w |= uint32(inst.Rs2) << 20   // bits 24:20
+	w |= uint32(inst.Op) << 25    // bits 31:25 (funct7)
 	return w
 }
 
@@ -210,9 +210,9 @@ type PipelineConfig struct {
 	QMULCycles  map[qword.Width]int // cycles per QMUL at each width
 	QROTCycles  map[qword.Width]int // cycles per QROT
 	OMACCycles  map[qword.Width]int // cycles per OMAC
-	FANOCycles  int                  // FANO is width-independent
+	FANOCycles  int                 // FANO is width-independent
 	QNORMCycles map[qword.Width]int // cycles per QNORM
-	ClockMHz    float64              // target clock frequency
+	ClockMHz    float64             // target clock frequency
 }
 
 // DefaultPipelineConfig returns design-target cycle counts.

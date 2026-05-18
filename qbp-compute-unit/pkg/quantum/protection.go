@@ -6,11 +6,11 @@ package quantum
 //
 // Layer 1: Hurwitz Norm Protection
 // Any single-qubit error (Pauli X, Y, or Z) on a unit quaternion state
-// q produces a non-unit quaternion? 
+// q produces a non-unit quaternion?
 // Actually, Pauli operations on quaternions are q -> iqi*, etc.
 // These are ROTATIONS, so they preserve the norm.
 //
-// Wait! Physical noise is not just Pauli errors. 
+// Wait! Physical noise is not just Pauli errors.
 // Physical noise (decoherence, amplitude damping) often shrinks the norm.
 // Hurwitz protection detects ANY non-norm-preserving error for free.
 //
@@ -20,13 +20,13 @@ package quantum
 // Errors that flip the sign without changing the rotation are detectable.
 //
 // Layer 3: Hessian Stabilizer Code
-// The [[16, 4, 2]] code implemented in hessian.go provides the 
+// The [[16, 4, 2]] code implemented in hessian.go provides the
 // conventional QEC layer. When combined with Layers 1 and 2,
 // the effective distance is d >= 3.
 type AlgebraicProtection struct {
-	NormProtection bool
+	NormProtection   bool
 	ParityProtection bool
-	CodeDistance int
+	CodeDistance     int
 }
 
 func GetProtectionSummary() string {

@@ -74,10 +74,10 @@ func RunCompositionBenchmark(iterations int) *CompositionResult {
 	// Equivalent SU(2) matrix:
 	// U = [[cos(θ/2) - i·sin(θ/2)·nz, -sin(θ/2)·(ny + i·nx)],
 	//      [sin(θ/2)·(ny - i·nx), cos(θ/2) + i·sin(θ/2)·nz]]
-	uA := Complex{Re: math.Cos(halfAngle), Im: -sinH * invSqrt3}   // u00
-	uB := Complex{Re: -sinH * invSqrt3, Im: -sinH * invSqrt3}      // u01
-	uC := Complex{Re: sinH * invSqrt3, Im: -sinH * invSqrt3}       // u10
-	uD := Complex{Re: math.Cos(halfAngle), Im: sinH * invSqrt3}    // u11
+	uA := Complex{Re: math.Cos(halfAngle), Im: -sinH * invSqrt3} // u00
+	uB := Complex{Re: -sinH * invSqrt3, Im: -sinH * invSqrt3}    // u01
+	uC := Complex{Re: sinH * invSqrt3, Im: -sinH * invSqrt3}     // u10
+	uD := Complex{Re: math.Cos(halfAngle), Im: sinH * invSqrt3}  // u11
 
 	// Start with identity matrix
 	mA := Complex{Re: 1}

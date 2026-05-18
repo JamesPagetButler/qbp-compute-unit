@@ -13,12 +13,12 @@ import (
 
 // WidthResult holds composition benchmark results at one precision.
 type WidthResult struct {
-	Label         string
-	Bits          int
-	Iterations    int
+	Label          string
+	Bits           int
+	Iterations     int
 	FinalNormDrift float64
-	DriftPerOp    float64
-	WallTime      time.Duration
+	DriftPerOp     float64
+	WallTime       time.Duration
 
 	// Estimated max compositions before 1e-6 tolerance exceeded
 	EstMaxDepth int64
@@ -52,13 +52,13 @@ func RunMultiWidthBenchmark(iterations int) []WidthResult {
 		drift := math.Abs(1.0 - quat.NormSq(q))
 		dpo := drift / float64(iterations)
 		results = append(results, WidthResult{
-			Label:         "QW64 (4×float64)",
-			Bits:          256,
-			Iterations:    iterations,
+			Label:          "QW64 (4×float64)",
+			Bits:           256,
+			Iterations:     iterations,
 			FinalNormDrift: drift,
-			DriftPerOp:    dpo,
-			WallTime:      elapsed,
-			EstMaxDepth:   int64(1e-6 / max(dpo, 1e-300)),
+			DriftPerOp:     dpo,
+			WallTime:       elapsed,
+			EstMaxDepth:    int64(1e-6 / max(dpo, 1e-300)),
 		})
 	}
 
@@ -88,13 +88,13 @@ func RunMultiWidthBenchmark(iterations int) []WidthResult {
 		drift := math.Abs(1.0 - nsq)
 		dpo := drift / float64(iterations)
 		results = append(results, WidthResult{
-			Label:         "QW32 (4×float32)",
-			Bits:          128,
-			Iterations:    iterations,
+			Label:          "QW32 (4×float32)",
+			Bits:           128,
+			Iterations:     iterations,
 			FinalNormDrift: drift,
-			DriftPerOp:    dpo,
-			WallTime:      elapsed,
-			EstMaxDepth:   int64(1e-6 / max(dpo, 1e-300)),
+			DriftPerOp:     dpo,
+			WallTime:       elapsed,
+			EstMaxDepth:    int64(1e-6 / max(dpo, 1e-300)),
 		})
 	}
 
@@ -154,13 +154,13 @@ func RunMultiWidthBenchmark(iterations int) []WidthResult {
 		drift := math.Abs(1.0 - nsq)
 		dpo := drift / float64(iterations)
 		results = append(results, WidthResult{
-			Label:         "QW16 (4×int16) — Gemini 64-bit proposal",
-			Bits:          64,
-			Iterations:    iterations,
+			Label:          "QW16 (4×int16) — Gemini 64-bit proposal",
+			Bits:           64,
+			Iterations:     iterations,
 			FinalNormDrift: drift,
-			DriftPerOp:    dpo,
-			WallTime:      elapsed,
-			EstMaxDepth:   int64(1e-6 / max(dpo, 1e-300)),
+			DriftPerOp:     dpo,
+			WallTime:       elapsed,
+			EstMaxDepth:    int64(1e-6 / max(dpo, 1e-300)),
 		})
 	}
 
@@ -198,13 +198,13 @@ func RunMultiWidthBenchmark(iterations int) []WidthResult {
 		drift := math.Abs(1.0 - nsq)
 		dpo := drift / float64(iterations)
 		results = append(results, WidthResult{
-			Label:         "QW8  (4×int8) — BMA hypergraph",
-			Bits:          32,
-			Iterations:    iterations,
+			Label:          "QW8  (4×int8) — BMA hypergraph",
+			Bits:           32,
+			Iterations:     iterations,
 			FinalNormDrift: drift,
-			DriftPerOp:    dpo,
-			WallTime:      elapsed,
-			EstMaxDepth:   int64(1e-6 / max(dpo, 1e-300)),
+			DriftPerOp:     dpo,
+			WallTime:       elapsed,
+			EstMaxDepth:    int64(1e-6 / max(dpo, 1e-300)),
 		})
 	}
 

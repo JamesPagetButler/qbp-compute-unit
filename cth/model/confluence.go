@@ -4,8 +4,8 @@ package model
 type ChainProvenance string
 
 const (
-	Internal      ChainProvenance = "internal"
-	External      ChainProvenance = "external"
+	Internal       ChainProvenance = "internal"
+	External       ChainProvenance = "external"
 	CrossProgramme ChainProvenance = "cross_programme"
 )
 

@@ -30,8 +30,8 @@ type SedimentReport struct {
 func DetectSedimentPartitions(inv model.Inventory) SedimentReport {
 	idx := anchorIndex(inv)
 
-	cleanDomains := make(map[string]bool)  // domains in laminar + low_sediment
-	dirtyDomains := make(map[string]bool)  // domains in moderate + heavy
+	cleanDomains := make(map[string]bool) // domains in laminar + low_sediment
+	dirtyDomains := make(map[string]bool) // domains in moderate + heavy
 
 	var report SedimentReport
 

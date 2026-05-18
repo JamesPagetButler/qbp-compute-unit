@@ -46,7 +46,7 @@ func SaveInventory(inv model.Inventory, path string) error {
 // LoadMultiple reads multiple inventory files in parallel (for merge workflows).
 func LoadMultiple(paths []string) ([]model.Inventory, error) {
 	results := make([]model.Inventory, len(paths))
-	
+
 	for i, path := range paths {
 		inv, err := LoadInventory(path)
 		if err != nil {

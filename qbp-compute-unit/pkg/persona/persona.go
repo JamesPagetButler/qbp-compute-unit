@@ -1,7 +1,7 @@
 // Package persona implements containerized high-precision BMA instances.
-// 
-// These "Persona Containers" are designed to run in QW256 (1024-bit) 
-// precision, providing "Level 5 Earnestness" for truth verification, 
+//
+// These "Persona Containers" are designed to run in QW256 (1024-bit)
+// precision, providing "Level 5 Earnestness" for truth verification,
 // hypothesis testing, and deep cognitive insights.
 package persona
 
@@ -36,7 +36,7 @@ type GroundTruth struct {
 
 // Persona represents an embedded cognitive instance as a Transformation Operator.
 //
-// In BMA Theory (Addendum 11.0), a Persona is not a static state, but a 
+// In BMA Theory (Addendum 11.0), a Persona is not a static state, but a
 // "Stance" or "Rotation" that brings specific algebraic invariants into focus.
 // It acts on incoming world-lines via the QROT instruction (qvq*).
 type Persona struct {
@@ -59,15 +59,15 @@ type Hypothesis struct {
 func (p *Persona) ApplyStance(input *Quat256) *Quat256 {
 	// This would implement the QROT 1024-bit equivalent: p.Transformation * input * p.Transformation*
 	// For now, we return a mock transformation result.
-	return input 
+	return input
 }
 
 // RunHypothesisTest simulates the investigation of an insight.
-// It uses the Persona's Transformation to "rotate" the hypothesis into 
+// It uses the Persona's Transformation to "rotate" the hypothesis into
 // its frame of reference, checking for algebraic resonance with its Ground Truth.
 func (p *Persona) RunHypothesisTest(h *Hypothesis) (bool, string) {
 	fmt.Printf("[Persona:%s] Interrogating Hypothesis: %s\n", p.ID, h.Description)
-	
+
 	// Check for resonance with Ground Truth gaps
 	for _, target := range h.TargetAnchors {
 		for _, gap := range p.Ground.Gaps {
@@ -76,10 +76,10 @@ func (p *Persona) RunHypothesisTest(h *Hypothesis) (bool, string) {
 			}
 		}
 	}
-	
+
 	// Simulation of deep cognitive traversal logic
 	resonanceDetected := true // Mocked
-	
+
 	return resonanceDetected, fmt.Sprintf("Insight Processed: %s frame identifies coherent path for scale-invariant physics.", p.Profile)
 }
 

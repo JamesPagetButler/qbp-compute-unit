@@ -41,14 +41,14 @@ import (
 
 const (
 	NumWheels     = 6
-	ControlRateHz = 500.0           // control loop frequency
+	ControlRateHz = 500.0               // control loop frequency
 	DtControl     = 1.0 / ControlRateHz // seconds per control tick
 )
 
 // WheelPosition defines where each wheel sits relative to chassis centre.
 // Quaternion-natural: position encoded as a pure quaternion (0, x, y, z).
 type WheelPosition struct {
-	Name string
+	Name    string
 	X, Y, Z float64 // metres from chassis centre
 }
 
@@ -127,17 +127,17 @@ func (t *TerrainProfile) SurfaceAt(posX float64, wheelY float64) (normal quat.Qu
 // QBPWheelState holds the algebraic state of one wheel in the QBP pipeline.
 // Everything stays in quaternion form — no scalar conversion.
 type QBPWheelState struct {
-	Orientation   quat.Quat      // wheel orientation relative to world
-	GroundContact quat.Quat      // composed: wheel orientation × surface normal
-	Velocity      quat.Quat      // angular velocity as pure quaternion
+	Orientation   quat.Quat       // wheel orientation relative to world
+	GroundContact quat.Quat       // composed: wheel orientation × surface normal
+	Velocity      quat.Quat       // angular velocity as pure quaternion
 	Torque        float64         // output torque command
 	Stiffness     float64         // suspension stiffness coefficient
 	ContactNormSq float64         // ||ground_contact||² — watchdog signal
 	IsAirborne    bool            // watchdog detected loss of contact
 	WD            *watchdog.Stats // per-wheel algebraic watchdog
 	PrevHeight    float64         // previous tick's height offset (for delta)
-	PrevContactQ  quat.Quat      // previous tick's contact quaternion
-	Initialized   bool           // false until first tick completes
+	PrevContactQ  quat.Quat       // previous tick's contact quaternion
+	Initialized   bool            // false until first tick completes
 	QDistEMA      float64         // exponential moving average of q-distance
 	QDistCount    int             // ticks seen (for warmup)
 }
@@ -154,16 +154,16 @@ type QBPVehicle struct {
 
 // Detection records when a loss-of-traction event was detected.
 type Detection struct {
-	Tick    int
-	Wheel   int
-	Signal  float64 // the algebraic signal that triggered detection
-	Method  string  // "QBP" or "Scalar"
+	Tick   int
+	Wheel  int
+	Signal float64 // the algebraic signal that triggered detection
+	Method string  // "QBP" or "Scalar"
 }
 
 func NewQBPVehicle(speed float64) *QBPVehicle {
 	v := &QBPVehicle{
-		Chassis:  quat.Identity(),
-		Speed:    speed,
+		Chassis: quat.Identity(),
+		Speed:   speed,
 	}
 	for i := 0; i < NumWheels; i++ {
 		v.Wheels[i] = &QBPWheelState{
@@ -332,20 +332,20 @@ type ScalarWheelState struct {
 	// Ground contact as scalar: vertical force estimate
 	ContactForce float64
 	// Kalman filter state
-	KalmanState  float64
-	KalmanCov    float64
-	Torque       float64
-	Stiffness    float64
-	IsAirborne   bool
+	KalmanState float64
+	KalmanCov   float64
+	Torque      float64
+	Stiffness   float64
+	IsAirborne  bool
 }
 
 type ScalarVehicle struct {
-	Wheels       [NumWheels]*ScalarWheelState
+	Wheels           [NumWheels]*ScalarWheelState
 	Roll, Pitch, Yaw float64 // chassis Euler angles
-	Position     float64
-	Speed        float64
-	TotalOps     int64
-	DetectionLog []Detection
+	Position         float64
+	Speed            float64
+	TotalOps         int64
+	DetectionLog     []Detection
 }
 
 func NewScalarVehicle(speed float64) *ScalarVehicle {
@@ -498,20 +498,20 @@ func ScalarTick(v *ScalarVehicle, terrain *TerrainProfile, tick int) int {
 
 // SimConfig configures the Hammer vehicle simulation.
 type SimConfig struct {
-	Speed          float64 // vehicle speed in m/s
-	Duration       float64 // simulation duration in seconds
-	TerrainRough   float64 // terrain roughness (0-1)
-	RockPosition   float64 // metres along track where rock strike occurs
-	RockHeight     float64 // rock height in metres
+	Speed        float64 // vehicle speed in m/s
+	Duration     float64 // simulation duration in seconds
+	TerrainRough float64 // terrain roughness (0-1)
+	RockPosition float64 // metres along track where rock strike occurs
+	RockHeight   float64 // rock height in metres
 }
 
 func DefaultSimConfig() SimConfig {
 	return SimConfig{
-		Speed:        15.0,  // 54 km/h
-		Duration:     2.0,   // 2 seconds
+		Speed:        15.0, // 54 km/h
+		Duration:     2.0,  // 2 seconds
 		TerrainRough: 0.5,
-		RockPosition: 12.0,  // rock at 12m — hit ~0.8s into run
-		RockHeight:   0.15,  // 15cm rock
+		RockPosition: 12.0, // rock at 12m — hit ~0.8s into run
+		RockHeight:   0.15, // 15cm rock
 	}
 }
 
@@ -521,16 +521,16 @@ type SimResult struct {
 	Ticks  int
 
 	// QBP results
-	QBPOps            int64
-	QBPDetections     []Detection
+	QBPOps             int64
+	QBPDetections      []Detection
 	QBPFirstDetectTick int // -1 if no detection
-	QBPWallTime       time.Duration
+	QBPWallTime        time.Duration
 
 	// Scalar results
-	ScalarOps            int64
-	ScalarDetections     []Detection
+	ScalarOps             int64
+	ScalarDetections      []Detection
 	ScalarFirstDetectTick int
-	ScalarWallTime       time.Duration
+	ScalarWallTime        time.Duration
 
 	// Comparison
 	DetectionAdvantage int     // ticks earlier QBP detected (positive = QBP wins)
@@ -544,9 +544,9 @@ func RunSimulation(cfg SimConfig) *SimResult {
 	terrain := NewTerrain(cfg.TerrainRough, cfg.RockPosition, cfg.RockHeight)
 
 	result := &SimResult{
-		Config:              cfg,
-		Ticks:               totalTicks,
-		QBPFirstDetectTick:  -1,
+		Config:                cfg,
+		Ticks:                 totalTicks,
+		QBPFirstDetectTick:    -1,
 		ScalarFirstDetectTick: -1,
 	}
 

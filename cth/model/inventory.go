@@ -2,15 +2,15 @@ package model
 
 // Inventory represents the top-level container for a research programme (Definition 1).
 type Inventory struct {
-	Programme        string            `json:"programme"`
-	Version          string            `json:"version"`
-	Axioms           []Anchor          `json:"axioms"`
+	Programme         string            `json:"programme"`
+	Version           string            `json:"version"`
+	Axioms            []Anchor          `json:"axioms"`
 	DerivedPrinciples []Anchor          `json:"derived_principles"`
-	Anchors          []Anchor          `json:"anchors"` // General pool
-	Inputs           []Anchor          `json:"inputs"`
-	Chains           []Chain           `json:"chains"`
-	ConfluencePoints []ConfluencePoint `json:"confluence_points"`
-	Health           Health            `json:"health"`
+	Anchors           []Anchor          `json:"anchors"` // General pool
+	Inputs            []Anchor          `json:"inputs"`
+	Chains            []Chain           `json:"chains"`
+	ConfluencePoints  []ConfluencePoint `json:"confluence_points"`
+	Health            Health            `json:"health"`
 }
 
 // Health captures the programme's epistemic metrics.

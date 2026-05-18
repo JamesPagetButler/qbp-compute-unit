@@ -33,7 +33,7 @@ type EddyRanking struct {
 	NearestProven string
 }
 
-// WeightedGap computes the sum of difficulties along the shortest path 
+// WeightedGap computes the sum of difficulties along the shortest path
 // from an input to the nearest proven ancestor (Definition 17).
 func WeightedGap(inputID string, inv model.Inventory) (float64, string) {
 	// 1. Build an adjacency map of the hypergraph (walking backwards)
@@ -62,12 +62,12 @@ func WeightedGap(inputID string, inv model.Inventory) (float64, string) {
 		id   string
 		dist float64
 	}
-	
+
 	dist := make(map[string]float64)
 	dist[inputID] = 0
-	
+
 	queue := []node{{id: inputID, dist: 0}}
-	
+
 	minDist := math.Inf(1)
 	nearest := ""
 
@@ -89,10 +89,10 @@ func WeightedGap(inputID string, inv model.Inventory) (float64, string) {
 			continue
 		}
 
-		// In the Crawl phase, we assume each "step" in the chain 
+		// In the Crawl phase, we assume each "step" in the chain
 		// has a difficulty of 'open_derivation' (1.0) unless specified.
-		difficulty := 1.0 
-		
+		difficulty := 1.0
+
 		for _, neighbor := range adj[curr.id] {
 			newDist := curr.dist + difficulty
 			if d, ok := dist[neighbor]; !ok || newDist < d {
@@ -111,7 +111,7 @@ func EddyProximity(inputID string, inv model.Inventory) float64 {
 	if gap == 0 || math.IsInf(gap, 1) {
 		return 0
 	}
-	
+
 	// Find the anchor's entropy
 	var entropy float64
 	for _, a := range inv.Inputs {
@@ -120,7 +120,7 @@ func EddyProximity(inputID string, inv model.Inventory) float64 {
 			break
 		}
 	}
-	
+
 	return entropy / gap
 }
 
@@ -133,7 +133,7 @@ func RankEddies(inv model.Inventory) []EddyRanking {
 		if gap > 0 && !math.IsInf(gap, 1) {
 			proximity = ResidualEntropy(input) / gap
 		}
-		
+
 		rankings = append(rankings, EddyRanking{
 			AnchorID:      input.ID,
 			Proximity:     proximity,
@@ -141,10 +141,10 @@ func RankEddies(inv model.Inventory) []EddyRanking {
 			NearestProven: nearest,
 		})
 	}
-	
+
 	sort.Slice(rankings, func(i, j int) bool {
 		return rankings[i].Proximity > rankings[j].Proximity
 	})
-	
+
 	return rankings
 }

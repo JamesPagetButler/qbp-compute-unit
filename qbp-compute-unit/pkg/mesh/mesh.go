@@ -74,9 +74,9 @@ type Task struct {
 	Allocated     bool        // whether the scheduler has assigned nodes
 
 	// Runtime (updated by watchdog):
-	ActualDepth     int64   // operations completed so far
-	ActualDrift     float64 // current measured drift
-	NeedsRealloc    bool    // watchdog signals that drift exceeds prediction
+	ActualDepth  int64   // operations completed so far
+	ActualDrift  float64 // current measured drift
+	NeedsRealloc bool    // watchdog signals that drift exceeds prediction
 }
 
 // RequiredWidthFor computes the minimum quaternion word width needed to
@@ -330,7 +330,7 @@ func (s *Scheduler) Status() MeshStatus {
 	defer s.mu.Unlock()
 
 	st := MeshStatus{
-		TotalNodes: len(s.Cells) * 7,
+		TotalNodes:  len(s.Cells) * 7,
 		NativeWidth: s.NativeWidth,
 	}
 	for _, cell := range s.Cells {
@@ -443,7 +443,7 @@ func CheckReallocation(t *Task) ReallocationAdvice {
 
 // ReallocationAdvice tells the scheduler whether a task needs more or fewer nodes.
 type ReallocationAdvice struct {
-	Action       string      // "none", "upgrade", "downgrade"
+	Action       string // "none", "upgrade", "downgrade"
 	Reason       string
 	CurrentWidth qword.Width
 	AdvisedWidth qword.Width

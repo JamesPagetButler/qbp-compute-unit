@@ -7,7 +7,7 @@ import (
 
 func main() {
 	probes := []struct {
-		name string
+		name     string
 		lat, lon float64
 	}{
 		{"NORTH POLE", 90, 0},
@@ -18,7 +18,7 @@ func main() {
 
 	fmt.Printf("%-20s | %-20s | %-20s\n", "LOCATION", "ECEF (GO)", "THREE.JS (JS)")
 	fmt.Println("--------------------------------------------------------------------------------")
-	
+
 	for _, p := range probes {
 		phi := p.lat * math.Pi / 180.0
 		theta := p.lon * math.Pi / 180.0
@@ -27,7 +27,7 @@ func main() {
 		gx := math.Cos(phi) * math.Cos(theta)
 		gy := math.Cos(phi) * math.Sin(theta)
 		gz := math.Sin(phi)
-		
+
 		// MAPPING TO THREE.JS Y-UP:
 		// Go X (Prime) -> JS Z+
 		// Go Y (90E)   -> JS X+
@@ -35,8 +35,8 @@ func main() {
 		jx := gy
 		jy := gz
 		jz := gx
-		
-		fmt.Printf("%-20s | [%.2f, %.2f, %.3f] | [%.2f, %.2f, %.2f]\n", 
+
+		fmt.Printf("%-20s | [%.2f, %.2f, %.3f] | [%.2f, %.2f, %.2f]\n",
 			p.name, gx, gy, gz, jx, jy, jz)
 	}
 }
