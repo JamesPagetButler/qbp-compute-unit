@@ -96,7 +96,7 @@ func main() {
 			}
 			avgNorm := totalNormSq / float64(len(edges))
 			fmt.Printf("Cycle %4d: Edge Count: %d, Avg NormSq: %.6f\n", cycle, len(edges), avgNorm)
-			
+
 			if math.IsNaN(avgNorm) || math.IsInf(avgNorm, 0) || avgNorm < 1e-10 {
 				fmt.Println("CRITICAL: Graph collapsed or drifted to infinity.")
 				return

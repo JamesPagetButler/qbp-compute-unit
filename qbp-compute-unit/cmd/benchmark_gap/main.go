@@ -46,7 +46,7 @@ func main() {
 	for i := 0; i < numNodes; i++ {
 		// MOCK KNN SEARCH: Find k closest nodes (Brute force O(N))
 		_ = findKNN(i, positions, k)
-		
+
 		// Then compute (mock computation)
 		_ = mockCompute(i, nodes)
 	}
@@ -63,7 +63,7 @@ func main() {
 			dx := positions[neighborIdx].X - positions[i].X
 			dy := positions[neighborIdx].Y - positions[i].Y
 			dz := positions[neighborIdx].Z - positions[i].Z
-			
+
 			nodes[i].Adjacency = append(nodes[i].Adjacency, gap.AdjacencyPointer{
 				TargetID: neighborIdx,
 				RelPos:   quat.ToQuat8(quat.Pure(dx, dy, dz)),
@@ -109,5 +109,5 @@ func mockCompute(i int, nodes []gap.GAPNode) quat.Quat {
 	return quat.Scalar(float64(i))
 }
 
-// Add RandomUnit to quat package if it doesn't exist? 
+// Add RandomUnit to quat package if it doesn't exist?
 // Actually I'll just use Identity for mock.

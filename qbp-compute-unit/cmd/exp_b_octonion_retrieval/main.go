@@ -48,7 +48,7 @@ func main() {
 	}
 
 	fmt.Printf("\nTotal Component Difference (L-assoc vs R-assoc): %.4f\n", diff)
-	
+
 	fmt.Println("\nANALYSIS:")
 	fmt.Println("The octonionic product (e1*e2)*e4 is NOT equal to e1*(e2*e4).")
 	fmt.Println("This confirms that the GROUPING of edges (the context) changes the result.")

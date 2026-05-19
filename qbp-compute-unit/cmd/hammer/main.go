@@ -61,10 +61,10 @@ func main() {
 		{ID: "traction-FL", CompositionDepth: 50, DriftTolerance: 1e-3},
 		{ID: "traction-FR", CompositionDepth: 50, DriftTolerance: 1e-3},
 		{ID: "traction-ML", CompositionDepth: 50, DriftTolerance: 1e-3},
-		{ID: "stability",   CompositionDepth: 500, DriftTolerance: 1e-6},
-		{ID: "trajectory",  CompositionDepth: 5000, DriftTolerance: 1e-9},
+		{ID: "stability", CompositionDepth: 500, DriftTolerance: 1e-6},
+		{ID: "trajectory", CompositionDepth: 5000, DriftTolerance: 1e-9},
 		{ID: "chassis-int", CompositionDepth: 200, DriftTolerance: 1e-6},
-		{ID: "watchdog",    CompositionDepth: 100, DriftTolerance: 1e-3},
+		{ID: "watchdog", CompositionDepth: 100, DriftTolerance: 1e-3},
 	}
 
 	fmt.Printf("  %-16s %8s %10s %10s %8s\n", "Task", "Depth", "Tolerance", "Width", "Nodes")
@@ -114,7 +114,11 @@ func main() {
 	// Estimation for different scenarios
 	fmt.Println("── Precision Estimates for Common Vehicle Tasks ──")
 	fmt.Println()
-	scenarios := []struct{ name string; depth int64; tol float64 }{
+	scenarios := []struct {
+		name  string
+		depth int64
+		tol   float64
+	}{
 		{"ABS pulse (single brake)", 10, 1e-3},
 		{"Traction per wheel/tick", 50, 1e-3},
 		{"Stability 100ms window", 500, 1e-6},

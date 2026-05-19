@@ -60,7 +60,7 @@ func main() {
 		// We promote weight to Quat for the calculation.
 		sourceVal := nodes[edge.From].Value
 		weight := edge.Weight.ToQuat()
-		
+
 		prod := quat.Mul(sourceVal, weight)
 		nodes[edge.To].Value = quat.MulAccum(nodes[edge.To].Value, prod, quat.Scalar(1.0))
 	}
@@ -68,11 +68,11 @@ func main() {
 
 	fmt.Printf("Traversal completed in: %v\n", elapsed)
 	fmt.Printf("Average time per edge:  %v\n", elapsed/time.Duration(numEdges))
-	
+
 	// Memory footprint check
-	q8Size := 4 // 4 bytes for int8 w,x,y,z
+	q8Size := 4   // 4 bytes for int8 w,x,y,z
 	q64Size := 32 // 32 bytes for float64 w,x,y,z
-	
+
 	fmt.Println("\nMemory Analysis:")
 	fmt.Printf("  Quat8 Storage (Total):  %.2f MB\n", float64(numEdges*q8Size)/1024/1024)
 	fmt.Printf("  Quat64 Storage (Total): %.2f MB\n", float64(numEdges*q64Size)/1024/1024)

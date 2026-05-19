@@ -39,8 +39,12 @@ func (v Vector) Quantize() Vector8 {
 }
 
 func clampInt8(f float64) int8 {
-	if f > 127 { return 127 }
-	if f < -127 { return -127 }
+	if f > 127 {
+		return 127
+	}
+	if f < -127 {
+		return -127
+	}
 	return int8(f)
 }
 
@@ -78,7 +82,7 @@ type Result struct {
 
 func RunExperiment(dim int, count int) {
 	fmt.Printf("\n--- Dimension: %d | Vectors: %d ---\n", dim, count)
-	
+
 	vectors := make([]Vector, count)
 	vectors8 := make([]Vector8, count)
 	for i := 0; i < count; i++ {
@@ -121,10 +125,16 @@ func RunExperiment(dim int, count int) {
 		// Find rank of i in both lists
 		rFP, rQ8 := 0, 0
 		for j := range resultsFP {
-			if resultsFP[j].Index == i { rFP = j; break }
+			if resultsFP[j].Index == i {
+				rFP = j
+				break
+			}
 		}
 		for j := range resultsQ8 {
-			if resultsQ8[j].Index == i { rQ8 = j; break }
+			if resultsQ8[j].Index == i {
+				rQ8 = j
+				break
+			}
 		}
 		diff := float64(rFP - rQ8)
 		sumSqDiff += diff * diff
