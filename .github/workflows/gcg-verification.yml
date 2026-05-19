@@ -4,25 +4,45 @@
 # `~/Documents/go-coding-guide.md` so agent-self-attestation + reviewer
 # discipline are no longer the only gate.
 #
-# Scope at v0.1 (this workflow): emulator/ only — the Wyrd-consumed substrate
-# where the Gearbox guarantees live. Other modules (cmd/, qbp-compute-unit/,
-# cth/) have pre-existing gofmt backlogs (~67 files); enabling gating across
-# the repo would produce a queue of small cleanup PRs that should land
-# separately. Staged rollout:
+# ============================================================
+# Staged rollout — what's gated, when
+# ============================================================
 #
-#   v0.1 (this commit): emulator/ — currently clean on all 4 gating gates
-#   v0.2 (follow-up):   cmd/ + qbp-compute-unit/ + cth/ after baseline cleanup
+#   v0.1 (PR #32, 2026-05-13):  emulator/
+#   v0.2 (this PR, 2026-05-18): + cth/
 #
-# Four gating gates + one informational:
+#   Deferred (each gated on its own housekeeping issue clearing first):
+#     - qbp-compute-unit/   — blocked by cmd/exp_i_sched_emu/main.go
+#                             vet failure (`t.Context undefined`); 16-file
+#                             gofmt backlog in qbp-compute-unit/cmd/ that
+#                             PR #43 missed; file as housekeeping
+#     - cmd/visualizer/     — blocked by absolute-path `replace kaiju`
+#                             directive that won't resolve in CI (#44)
+#     - cmd/wasm-visualizer/ — blocked by `replace emulator => ../../`
+#                             local-path directive (#44)
+#     - cmd/hw-eval/        — blocked by pre-existing `go mod tidy`
+#                             mutation (indirect → direct correction)
+#     - . (root module)     — blocked by rogue legacy file
+#                             worktrees/walk-infrastructure/pkg/gap/
+#                             gap_gated.go (initial-commit era; not
+#                             in .gitignore)
 #
-#   GATING                                             EVIDENCE
-#   gofmt -l . (empty)                                 — verified clean today
-#   go vet ./...                                       — verified clean today
-#   go test -race -count=1 ./...                       — verified PASS 1.0s
-#   go mod tidy → no go.mod diff                       — verified no-op today
+# Each deferred module gets its own GCG job when its blocker clears.
+# Modules listed above are NOT gated by CI today; they're tracked at
+# the housekeeping issue cited.
 #
-#   INFORMATIONAL (continue-on-error; promotable later)
-#   staticcheck ./...                                  — findings allowed at v0.1
+# ============================================================
+# Four gating gates + one informational (per gated module)
+# ============================================================
+#
+#   GATING
+#     gofmt -l . (empty)
+#     go vet ./...
+#     go test -race -count=1 ./...
+#     go mod tidy → no go.mod / go.sum diff
+#
+#   INFORMATIONAL (continue-on-error; promotable to gating after backlog cleanup)
+#     staticcheck ./...
 
 name: GCG Verification Ladder
 
@@ -68,6 +88,62 @@ jobs:
         run: |
           cp go.mod go.mod.before
           # Also copy go.sum if it exists
+          [ -f go.sum ] && cp go.sum go.sum.before || true
+          go mod tidy
+          if ! diff -q go.mod.before go.mod > /dev/null; then
+            echo "::error title=go.mod not tidy::Run 'go mod tidy' locally and commit the changes."
+            diff go.mod.before go.mod || true
+            exit 1
+          fi
+          if [ -f go.sum.before ] && ! diff -q go.sum.before go.sum > /dev/null; then
+            echo "::error title=go.sum not tidy::Run 'go mod tidy' locally and commit the changes."
+            diff go.sum.before go.sum || true
+            exit 1
+          fi
+          rm -f go.mod.before go.sum.before
+          echo "go mod tidy is a no-op."
+
+      - name: staticcheck (informational; promotable to gating)
+        continue-on-error: true
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          staticcheck ./...
+
+  gcg-cth:
+    name: GCG ladder — cth/
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: cth
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: cth/go.mod
+
+      - name: gofmt -l (gating; cth/ scope)
+        run: |
+          BAD=$(gofmt -l .)
+          if [ -n "$BAD" ]; then
+            echo "::error title=gofmt findings::Run gofmt -w . inside cth/ to fix:"
+            echo "$BAD"
+            exit 1
+          fi
+          echo "gofmt clean."
+
+      - name: go vet (gating)
+        run: go vet ./...
+
+      - name: go test -race -count=1 (gating)
+        run: go test -race -count=1 ./...
+
+      - name: go mod tidy is no-op (gating)
+        run: |
+          cp go.mod go.mod.before
           [ -f go.sum ] && cp go.sum go.sum.before || true
           go mod tidy
           if ! diff -q go.mod.before go.mod > /dev/null; then
