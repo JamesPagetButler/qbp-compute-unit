@@ -10,26 +10,11 @@
 #   doc/wyrd-integration.md §5.1 (Cross-repo build verification).
 #   Issue: https://github.com/JamesPagetButler/qbp-compute-unit/issues/10 (D2).
 #
-# Auth gating (issue #15):
-#   The Wyrd repo (https://github.com/JamesPagetButler/wyrd) is private as of
-#   2026-05-07. The cross-repo checkout therefore requires the `WYRD_PAT`
-#   repository secret (a Personal Access Token with read access to
-#   JamesPagetButler/wyrd). Until issue #15 resolves —
-#     option A: make both repos public, OR
-#     option B: provision WYRD_PAT as a repo secret —
-#   the first step (preflight) reads the secret into an env var and emits
-#   a step output `has_pat=true|false`. All subsequent steps gate on that
-#   step output. When WYRD_PAT is unset, the preflight step prints a
-#   ::notice::, all real-work steps skip, and the job ends green.
-#   When #15 resolves and the secret is provisioned, the preflight emits
-#   has_pat=true and the canary activates automatically. No YAML edit
-#   needed at that point.
-#
-#   GitHub Actions context-availability rules:
-#   `secrets.*` is NOT allowed in `if` conditionals (job-level OR step-level)
-#   per the official docs. It is allowed in `env`, `with`, and `run`. The
-#   preflight pattern below converts the secret-presence check into a step
-#   output, which IS allowed in subsequent step-level `if` expressions.
+# Auth (issue #15 resolution, 2026-05-21):
+#   Both `qbp-compute-unit` and `wyrd` are public repositories. No PAT needed;
+#   `actions/checkout@v4` without `token:` works for public-repo reads.
+#   The earlier `WYRD_PAT`-gated preflight pattern (PR #22 + PR #30 hotfix)
+#   is retired here per the Option A decision on #15.
 
 name: Wyrd Compatibility Check
 
@@ -49,54 +34,34 @@ jobs:
       GOFLAGS: "-mod=mod"
 
     steps:
-      - name: Preflight — check WYRD_PAT availability
-        id: preflight
-        env:
-          WYRD_PAT: ${{ secrets.WYRD_PAT }}
-        run: |
-          if [ -n "$WYRD_PAT" ]; then
-            echo "has_pat=true" >> "$GITHUB_OUTPUT"
-            echo "WYRD_PAT is provisioned; canary will run."
-          else
-            echo "has_pat=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Wyrd Compatibility Check skipped::WYRD_PAT secret is not provisioned (issue #15 unresolved). The cross-repo canary requires read access to the Wyrd private repo. When #15 resolves and the secret is provisioned, this canary activates automatically."
-          fi
-
       - name: Checkout qbp-compute-unit (this repo)
-        if: steps.preflight.outputs.has_pat == 'true'
         uses: actions/checkout@v4
         with:
           path: qbp-compute-unit
 
-      - name: Checkout Wyrd (private — requires WYRD_PAT, see issue #15)
-        if: steps.preflight.outputs.has_pat == 'true'
+      - name: Checkout Wyrd (public; no token required as of #15 resolution)
         uses: actions/checkout@v4
         with:
           repository: JamesPagetButler/wyrd
-          token: ${{ secrets.WYRD_PAT }}
           path: wyrd
 
       - name: Set up Go (version pinned by Wyrd's go.mod)
-        if: steps.preflight.outputs.has_pat == 'true'
         uses: actions/setup-go@v5
         with:
           go-version-file: wyrd/go.mod
 
       - name: Pin Wyrd's emulator import to local checkout
-        if: steps.preflight.outputs.has_pat == 'true'
         run: |
           cd wyrd
           go mod edit -replace=github.com/JamesPagetButler/qbp-compute-unit/emulator=../qbp-compute-unit/emulator
           go mod tidy || true
 
       - name: Run Wyrd compute tests against local emulator
-        if: steps.preflight.outputs.has_pat == 'true'
         run: |
           cd wyrd
           go test -race -count=1 ./compute/...
 
       - name: Sanity build (catches unused imports / link breakage)
-        if: steps.preflight.outputs.has_pat == 'true'
         run: |
           cd wyrd
           go build ./...
