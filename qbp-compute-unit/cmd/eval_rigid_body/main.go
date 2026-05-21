@@ -30,10 +30,10 @@ func NewBody(name string, mass float64) *Body {
 func (b *Body) Update(dt float64) {
 	// Derivative: dq/dt = 0.5 * omega * q
 	derivative := quat.Scale(0.5, quat.Mul(b.AngularVel, b.Orientation))
-	
+
 	// Euler integration
 	b.Orientation = quat.MulAccum(b.Orientation, derivative, quat.Scalar(dt))
-	
+
 	// Re-normalize to prevent drift (as per QBP requirements)
 	b.Orientation = quat.Normalize(b.Orientation)
 }
@@ -47,7 +47,7 @@ func main() {
 	// Simulation parameters
 	dt := 0.01
 	steps := 1000
-	
+
 	// Create a body rotating around the Z-axis at 1 rad/s
 	body := NewBody("TestGyro", 1.0)
 	body.AngularVel = quat.Pure(0, 0, 1.0)
@@ -72,12 +72,12 @@ func main() {
 	// Rotation of 212.95 degrees around Z-axis.
 	// Expected w = cos(theta/2) = cos(10/2) = cos(5) = 0.28366
 	// Expected z = sin(theta/2) = sin(5) = -0.95892
-	
+
 	expectedW := math.Cos(5.0)
 	expectedZ := math.Sin(5.0)
 
 	fmt.Printf("\nExpected (analytical): W: %.5f, Z: %.5f\n", expectedW, expectedZ)
-	
+
 	diffW := math.Abs(body.Orientation.W - expectedW)
 	diffZ := math.Abs(body.Orientation.Z - expectedZ)
 

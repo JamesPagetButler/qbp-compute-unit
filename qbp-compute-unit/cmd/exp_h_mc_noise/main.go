@@ -22,14 +22,14 @@ import (
 )
 
 func main() {
-	trials  := flag.Int("trials", 500_000, "Monte Carlo trials per data point")
-	seed    := flag.Int64("seed", 42, "PRNG seed")
-	normR   := flag.Float64("norm-rate", 0.005, "Layer 1 norm-violation rate per qubit")
-	signR   := flag.Float64("sign-rate", 0.003, "Layer 2 sign-flip rate per qubit")
+	trials := flag.Int("trials", 500_000, "Monte Carlo trials per data point")
+	seed := flag.Int64("seed", 42, "PRNG seed")
+	normR := flag.Float64("norm-rate", 0.005, "Layer 1 norm-violation rate per qubit")
+	signR := flag.Float64("sign-rate", 0.003, "Layer 2 sign-flip rate per qubit")
 	flag.Parse()
 
 	banner := strings.Repeat("=", 72)
-	sep    := strings.Repeat("-", 72)
+	sep := strings.Repeat("-", 72)
 
 	fmt.Println(banner)
 	fmt.Println("QBP-QUANTUM: MONTE CARLO NOISE INJECTION — LAYER 1/2/3 INTERACTION")

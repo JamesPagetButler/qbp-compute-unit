@@ -30,11 +30,11 @@ func main() {
 
 	// ─── STEP 3: WORKTREE FORK (PLAYGROUND) ───────────────────────────────
 	fmt.Println("\n[PHASE: WORKTREE] Forking 'investigation/squam-loons'...")
-	
+
 	// Simulation of Worktree Investigation
 	hypo := &persona.Hypothesis{
-		ID:          "HYPO-LOON-01",
-		Description: "Population decline is an algebraic 'Seam' caused by contaminant-temperature resonance.",
+		ID:            "HYPO-LOON-01",
+		Description:   "Population decline is an algebraic 'Seam' caused by contaminant-temperature resonance.",
 		TargetAnchors: []string{"Mystery-Die-off-2005", "Mercury-Levels"},
 	}
 
@@ -50,7 +50,7 @@ func main() {
 	// ─── STEP 5: PULL REQUEST (NT_PROPOSAL) ───────────────────────────────
 	fmt.Println("\n[PHASE: PROPOSAL] Personas submitting PR-SQUAM-001...")
 	fmt.Println("Delta: +Node(Holographic-Ecological-Resonance) | +Edge(Climate-To-Loon)")
-	
+
 	// ─── STEP 6: JUDGMENT REVIEW ──────────────────────────────────────────
 	fmt.Println("\n[PHASE: JUDGMENT] Running Weighted Approval (0.70 threshold)...")
 	fmt.Println("Red Team (Claude): APPROVE (Safety & Ethical context clear)")

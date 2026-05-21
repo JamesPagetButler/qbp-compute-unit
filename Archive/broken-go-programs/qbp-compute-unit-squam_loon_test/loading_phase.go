@@ -18,7 +18,7 @@ func main() {
 	fmt.Println("Ingest -> NOAA-Northeast-Climate-1976-2026")
 	fmt.Println("Ingest -> NIACS-Forest-Hydrology-Baseline")
 	fmt.Println("Ingest -> LPC-Squam-Loon-Census")
-	
+
 	// Map data to Mean-Field (Quat8)
 	fmt.Println("[BMA:InfoCart] Mapping 1,452 data points to Hypergraph Locale: Squam-L3.")
 
@@ -33,8 +33,8 @@ func main() {
 
 	// ─── STEP 3: CROSS-DOMAIN HYPOTHESIS ──────────────────────────────────
 	hypo := &persona.Hypothesis{
-		ID:          "HYPO-SQUAM-Consilience",
-		Description: "The 2005 Seam was a 'Resolution Failure' where forest buffers failed to absorb high-frequency chemical vorticity.",
+		ID:            "HYPO-SQUAM-Consilience",
+		Description:   "The 2005 Seam was a 'Resolution Failure' where forest buffers failed to absorb high-frequency chemical vorticity.",
 		TargetAnchors: []string{"Forest-Buffer-Stability", "Mystery-Die-off-2005"},
 	}
 

@@ -8,6 +8,7 @@ import (
 )
 
 type Precision int
+
 const (
 	QW8 Precision = iota
 	QW16
@@ -46,7 +47,7 @@ func main() {
 		for i := 0; i < 100; i++ {
 			v1 := []float64{rand.NormFloat64(), rand.NormFloat64()}
 			v2 := []float64{rand.NormFloat64(), rand.NormFloat64()}
-			
+
 			// Reference float64
 			refDot := v1[0]*v2[0] + v1[1]*v2[1]
 			refNorm := math.Sqrt(v1[0]*v1[0]+v1[1]*v1[1]) * math.Sqrt(v2[0]*v2[0]+v2[1]*v2[1])
@@ -84,7 +85,9 @@ func main() {
 		signPass := 0
 		for i := 0; i < 1000; i++ {
 			val := (rand.Float64() - 0.5) * 2.0 // [-1, 1]
-			if math.Abs(val) < 0.01 { continue } // Skip near zero
+			if math.Abs(val) < 0.01 {
+				continue
+			} // Skip near zero
 			refSign := val > 0
 			qVal := Quantize(val, p)
 			qSign := qVal > 0

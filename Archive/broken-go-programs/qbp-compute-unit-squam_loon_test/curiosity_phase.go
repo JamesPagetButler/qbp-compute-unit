@@ -14,7 +14,7 @@ func main() {
 
 	// ─── STEP 1: BACKGROUND SCOUTING (While Beekeeper is Away) ────────────
 	fmt.Println("[BMA:Background] Feynman is scanning ArXiv feed (QW8 Low-Res Scan)...")
-	
+
 	// Simulation of finding a relevant paper
 	paperTitle := "Observations of Gravitational Wave Asymmetry in BH Mergers (DOI:10.1038/s41550)"
 	resonance := 0.92 // 92% resonance with PRED-holographic-boundary-gravity
@@ -24,10 +24,10 @@ func main() {
 
 	// ─── STEP 2: CREATE THE NT_SIGNAL NODE ────────────────────────────────
 	fmt.Println("[BMA:Background] Creating NT_SIGNAL node for 'QBP-Gravity-Bridge'...")
-	
+
 	signal := struct {
-		ID       string
-		Persona  string
+		ID        string
+		Persona   string
 		Resonance float64
 		Rationale string
 	}{

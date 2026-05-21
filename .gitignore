@@ -10,3 +10,11 @@ cmd/wasm-visualizer/qbp.wasm
 # Compiled CLI binaries (per-cmd, by exact name — leaves source dirs tracked)
 cth/bin/
 cmd/hw-eval/hw-eval
+
+# Local worktrees (created via `git worktree add worktrees/<name> ...`).
+# Untracked by policy — worktrees are forensic audit material per
+# feedback_branch_cleanup.md (no pre-stable cleanup), not committable
+# content. The single committed file under this path (worktrees/walk-
+# infrastructure/pkg/gap/gap_gated.go, removed in v0.3 prereqs) was an
+# initial-commit-era artifact pre-dating the worktrees pattern.
+worktrees/

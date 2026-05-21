@@ -77,7 +77,9 @@ func main() {
 	for hop := 0; hop < 3; hop++ {
 		nextActivation := make(map[int]float64)
 		for nodeID, energy := range activation {
-			if energy < 0.01 { continue }
+			if energy < 0.01 {
+				continue
+			}
 			share := energy / float64(len(nodes[nodeID].Edges)+1)
 			for _, neighbor := range nodes[nodeID].Edges {
 				nextActivation[neighbor] += share
@@ -100,7 +102,9 @@ func main() {
 	// Evaluate
 	matches := 0
 	checkK := topK
-	if len(saResults) < checkK { checkK = len(saResults) }
+	if len(saResults) < checkK {
+		checkK = len(saResults)
+	}
 	for i := 0; i < checkK; i++ {
 		if groundTruth[saResults[i].ID] {
 			matches++

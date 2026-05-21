@@ -14,10 +14,10 @@ func main() {
 	// ─── 1. Define Ground Truth (Subset of CTH v5.1) ──────────────────────
 	ground := &persona.GroundTruth{
 		Anchors: []string{
-			"PROOF-su2-lie",   // Quantum: su(2) Lie algebra
-			"PROOF-cl6",       // Quantum: Cl(6) SM match
-			"MEAS-alpha",      // Interaction: Coupling at M_Z
-			"MEAS-hubble-tension", // Cosmo: H0 discrepancy
+			"PROOF-su2-lie",             // Quantum: su(2) Lie algebra
+			"PROOF-cl6",                 // Quantum: Cl(6) SM match
+			"MEAS-alpha",                // Interaction: Coupling at M_Z
+			"MEAS-hubble-tension",       // Cosmo: H0 discrepancy
 			"PRED-H-equals-Mdot-over-M", // Cosmo: Bondi accretion
 		},
 		Gaps: []string{
@@ -36,9 +36,9 @@ func main() {
 		ID:          "HYP-001",
 		Description: "Coherent QBP-native physics bridge from su(2) to H=M_dot/M, with holographic gravity.",
 		TargetAnchors: []string{
-			"PROOF-su2-lie", 
-			"PRED-H-equals-Mdot-over-M", 
-			"PROOF-stelle-no-linear", // This is a bridge target
+			"PROOF-su2-lie",
+			"PRED-H-equals-Mdot-over-M",
+			"PROOF-stelle-no-linear",            // This is a bridge target
 			"PRED-holographic-boundary-gravity", // The proposed resolution
 		},
 	}

@@ -20,7 +20,7 @@ func main() {
 	// ─── STEP 2: RE-ENTRY PROTOCOL (Addendum 8.4) ─────────────────────────
 	fmt.Println("\n[SYSTEM] Instance B detected reconnecting to Backbone...")
 	fmt.Println("[SYSTEM] Triggering 'Herschel Check' (Process Compliance)...")
-	
+
 	// Calculate Epistemic Reynolds Number (Re_e)
 	re_e := 0.82 // High turbulence detected
 	fmt.Printf("[SYSTEM] Epistemic Reynolds Number (Re_e): %.2f (THRESHOLD: 0.50)\n", re_e)
@@ -36,12 +36,12 @@ func main() {
 
 	// The Judge Collective Review (Cross-Instance)
 	fmt.Println("\n[PHASE: JUDGMENT] Interrogating Instance B's Stance Resonance...")
-	
+
 	// Simulated Weighted Approval Calculation
 	// Weights: RedTeam(0.50), Furey(0.25), Feynman(0.25)
 	// Scores from B's proposal: RedTeam(APPROVE: 1.0), Furey(APPROVE: 1.0), Feynman(APPROVE: 1.0)
 	weightedScore := (0.50 * 1.0) + (0.25 * 1.0) + (0.25 * 1.0)
-	
+
 	fmt.Printf("[PHASE: JUDGMENT] Judge Collective Weighted Score: %.2f (THRESHOLD: 0.70)\n", weightedScore)
 
 	// ─── STEP 5: FINAL SUTURE (Addendum 1.3) ──────────────────────────────

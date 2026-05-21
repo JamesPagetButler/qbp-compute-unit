@@ -46,14 +46,14 @@ import (
 const calibIters = 500 // ops per width in the empirical calibration sweep
 
 func main() {
-	cells       := flag.Int("cells", 2, "number of Fano cells in the scheduler")
+	cells := flag.Int("cells", 2, "number of Fano cells in the scheduler")
 	nativeWidth := flag.Int("native-width", 64, "native node width in bits (8/16/32/64/128)")
 	flag.Parse()
 
 	native := bitsToWidth(*nativeWidth)
 
 	banner := strings.Repeat("=", 72)
-	sep    := strings.Repeat("─", 72)
+	sep := strings.Repeat("─", 72)
 
 	fmt.Println(banner)
 	fmt.Println("QBP: SCHEDULER → EMULATOR INTEGRATION TEST")
@@ -61,7 +61,7 @@ func main() {
 	fmt.Println(banner)
 	fmt.Printf("\nScheduler: %d Fano cell(s), native %s\n\n", *cells, native)
 
-	engine   := emu.NewEngine(emu.DefaultPipelineConfig())
+	engine := emu.NewEngine(emu.DefaultPipelineConfig())
 	rotation := quat.Normalize(quat.New(math.Cos(math.Pi/4), 0, 0, math.Sin(math.Pi/4)))
 	engine.RF.LoadQuat(4, rotation) // rs2: rotation applied at every QMUL step
 
@@ -81,17 +81,17 @@ func main() {
 	// Step 2 checks pipeline connectivity; Step 5 reports the calibration gap.
 	tasks := []*mesh.Task{
 		// Model selects W8:  MaxDepth(W8, 0.5) = 0.5/6.2e-5 ≈ 8000 >= 10 ✓
-		{ID: "surface",      CompositionDepth: 10,    DriftTolerance: 0.5},
+		{ID: "surface", CompositionDepth: 10, DriftTolerance: 0.5},
 		// Model selects W16: MaxDepth(W16, 1e-6) = 1e-6/9.3e-10 ≈ 1075 >= 1000 ✓
 		// Also used in the reallocation test (Step 3) — depth chosen so upgrade
 		// to W32 is triggered: MaxDepth(W16, 5e-7) = 537 < 1000 → W32 required.
-		{ID: "realloc-demo", CompositionDepth: 1000,  DriftTolerance: 1e-6},
+		{ID: "realloc-demo", CompositionDepth: 1000, DriftTolerance: 1e-6},
 		// Model selects W32: MaxDepth(W32, 1e-11) = 1e-11/1.42e-14 ≈ 704 < 1000;
 		//                    MaxDepth(W64, 1e-11) ≈ 2e20 >= 1000 ✓
 		// Wait — corrected: MaxDepth(W32, 1e-9) ≈ 70K >= 5000 → W32 selected.
-		{ID: "physics",      CompositionDepth: 5000,  DriftTolerance: 1e-9},
+		{ID: "physics", CompositionDepth: 5000, DriftTolerance: 1e-9},
 		// Model selects W64: MaxDepth(W64, 1e-9) >> 100K ✓
-		{ID: "precision",    CompositionDepth: 100000, DriftTolerance: 1e-9},
+		{ID: "precision", CompositionDepth: 100000, DriftTolerance: 1e-9},
 	}
 
 	fmt.Printf("  %-14s  %10s  %10s  %14s  %6s  %s\n",
@@ -128,8 +128,8 @@ func main() {
 			continue
 		}
 
-		ctx  := t.Context()
-		wc   := emu.WidthToCode(ctx.Width)
+		ctx := t.Context()
+		wc := emu.WidthToCode(ctx.Width)
 		inst := emu.Instruction{Op: emu.OpQMUL, Width: wc, Rd: 0, Rs1: 0, Rs2: 4}
 
 		runIters := int64(500)
@@ -158,14 +158,14 @@ func main() {
 		// Pipeline validity checks: cycles and non-zero drift.
 		expectedCycles := runIters * int64(engine.Config.QMULCycles[ctx.Width])
 		cyclesOK := engine.Cycles == expectedCycles
-		driftOK  := wd.CumulativeNormDrift > 0
+		driftOK := wd.CumulativeNormDrift > 0
 
 		if !cyclesOK || !driftOK {
 			pipelinePass = false
 		}
 
-		driftRate   := wd.CumulativeNormDrift / float64(runIters)
-		projDrift   := driftRate * float64(t.CompositionDepth)
+		driftRate := wd.CumulativeNormDrift / float64(runIters)
+		projDrift := driftRate * float64(t.CompositionDepth)
 		modelPasses := projDrift <= t.DriftTolerance
 
 		fmt.Printf("  %-14s  ctx.Width=%-14s  iters=%d\n",
@@ -222,9 +222,9 @@ func main() {
 					fmt.Printf("  FAIL: PromoteWidth: %v\n\n", err)
 					reallocPass = false
 				} else {
-					stalls        := engine.Cycles - stallsBefore
+					stalls := engine.Cycles - stallsBefore
 					expectedStall := int64(int(advice.AdvisedWidth)/int(advice.CurrentWidth) - 1)
-					stallOK       := stalls == expectedStall
+					stallOK := stalls == expectedStall
 					fmt.Printf("  PromoteWidth stall: got %d cycle(s), expected %d  → %s\n",
 						stalls, expectedStall, passStr(stallOK))
 					if !stallOK {
@@ -232,7 +232,7 @@ func main() {
 					}
 
 					// Continue execution at the upgraded width.
-					upgWC   := emu.WidthToCode(advice.AdvisedWidth)
+					upgWC := emu.WidthToCode(advice.AdvisedWidth)
 					upgInst := emu.Instruction{Op: emu.OpQMUL, Width: upgWC, Rd: 0, Rs1: 0, Rs2: 4}
 					engine.RF.LoadQuat(0, quat.Normalize(quat.New(1, 2, 3, 4)))
 					wdUpg := watchdog.New()
@@ -241,7 +241,7 @@ func main() {
 						engine.Execute(upgInst) //nolint:errcheck
 						wdUpg.ObserveMul(engine.RF.ReadQuat(0))
 					}
-					upgRate        := wdUpg.CumulativeNormDrift / 500.0
+					upgRate := wdUpg.CumulativeNormDrift / 500.0
 					driftDecreased := upgRate < baseRate
 					fmt.Printf("  Post-upgrade drift/op: %.3e  (pre %.3e)  → %s\n\n",
 						upgRate, baseRate, passStr(driftDecreased))
@@ -267,8 +267,8 @@ func main() {
 
 	discrimPass := true
 	var prevRate float64
-	prevName    := ""
-	driftW64    := empirical[qword.W64]
+	prevName := ""
+	driftW64 := empirical[qword.W64]
 
 	for _, entry := range []struct {
 		wc   emu.WidthCode
@@ -278,9 +278,9 @@ func main() {
 		{emu.WC64, "W64", qword.W64},
 		{emu.WC32, "W32", qword.W32},
 		{emu.WC16, "W16", qword.W16},
-		{emu.WC8,  "W8",  qword.W8},
+		{emu.WC8, "W8", qword.W8},
 	} {
-		rate     := empirical[entry.w]
+		rate := empirical[entry.w]
 		maxDepth := qword.MaxCompositionDepth(entry.w, 1e-9)
 		ratioStr := "baseline"
 		if entry.wc != emu.WC64 && driftW64 > 0 {
@@ -316,17 +316,17 @@ func main() {
 		w   qword.Width
 		eps float64
 	}{
-		{qword.W8,   1.0 / 127.0},
-		{qword.W16,  1.0 / 32767.0},
-		{qword.W32,  1.19e-7},
-		{qword.W64,  2.22e-16},
+		{qword.W8, 1.0 / 127.0},
+		{qword.W16, 1.0 / 32767.0},
+		{qword.W32, 1.19e-7},
+		{qword.W64, 2.22e-16},
 		{qword.W128, 9.63e-35},
 	}
 	for _, cw := range calibWidths {
-		emp       := empirical[cw.w]
+		emp := empirical[cw.w]
 		modelRate := cw.eps * cw.eps
-		ratioStr  := "—"
-		finding   := "calibrated"
+		ratioStr := "—"
+		finding := "calibrated"
 		if emp > 0 {
 			r := modelRate / emp
 			ratioStr = fmt.Sprintf("%.2e", r)
@@ -364,7 +364,7 @@ func main() {
 // to set task tolerances that are achievable at the measured drift rates.
 func measureEmpiricalDrift(engine *emu.Engine, rotation quat.Quat) map[qword.Width]float64 {
 	result := make(map[qword.Width]float64)
-	q0     := quat.Normalize(quat.New(1, 2, 3, 4))
+	q0 := quat.Normalize(quat.New(1, 2, 3, 4))
 
 	engine.RF.LoadQuat(4, rotation)
 	for _, entry := range []struct {
