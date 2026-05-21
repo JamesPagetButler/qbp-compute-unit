@@ -1,3 +1,5 @@
+//go:build never
+
 // Command exp_i_sched_emu is the scheduler → emulator integration test.
 //
 // It exercises the full pipeline that the width-aware execution work closed:
