@@ -2,7 +2,7 @@
 
 This directory holds Go programs that have been broken since the initial commit (`68cc13e`, 2026-04 era) and that referenced APIs that never existed in the corresponding packages. They are preserved here as forensic audit material per `feedback_branch_cleanup.md` (no pre-stable deletion of historical artifacts) and to honor the experimental authoring lineage.
 
-Each program carries a `//go:build never` build tag at the top of every `.go` file, which prevents the Go toolchain from compiling them while preserving syntax highlighting + readability for future forensic review. The directory itself is NOT a Go package from any module's perspective because the build-tagged files are filtered out before package discovery.
+Each program carries a `.go.disabled extension` build tag at the top of every `.go` file, which prevents the Go toolchain from compiling them while preserving syntax highlighting + readability for future forensic review. The directory itself is NOT a Go package from any module's perspective because the build-tagged files are filtered out before package discovery.
 
 ## What's here + why each is broken
 
@@ -53,8 +53,8 @@ Files retained for:
 
 If a future contributor wants to revive one of these:
 
-**For `qbp-compute-unit-exp_i_sched_emu/`:** start by reading the header comments which spec the four missing APIs (`mesh.Task.Context()`, `emu.WidthToCode`, `mesh.CheckReallocation`, `Engine.PromoteWidth`). Decide whether the scheduler subsystem should be revived or whether its claims should be folded into a different design. Move the file back to `qbp-compute-unit/cmd/exp_i_sched_emu/` and remove the `//go:build never` tag; implement the missing APIs in `mesh/` + `emu/`.
+**For `qbp-compute-unit-exp_i_sched_emu/`:** start by reading the header comments which spec the four missing APIs (`mesh.Task.Context()`, `emu.WidthToCode`, `mesh.CheckReallocation`, `Engine.PromoteWidth`). Decide whether the scheduler subsystem should be revived or whether its claims should be folded into a different design. Move the file back to `qbp-compute-unit/cmd/exp_i_sched_emu/` and remove the `.go.disabled extension` tag; implement the missing APIs in `mesh/` + `emu/`.
 
-**For `qbp-compute-unit-squam_loon_test/`:** split each file into its own `qbp-compute-unit/cmd/squam-loon-<name>/` (or similar) subdirectory. Remove the `//go:build never` tag from each file. Each file would compile and run independently as a cognitive-test demonstration program.
+**For `qbp-compute-unit-squam_loon_test/`:** split each file into its own `qbp-compute-unit/cmd/squam-loon-<name>/` (or similar) subdirectory. Remove the `.go.disabled extension` tag from each file. Each file would compile and run independently as a cognitive-test demonstration program.
 
 Neither program is currently a federation work-item; both are forensic-only at this archive.
