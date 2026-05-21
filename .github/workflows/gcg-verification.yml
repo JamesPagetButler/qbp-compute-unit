@@ -9,27 +9,18 @@
 # ============================================================
 #
 #   v0.1 (PR #32, 2026-05-13):  emulator/
-#   v0.2 (this PR, 2026-05-18): + cth/
+#   v0.2 (PR #46, 2026-05-18):  + cth/
+#   v0.3 (this PR, 2026-05-20): + qbp-compute-unit/ + cmd/hw-eval/ + . (root)
 #
-#   Deferred (each gated on its own housekeeping issue clearing first):
-#     - qbp-compute-unit/   — blocked by cmd/exp_i_sched_emu/main.go
-#                             vet failure (`t.Context undefined`); 16-file
-#                             gofmt backlog in qbp-compute-unit/cmd/ that
-#                             PR #43 missed; file as housekeeping
-#     - cmd/visualizer/     — blocked by absolute-path `replace kaiju`
-#                             directive that won't resolve in CI (#44)
-#     - cmd/wasm-visualizer/ — blocked by `replace emulator => ../../`
-#                             local-path directive (#44)
-#     - cmd/hw-eval/        — blocked by pre-existing `go mod tidy`
-#                             mutation (indirect → direct correction)
-#     - . (root module)     — blocked by rogue legacy file
-#                             worktrees/walk-infrastructure/pkg/gap/
-#                             gap_gated.go (initial-commit era; not
-#                             in .gitignore)
+#   Deferred to v0.4 (gated on #44 replace-directive cleanup):
+#     - cmd/visualizer/      — `replace kaiju => /home/prime/...` absolute
+#                              path that won't resolve in CI (#44)
+#     - cmd/wasm-visualizer/ — `replace ... => ../../emulator` local-path
+#                              directive that needs proper Go-module pinning
+#                              for CI (#44)
 #
-# Each deferred module gets its own GCG job when its blocker clears.
-# Modules listed above are NOT gated by CI today; they're tracked at
-# the housekeeping issue cited.
+# Federation CI surface after this PR: 5 of 7 Go modules gated.
+# v0.4 target (after #44 closes): 7 of 7.
 #
 # ============================================================
 # Four gating gates + one informational (per gated module)
@@ -130,6 +121,189 @@ jobs:
           BAD=$(gofmt -l .)
           if [ -n "$BAD" ]; then
             echo "::error title=gofmt findings::Run gofmt -w . inside cth/ to fix:"
+            echo "$BAD"
+            exit 1
+          fi
+          echo "gofmt clean."
+
+      - name: go vet (gating)
+        run: go vet ./...
+
+      - name: go test -race -count=1 (gating)
+        run: go test -race -count=1 ./...
+
+      - name: go mod tidy is no-op (gating)
+        run: |
+          cp go.mod go.mod.before
+          [ -f go.sum ] && cp go.sum go.sum.before || true
+          go mod tidy
+          if ! diff -q go.mod.before go.mod > /dev/null; then
+            echo "::error title=go.mod not tidy::Run 'go mod tidy' locally and commit the changes."
+            diff go.mod.before go.mod || true
+            exit 1
+          fi
+          if [ -f go.sum.before ] && ! diff -q go.sum.before go.sum > /dev/null; then
+            echo "::error title=go.sum not tidy::Run 'go mod tidy' locally and commit the changes."
+            diff go.sum.before go.sum || true
+            exit 1
+          fi
+          rm -f go.mod.before go.sum.before
+          echo "go mod tidy is a no-op."
+
+      - name: staticcheck (informational; promotable to gating)
+        continue-on-error: true
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          staticcheck ./...
+
+  gcg-qbp-compute-unit:
+    name: GCG ladder — qbp-compute-unit/
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: qbp-compute-unit
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: qbp-compute-unit/go.mod
+
+      - name: gofmt -l (gating; qbp-compute-unit/ scope)
+        run: |
+          BAD=$(gofmt -l .)
+          if [ -n "$BAD" ]; then
+            echo "::error title=gofmt findings::Run gofmt -w . inside qbp-compute-unit/ to fix:"
+            echo "$BAD"
+            exit 1
+          fi
+          echo "gofmt clean."
+
+      - name: go vet (gating)
+        run: go vet ./...
+
+      - name: go test -race -count=1 (gating)
+        run: go test -race -count=1 ./...
+
+      - name: go mod tidy is no-op (gating)
+        run: |
+          cp go.mod go.mod.before
+          [ -f go.sum ] && cp go.sum go.sum.before || true
+          go mod tidy
+          if ! diff -q go.mod.before go.mod > /dev/null; then
+            echo "::error title=go.mod not tidy::Run 'go mod tidy' locally and commit the changes."
+            diff go.mod.before go.mod || true
+            exit 1
+          fi
+          if [ -f go.sum.before ] && ! diff -q go.sum.before go.sum > /dev/null; then
+            echo "::error title=go.sum not tidy::Run 'go mod tidy' locally and commit the changes."
+            diff go.sum.before go.sum || true
+            exit 1
+          fi
+          rm -f go.mod.before go.sum.before
+          echo "go mod tidy is a no-op."
+
+      - name: staticcheck (informational; promotable to gating)
+        continue-on-error: true
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          staticcheck ./...
+
+  gcg-cmd-hw-eval:
+    name: GCG ladder — cmd/hw-eval/
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: cmd/hw-eval
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: cmd/hw-eval/go.mod
+
+      - name: gofmt -l (gating; cmd/hw-eval/ scope)
+        run: |
+          BAD=$(gofmt -l .)
+          if [ -n "$BAD" ]; then
+            echo "::error title=gofmt findings::Run gofmt -w . inside cmd/hw-eval/ to fix:"
+            echo "$BAD"
+            exit 1
+          fi
+          echo "gofmt clean."
+
+      - name: go vet (gating)
+        run: go vet ./...
+
+      - name: go test -race -count=1 (gating)
+        run: go test -race -count=1 ./...
+
+      - name: go mod tidy is no-op (gating)
+        run: |
+          cp go.mod go.mod.before
+          [ -f go.sum ] && cp go.sum go.sum.before || true
+          go mod tidy
+          if ! diff -q go.mod.before go.mod > /dev/null; then
+            echo "::error title=go.mod not tidy::Run 'go mod tidy' locally and commit the changes."
+            diff go.mod.before go.mod || true
+            exit 1
+          fi
+          if [ -f go.sum.before ] && ! diff -q go.sum.before go.sum > /dev/null; then
+            echo "::error title=go.sum not tidy::Run 'go mod tidy' locally and commit the changes."
+            diff go.sum.before go.sum || true
+            exit 1
+          fi
+          rm -f go.mod.before go.sum.before
+          echo "go mod tidy is a no-op."
+
+      - name: staticcheck (informational; promotable to gating)
+        continue-on-error: true
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          staticcheck ./...
+
+  gcg-root:
+    name: GCG ladder — root module
+    runs-on: ubuntu-latest
+
+    # Root module covers the four non-submodule cmd/ programs:
+    # cmd/{benchmark-qbp,lean2rom,locale-probe,verify-coords}/. Other
+    # subdirectories (emulator/, cth/, qbp-compute-unit/, cmd/{hw-eval,
+    # visualizer,wasm-visualizer}/) are separate Go modules with their
+    # own go.mod and their own gcg-* jobs above (or deferred to v0.4
+    # per #44).
+    #
+    # gofmt is module-aware via `go list -f '{{.Dir}}' ./... | xargs
+    # gofmt -l`, which only emits the directories of packages in the
+    # root module's package graph. This avoids descending into nested
+    # modules (which are separately gated above) and avoids descending
+    # into Archive/broken-go-programs/ where files carry `//go:build
+    # never` build tags that filter them out before package discovery.
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: gofmt -l (gating; module-aware, root scope)
+        run: |
+          DIRS=$(go list -f '{{.Dir}}' ./...)
+          if [ -z "$DIRS" ]; then
+            echo "No Go packages in root module; skipping gofmt check."
+            exit 0
+          fi
+          BAD=$(echo "$DIRS" | xargs gofmt -l)
+          if [ -n "$BAD" ]; then
+            echo "::error title=gofmt findings::Run gofmt -w on these files:"
             echo "$BAD"
             exit 1
           fi
