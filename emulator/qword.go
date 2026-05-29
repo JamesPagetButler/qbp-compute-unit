@@ -68,17 +68,54 @@ type csr struct {
 	psel  int
 }
 
+// LocaleRef references the working-tree location where a Seam was detected.
+// Per A11 Locale primitive (inter/theory/BMA-Theory-Addendum-11_0).
+// Consumer reconstructs source-attestation by joining against the
+// working-tree node table. Empty values are acceptable for bench harnesses
+// or substrate-only tenants that do not maintain a per-Seam working-tree
+// representation.
+type LocaleRef struct {
+	WorkingTreeNodeID string // node ID in the consumer's working-tree
+	Path              string // working-tree-relative path (e.g., "subconscious-l/qw8-register-3")
+	RegisterPosition  uint8  // QW8 register file slot (0..K); substrate-implementation-defined at v0.2
+}
+
+// SeamEvent describes a peripheral-register detection that warrants
+// foveal attention. Emitted from inside the peripheral goroutine;
+// delivered to the registered OnSeam callback.
+//
+// v0.1 fields: Q, V, Residue, Threshold, PrecisionTier, Cycle.
+// v0.2 additions (this PR): SeamID, Locale, Magnitude, DetectionContext.
+//
+// Per doc/design/m1-gearbox.md §2.1 + §5.4a.
+type SeamEvent struct {
+	// v0.1 fields
+	Q             QW8     // operand at peripheral precision
+	V             QW8     // residue vector at peripheral precision
+	Residue       float32 // |Q · V · Q* − V| at peripheral precision
+	Threshold     float32 // active τ at fire time (K · δ · ‖V‖)
+	PrecisionTier Width   // peripheral width when the Seam fired
+	Cycle         uint64  // cpu.go canonical accelerator cycle
+
+	// v0.2 additions (closes #38 + #5.4a SeamID deferral)
+	SeamID           uint64    // atomic-incremented per detection; same-cycle disambiguator
+	Locale           LocaleRef // A11 source-attestation
+	Magnitude        float32   // [0.0, 1.0] normalized surprise; Residue/Threshold ratio
+	DetectionContext []byte    // opaque payload; algebraic state at detection moment
+}
+
 // Gearbox manages the precision context and zero-allocation scratchpads.
 //
 // M1+ concurrency model: mu guards all CSR reads/writes and the peripheral
-// lifecycle (added in m1.3). Fast-path methods (QMul64, QMul128, etc.) acquire
-// mu.RLock for AMODE validation. QMulHighPrec acquires mu.Lock (snapshot/restore
-// of ActiveWidth). The ISA execution path (cpu.go — Mul/Conj/Rotate/NormSq) does
-// not acquire mu because it runs single-threaded with respect to the Gearbox;
-// the peripheral goroutine (m1.3) does not call the big.Float path.
+// lifecycle. Fast-path methods (QMul64, QMul128, etc.) acquire mu.RLock.
+// QMulHighPrec acquires mu.Lock (snapshot/restore of ActiveWidth).
+// The ISA execution path (cpu.go — Mul/Conj/Rotate/NormSq) does not
+// acquire mu because it runs single-threaded with respect to the Gearbox;
+// the peripheral goroutine does not call the big.Float path.
 type Gearbox struct {
 	mu             sync.RWMutex
 	csr            csr
+	peripheral     *peripheralState // nil until StartPeripheral; guarded by mu
 	ActiveWidth    Width
 	t1, t2, t3, t4 *big.Float
 	rW, rX, rY, rZ *big.Float // Temp result scratchpads
