@@ -46,6 +46,93 @@ import (
 // detect this condition.
 var ErrTierUnsupported = errors.New("tier not yet supported in Crawl phase")
 
+// CSR sentinel errors returned by SetAMODE / SetBSEL / SetPSEL.
+var (
+	// ErrInvalidAMODE is returned when SetAMODE is called with a value
+	// that is not a recognised mode code. Currently 0 (quaternion) is
+	// the only valid mode; 1 (octonion) is Xqbpoct-gated and reserved
+	// until M1.5+.
+	ErrInvalidAMODE = errors.New("AMODE: unrecognised mode code")
+
+	// ErrAMODEReserved is returned when SetAMODE is called with a value
+	// ≥ 2 (reserved encoding space, not yet assigned).
+	ErrAMODEReserved = errors.New("AMODE: reserved encoding — not valid in this firmware")
+
+	// ErrInvalidBSEL is returned when SetBSEL is called with a value
+	// outside the defined basis-selection range.
+	ErrInvalidBSEL = errors.New("BSEL: invalid basis-selection code")
+
+	// ErrInvalidPSEL is returned when SetPSEL is called with a value
+	// outside the defined precision-selection range.
+	ErrInvalidPSEL = errors.New("PSEL: invalid precision-selection code")
+)
+
+// SetAMODE sets the Algebra MODE CSR register. Currently only mode 0
+// (quaternion) is valid; mode 1 is reserved for the Xqbpoct extension
+// (M1.5+); mode ≥ 2 is reserved. Returns ErrAMODEReserved for ≥ 2,
+// ErrInvalidAMODE for 1 (not yet supported). Thread-safe.
+func (g *Gearbox) SetAMODE(mode int) error {
+	switch {
+	case mode == 0:
+		g.mu.Lock()
+		g.csr.amode = mode
+		g.mu.Unlock()
+		return nil
+	case mode == 1:
+		return fmt.Errorf("SetAMODE mode=1 (octonion / Xqbpoct): %w", ErrInvalidAMODE)
+	default:
+		return fmt.Errorf("SetAMODE mode=%d: %w", mode, ErrAMODEReserved)
+	}
+}
+
+// AMODE returns the current Algebra MODE CSR register value. Thread-safe.
+func (g *Gearbox) AMODE() int {
+	g.mu.RLock()
+	v := g.csr.amode
+	g.mu.RUnlock()
+	return v
+}
+
+// SetBSEL sets the Basis SELection CSR register. Only 0 is valid at
+// Crawl phase. Returns ErrInvalidBSEL for any other value.
+func (g *Gearbox) SetBSEL(sel int) error {
+	if sel != 0 {
+		return fmt.Errorf("SetBSEL sel=%d: %w", sel, ErrInvalidBSEL)
+	}
+	g.mu.Lock()
+	g.csr.bsel = sel
+	g.mu.Unlock()
+	return nil
+}
+
+// BSEL returns the current Basis SELection CSR register value.
+func (g *Gearbox) BSEL() int {
+	g.mu.RLock()
+	v := g.csr.bsel
+	g.mu.RUnlock()
+	return v
+}
+
+// SetPSEL sets the Precision SELection CSR register. Only 0 is valid
+// at Crawl phase. Returns ErrInvalidPSEL for any other value.
+func (g *Gearbox) SetPSEL(sel int) error {
+	if sel != 0 {
+		return fmt.Errorf("SetPSEL sel=%d: %w", sel, ErrInvalidPSEL)
+	}
+	g.mu.Lock()
+	g.csr.psel = sel
+	g.mu.Unlock()
+	return nil
+}
+
+// PSEL returns the current Precision SELection CSR register value.
+func (g *Gearbox) PSEL() int {
+	g.mu.RLock()
+	v := g.csr.psel
+	g.mu.RUnlock()
+	return v
+}
+
 // SedenionResult bundles a sedenion multiply result with the
 // zero-divisor diagnostic flag. Sedenions admit 42 cross-copy basis-sum
 // zero-divisors; SMul64 reports when an operation hits one of them so
@@ -68,8 +155,11 @@ type SedenionResult struct {
 
 // QMul64 computes the Hamilton product a · b at QW64 precision. On
 // AVX-FMA hosts, dispatches to qmul64AVX. On other hosts, dispatches
-// to the scalar fallback. This is a hot path: zero-allocation.
+// to the scalar fallback. Hot path: zero-allocation. Acquires mu.RLock
+// to guard against concurrent CSR mutation (M1+ concurrency model).
 func (g *Gearbox) QMul64(a, b [4]float64) [4]float64 {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
 	var dst QW64
 	qa := QW64(a)
 	qb := QW64(b)
@@ -80,6 +170,8 @@ func (g *Gearbox) QMul64(a, b [4]float64) [4]float64 {
 // QAdd64 computes the component-wise sum a + b at QW64 precision.
 // Hot path: zero-allocation.
 func (g *Gearbox) QAdd64(a, b [4]float64) [4]float64 {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
 	var dst QW64
 	qa := QW64(a)
 	qb := QW64(b)
@@ -90,6 +182,8 @@ func (g *Gearbox) QAdd64(a, b [4]float64) [4]float64 {
 // QRot64 applies unit quaternion q to vector v as q · v · q* at QW64
 // precision. Hot path: zero-allocation.
 func (g *Gearbox) QRot64(q, v [4]float64) [4]float64 {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
 	var dst QW64
 	qq := QW64(q)
 	qv := QW64(v)
@@ -100,6 +194,8 @@ func (g *Gearbox) QRot64(q, v [4]float64) [4]float64 {
 // QConj64 computes the conjugate a* at QW64 precision. Hot path:
 // zero-allocation.
 func (g *Gearbox) QConj64(a [4]float64) [4]float64 {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
 	var dst QW64
 	qa := QW64(a)
 	qconj64(&dst, &qa)
@@ -109,6 +205,8 @@ func (g *Gearbox) QConj64(a [4]float64) [4]float64 {
 // QNorm64 computes the norm-squared (dot product with self) of a at
 // QW64 precision. Hot path: zero-allocation.
 func (g *Gearbox) QNorm64(a [4]float64) float64 {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
 	var dst float64
 	qa := QW64(a)
 	qnorm64(&dst, &qa)
@@ -121,6 +219,8 @@ func (g *Gearbox) QNorm64(a [4]float64) float64 {
 // components. This layout is internal to the QW128 representation and
 // matches qmath_128_amd64.s. Hot path: zero-allocation.
 func (g *Gearbox) QMul128(a, b [8]float64) [8]float64 {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
 	var dst QW128
 	qa := QW128(a)
 	qb := QW128(b)
@@ -131,6 +231,8 @@ func (g *Gearbox) QMul128(a, b [8]float64) [8]float64 {
 // QAdd128 computes the component-wise double-double sum a + b at QW128
 // precision. Layout matches QMul128. Hot path: zero-allocation.
 func (g *Gearbox) QAdd128(a, b [8]float64) [8]float64 {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
 	var dst QW128
 	qa := QW128(a)
 	qb := QW128(b)
@@ -141,6 +243,8 @@ func (g *Gearbox) QAdd128(a, b [8]float64) [8]float64 {
 // QRot128 applies unit quaternion q to vector v as q · v · q* at
 // QW128 precision. Hot path: zero-allocation.
 func (g *Gearbox) QRot128(q, v [8]float64) [8]float64 {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
 	var dst QW128
 	qq := QW128(q)
 	qv := QW128(v)
@@ -151,6 +255,8 @@ func (g *Gearbox) QRot128(q, v [8]float64) [8]float64 {
 // QConj128 computes the conjugate a* at QW128 precision. Hot path:
 // zero-allocation.
 func (g *Gearbox) QConj128(a [8]float64) [8]float64 {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
 	var dst QW128
 	qa := QW128(a)
 	qconj128(&dst, &qa)
@@ -162,6 +268,8 @@ func (g *Gearbox) QConj128(a [8]float64) [8]float64 {
 // the scalar in indices 0 and 4 hi/lo; remaining components are zero).
 // Hot path: zero-allocation.
 func (g *Gearbox) QNorm128(a [8]float64) [8]float64 {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
 	var dst QW128
 	qa := QW128(a)
 	qnorm128(&dst, &qa)
@@ -208,10 +316,14 @@ func (g *Gearbox) QMulHighPrec(w Width, a, b [4]float64) ([4]float64, error) {
 	// Snapshot existing Gearbox precision so we don't disturb cpu.go's
 	// in-flight ISA-execution state. SetWidth re-scales the scratchpads
 	// to the requested precision; we restore on exit.
+	// mu.Lock: SetWidth + Mul mutate Gearbox scratchpads; this is the
+	// only method that holds Lock during computation (all others use RLock).
+	g.mu.Lock()
 	prevWidth := g.ActiveWidth
 	g.SetWidth(w)
 	g.Mul(&dst, &qa, &qb)
 	g.SetWidth(prevWidth)
+	g.mu.Unlock()
 
 	out := [4]float64{}
 	out[0], _ = dst.W.Float64()

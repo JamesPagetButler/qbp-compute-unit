@@ -3,6 +3,7 @@ package emulator
 import (
 	"fmt"
 	"math/big"
+	"sync"
 )
 
 // Width defines the component bit-width of a quaternion word.
@@ -56,8 +57,28 @@ func (q QWord) String() string {
 	return fmt.Sprintf("[%v, %v, %v, %v]", q.W, q.X, q.Y, q.Z)
 }
 
+// csr holds the Gearbox Control/Status Register state.
+// All fields are guarded by Gearbox.mu.
+//
+// AMODE values: 0 = quaternion (default), 1 = octonion (M1.5+ Xqbpoct), ≥2 = reserved.
+// BSEL/PSEL are basis-selection and precision-selection registers for future use.
+type csr struct {
+	amode int
+	bsel  int
+	psel  int
+}
+
 // Gearbox manages the precision context and zero-allocation scratchpads.
+//
+// M1+ concurrency model: mu guards all CSR reads/writes and the peripheral
+// lifecycle (added in m1.3). Fast-path methods (QMul64, QMul128, etc.) acquire
+// mu.RLock for AMODE validation. QMulHighPrec acquires mu.Lock (snapshot/restore
+// of ActiveWidth). The ISA execution path (cpu.go — Mul/Conj/Rotate/NormSq) does
+// not acquire mu because it runs single-threaded with respect to the Gearbox;
+// the peripheral goroutine (m1.3) does not call the big.Float path.
 type Gearbox struct {
+	mu             sync.RWMutex
+	csr            csr
 	ActiveWidth    Width
 	t1, t2, t3, t4 *big.Float
 	rW, rX, rY, rZ *big.Float // Temp result scratchpads
