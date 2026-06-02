@@ -10,17 +10,18 @@
 #
 #   v0.1 (PR #32, 2026-05-13):  emulator/
 #   v0.2 (PR #46, 2026-05-18):  + cth/
-#   v0.3 (this PR, 2026-05-20): + qbp-compute-unit/ + cmd/hw-eval/ + . (root)
+#   v0.3 (PR #49, 2026-05-20):  + qbp-compute-unit/ + cmd/hw-eval/ + . (root)
+#   v0.4 (housekeeping R13+R14): + cmd/wasm-visualizer/ (emulator pinned to
+#                                  v0.1.0-rc1, closes #44 for this module);
+#                                  + GOARCH=riscv64 cross-compile on emulator/
+#                                  (R3-A Silicon Ladder, Sprint 2 §7 CONFIRM)
 #
-#   Deferred to v0.4 (gated on #44 replace-directive cleanup):
-#     - cmd/visualizer/      — `replace kaiju => /home/prime/...` absolute
-#                              path that won't resolve in CI (#44)
-#     - cmd/wasm-visualizer/ — `replace ... => ../../emulator` local-path
-#                              directive that needs proper Go-module pinning
-#                              for CI (#44)
+#   Deferred (kaiju not on module proxy — #44 partial):
+#     - cmd/visualizer/  — requires local kaiju game engine; GCG deferred
+#                          until kaiju publishes to module proxy
 #
-# Federation CI surface after this PR: 5 of 7 Go modules gated.
-# v0.4 target (after #44 closes): 7 of 7.
+# Federation CI surface after v0.4: 6 of 7 Go modules gated.
+# v0.5 target: cmd/visualizer/ when kaiju module-proxied.
 #
 # ============================================================
 # Four gating gates + one informational (per gated module)
@@ -99,6 +100,9 @@ jobs:
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@latest
           staticcheck ./...
+
+      - name: RISC-V cross-compile (R3-A Silicon Ladder; gating)
+        run: GOARCH=riscv64 GOOS=linux go build ./...
 
   gcg-cth:
     name: GCG ladder — cth/
@@ -338,3 +342,53 @@ jobs:
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@latest
           staticcheck ./...
+
+  gcg-cmd-wasm-visualizer:
+    name: GCG ladder — cmd/wasm-visualizer/
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: cmd/wasm-visualizer
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: cmd/wasm-visualizer/go.mod
+
+      - name: gofmt -l (gating; cmd/wasm-visualizer/ scope)
+        run: |
+          BAD=$(gofmt -l .)
+          if [ -n "$BAD" ]; then
+            echo "::error title=gofmt findings::Run gofmt -w . inside cmd/wasm-visualizer/ to fix:"
+            echo "$BAD"
+            exit 1
+          fi
+          echo "gofmt clean."
+
+      - name: go vet (gating; GOOS=js GOARCH=wasm required)
+        run: GOOS=js GOARCH=wasm go vet ./...
+
+      - name: go build (gating; GOOS=js GOARCH=wasm)
+        run: GOOS=js GOARCH=wasm go build ./...
+
+      - name: go mod tidy is no-op (gating)
+        run: |
+          cp go.mod go.mod.before
+          [ -f go.sum ] && cp go.sum go.sum.before || true
+          go mod tidy
+          if ! diff -q go.mod.before go.mod > /dev/null; then
+            echo "::error title=go.mod not tidy::Run 'go mod tidy' locally and commit the changes."
+            diff go.mod.before go.mod || true
+            exit 1
+          fi
+          if [ -f go.sum.before ] && ! diff -q go.sum.before go.sum > /dev/null; then
+            echo "::error title=go.sum not tidy::Run 'go mod tidy' locally and commit the changes."
+            diff go.sum.before go.sum || true
+            exit 1
+          fi
+          rm -f go.mod.before go.sum.before
+          echo "go mod tidy is a no-op."
