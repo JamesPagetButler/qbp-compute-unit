@@ -2,12 +2,13 @@ module github.com/JamesPagetButler/qbp-visualizer
 
 go 1.25.0
 
-replace github.com/JamesPagetButler/qbp-compute-unit/emulator => ../../emulator
-
-replace kaiju => /home/prime/Documents/QBP/src/bakeoff/kaiju/engine/src
-
+// LOCAL SETUP REQUIRED: kaiju (native game engine) is not available on the
+// Go module proxy. Before building this module, add to go.mod locally:
+//   replace kaiju => /path/to/kaiju/engine/src
+// Do NOT commit machine-specific replace directives.
+// CI build is deferred until kaiju publishes to a module proxy.
 require (
-	github.com/JamesPagetButler/qbp-compute-unit/emulator v0.0.0-00010101000000-000000000000
+	github.com/JamesPagetButler/qbp-compute-unit/emulator v0.1.0-rc1
 	kaiju v0.0.0-00010101000000-000000000000
 )
 
