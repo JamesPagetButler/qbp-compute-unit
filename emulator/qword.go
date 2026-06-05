@@ -262,18 +262,65 @@ type FanoEntry struct {
 	Sign  int8
 }
 
-// FanoLookup returns the product of imaginary units e_i and e_j.
+// fanoLines is the canonical Fano-plane orientation: seven oriented
+// triples {a,b,c} where e_a × e_b = +e_c. This is the standard
+// orientation used across the workspace — it matches pkg/fano
+// (qbp-compute-unit module), the Lean-derived ROMs
+// (roms/octonion_idx.hex + roms/octonion_signs.hex), and the
+// kernel-proven QBP Foundations orientation (Lean identity:
+// QBP.Foundations FanoOrientationF3, per the confluent-trust#96
+// shared-Lean-identity-key pattern).
+//
+// All seven lines satisfy the XOR-index lemma: c = a XOR b.
+var fanoLines = [7][3]int{
+	{1, 2, 3},
+	{1, 4, 5},
+	{1, 7, 6},
+	{2, 4, 6},
+	{2, 5, 7},
+	{3, 4, 7},
+	{3, 6, 5},
+}
+
+// fanoLUT is the full 7×7 multiplication table for imaginary octonion
+// units e₁..e₇, derived from fanoLines in init(). Access as
+// fanoLUT[i-1][j-1] for e_i × e_j.
+//
+// History: prior to issue #57 this lookup hardcoded only the three
+// quaternion pairs and fell back to a wrong (index, sign) formula for
+// all octonion-range products (e₄–e₇). The ISA FANO opcode consumed
+// the broken path. The lines-derived LUT below is verified against
+// the Lean-derived ROM ground truth by TestFanoLookup_MatchesROMs.
+var fanoLUT [7][7]FanoEntry
+
+func init() {
+	// Diagonal: e_i × e_i = -1 (scalar; Index 0 signals scalar result).
+	for i := range 7 {
+		fanoLUT[i][i] = FanoEntry{Index: 0, Sign: -1}
+	}
+	// From each oriented line {a,b,c}:
+	// cyclic products are positive, anti-cyclic negative.
+	for _, l := range fanoLines {
+		a, b, c := l[0]-1, l[1]-1, l[2]-1
+		fanoLUT[a][b] = FanoEntry{Index: int8(l[2]), Sign: 1}
+		fanoLUT[b][c] = FanoEntry{Index: int8(l[0]), Sign: 1}
+		fanoLUT[c][a] = FanoEntry{Index: int8(l[1]), Sign: 1}
+		fanoLUT[b][a] = FanoEntry{Index: int8(l[2]), Sign: -1}
+		fanoLUT[c][b] = FanoEntry{Index: int8(l[0]), Sign: -1}
+		fanoLUT[a][c] = FanoEntry{Index: int8(l[1]), Sign: -1}
+	}
+}
+
+// FanoLookup returns the product of imaginary units e_i × e_j for
+// i, j ∈ [1, 7] over the full octonion range. Index 0 in the result
+// signals a scalar -1 (the e_i × e_i case). This is the FANO ISA
+// opcode's implementation (isa.go Funct7FANO).
+//
+// Out-of-range indices return a zero FanoEntry; the ISA layer is
+// responsible for operand validation.
 func (g *Gearbox) FanoLookup(i, j int) FanoEntry {
-	if i == j {
-		return FanoEntry{Index: 0, Sign: -1}
+	if i < 1 || i > 7 || j < 1 || j > 7 {
+		return FanoEntry{}
 	}
-	table := map[[2]int]FanoEntry{
-		{1, 2}: {3, 1}, {2, 1}: {3, -1},
-		{2, 3}: {1, 1}, {3, 2}: {1, -1},
-		{3, 1}: {2, 1}, {1, 3}: {2, -1},
-	}
-	if res, ok := table[[2]int{i, j}]; ok {
-		return res
-	}
-	return FanoEntry{Index: int8((i+j)%7) + 1, Sign: 1}
+	return fanoLUT[i-1][j-1]
 }
