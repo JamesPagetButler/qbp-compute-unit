@@ -122,6 +122,43 @@ func TestQW8_DetectSeam8(t *testing.T) {
 	}
 }
 
+func TestQW8_QRot8(t *testing.T) {
+	g := NewGearbox()
+	one := QW8{1, 0, 0, 0}
+	qi := QW8{0, 1, 0, 0}
+	qk := QW8{0, 0, 0, 1}
+	vi := QW8{0, 1, 0, 0}
+	vj := QW8{0, 0, 1, 0}
+	vk := QW8{0, 0, 0, 1}
+	cases := []struct {
+		name       string
+		q, v, want QW8
+	}{
+		{"identity·i", one, vi, vi},
+		{"identity·j", one, vj, vj},
+		{"rotX180·i", qi, vi, QW8{0, 1, 0, 0}},  // axis fixed
+		{"rotX180·j", qi, vj, QW8{0, 0, -1, 0}}, // j -> -j
+		{"rotX180·k", qi, vk, QW8{0, 0, 0, -1}}, // k -> -k
+		{"rotZ180·i", qk, vi, QW8{0, -1, 0, 0}}, // i -> -i
+		{"rotZ180·k", qk, vk, QW8{0, 0, 0, 1}},  // axis fixed
+	}
+	for _, c := range cases {
+		if got := g.QRot8(c.q, c.v); got != c.want {
+			t.Errorf("QRot8 %s: got %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+func TestQW8_DetectSeam8_PositiveSeam(t *testing.T) {
+	g := NewGearbox()
+	qi := QW8{0, 1, 0, 0}
+	vj := QW8{0, 0, 1, 0}
+	residue, seam := g.DetectSeam8(qi, vj, 1) // |(-1)-(1)| = 2 > 1
+	if !seam || residue != 2 {
+		t.Errorf("expected seam=true residue=2, got seam=%v residue=%d", seam, residue)
+	}
+}
+
 func BenchmarkQMul8(b *testing.B) {
 	g := NewGearbox()
 	a := QW8{1, 0, 0, 0}

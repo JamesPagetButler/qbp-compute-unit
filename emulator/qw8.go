@@ -80,6 +80,11 @@ func (g *Gearbox) QAdd8(a, b QW8) QW8 {
 // precision. Composed of two QMul8 calls; acquires mu.RLock once.
 // Note: intermediate products can saturate; unit quaternion constraint
 // is not enforced at QW8 (caller responsibility).
+//
+// Precision bound: at int8, QRot8 is exact only for unit-basis quaternions
+// (i.e. q ∈ {±1, ±i, ±j, ±k}). A general unit quaternion (e.g. a 45°
+// rotation) rounds to identity or saturates under PackQW8 — use QW64/QW128
+// for non-trivial rotations.
 func (g *Gearbox) QRot8(q, v QW8) QW8 {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
