@@ -97,6 +97,65 @@ The M0 cohort was implemented via a multi-agent execution discipline: `general-p
 
 ---
 
+## [emulator/v0.1.0] — First stable Gearbox release
+
+> **Status: PENDING.** Gates not yet fully satisfied. See
+> [`architecture/v0.1.0-walk-smoke-test.md`](architecture/v0.1.0-walk-smoke-test.md).
+> The 24h continuous operation gate requires BMA Sprint 3 execution. This section will be
+> finalised and the tag pushed once all gates in the smoke test log show PASS.
+
+All changes listed here are **additive relative to rc1** — no breaking API changes.
+Consumers pinned to `emulator/v0.1.0-rc1` continue to compile and behave identically.
+
+### Added (M1 cohort, post-rc1)
+
+- **CSR-bound stateful Gearbox — M1.1** ([#52](https://github.com/JamesPagetButler/qbp-compute-unit/pull/52), closes [#52](https://github.com/JamesPagetButler/qbp-compute-unit/issues/44)).
+  Mutex-protected CSR registers `amode` / `bsel` / `psel` on `*Gearbox`. Accessor methods
+  `SetAMODE` / `AMODE` / `SetBSEL` / `BSEL` / `SetPSEL` / `PSEL` with sentinel errors
+  `ErrInvalidAMODE`, `ErrAMODEReserved`, `ErrInvalidBSEL`, `ErrInvalidPSEL`. Thread-safe
+  read-path methods (`QConj64`, `QNorm64`, `QMul128`, `QAdd128`, `QRot128`, `QConj128`,
+  `QNorm128`, `QMulHighPrec`) gain mutex guards. Implements
+  `architecture/adr-004-m1-gearbox-state-model.md` direction.
+
+- **QW8 peripheral surface — M1.2** ([#53](https://github.com/JamesPagetButler/qbp-compute-unit/pull/53)).
+  `QW8` type: int8-saturating quaternion (saturate-on-overflow, zero on underflow).
+  Arithmetic: `QW8Add`, `QW8Mul`, `QW8Norm` — no allocations. Designed for BMA Theory
+  Addendum 18 §3 hypergraph traversal (spreading-activation inner loop).
+
+- **Peripheral goroutine + OnSeam dispatch — M1.3** ([#54](https://github.com/JamesPagetButler/qbp-compute-unit/pull/54), closes [#38](https://github.com/JamesPagetButler/qbp-compute-unit/issues/38)).
+  `Gearbox.OnSeam(handler SeamHandler)` registers a callback for SeamEvents emitted on
+  cycle boundaries. Goroutine-pair model: peripheral goroutine dispatches events; consumer
+  registers handler. `SeamEvent` v0.2: `SeamID uint64`, `Locale LocaleRef`,
+  `Magnitude float32`, `DetectionContext []byte`. Per `architecture/adr-004-m1-gearbox-state-model.md`
+  §goroutine-pair.
+
+- **M0.5 ISA stubs** ([#31](https://github.com/JamesPagetButler/qbp-compute-unit/pull/31), closes [#9](https://github.com/JamesPagetButler/qbp-compute-unit/issues/9)).
+  `spec/QBP-RISCV-Xqbpoct-Spec-v0.1.md` + `spec/QBP-RISCV-Xqbpvcp-Spec-v0.1.md` — v0.1
+  extension stubs for the octonion and coprocessor-dispatch RISC-V ISA surfaces. Spec-only;
+  implementation gated on §I4 governance read from `@bma` + `@bma-implementor` (ADR-003).
+
+### Fixed (post-rc1)
+
+- **FanoLookup full 7×7 octonion multiplication table** ([#58](https://github.com/JamesPagetButler/qbp-compute-unit/pull/58), closes [#57](https://github.com/JamesPagetButler/qbp-compute-unit/issues/57)).
+  The previous implementation's fallback path returned garbage for (e₄, e₅, e₆) rows.
+  Replaced with a complete, verified 7×7 Fano-plane table. Affects octonion multiplication
+  correctness; not yet on a hot path (octonion dispatch returns `ErrTierUnsupported` in
+  Crawl phase until `Xqbpoct` M1.5+ lands).
+
+### Verification gates (Walk-phase smoke test)
+
+See [`architecture/v0.1.0-walk-smoke-test.md`](architecture/v0.1.0-walk-smoke-test.md)
+for the full evidence log.
+
+| Gate | Status |
+|---|---|
+| Wyrd `HamiltonProduct` + `HamiltonProductHighPrec` paths exercised against Gearbox | PASS |
+| BMA full test suite (mem + sleep + stress + readiness) under `-race` | PASS |
+| No breaking API changes rc1 → v0.1.0 | PASS |
+| 24h continuous operation under BMA Sprint 3 workload | **PENDING** |
+
+---
+
 ## Unreleased
 
-See open issues [#3](https://github.com/JamesPagetButler/qbp-compute-unit/issues/3) (epic Stream A → Stream B), [#17](https://github.com/JamesPagetButler/qbp-compute-unit/issues/17) (CI hardening — `-race` / `golangci-lint` / `staticcheck` enforcement), [#18](https://github.com/JamesPagetButler/qbp-compute-unit/issues/18) (M1 Spike co-sim + `riscv-arch-test`), and the M0.5 stubs branch (`Xqbpoct` + `Xqbpvcp` v0.1; awaiting bma + bma-implementor §I4 governance review).
+See open issues [#3](https://github.com/JamesPagetButler/qbp-compute-unit/issues/3) (epic Stream A → Stream B), [#18](https://github.com/JamesPagetButler/qbp-compute-unit/issues/18) (M1 Spike co-sim + `riscv-arch-test`), [#41](https://github.com/JamesPagetButler/qbp-compute-unit/issues/41) (cosim manifest emission), [#42](https://github.com/JamesPagetButler/qbp-compute-unit/issues/42) (DetectionContext schema versioning), [#45](https://github.com/JamesPagetButler/qbp-compute-unit/issues/45) (GCG v0.3 ladder completion), and [#59](https://github.com/JamesPagetButler/qbp-compute-unit/issues/59) (prove-before-bake FanoLookup CI gate).
