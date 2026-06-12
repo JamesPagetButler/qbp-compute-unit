@@ -113,8 +113,10 @@ Consumers pinned to `emulator/v0.1.0-rc1` continue to compile and behave identic
   Mutex-protected CSR registers `amode` / `bsel` / `psel` on `*Gearbox`. Accessor methods
   `SetAMODE` / `AMODE` / `SetBSEL` / `BSEL` / `SetPSEL` / `PSEL` with sentinel errors
   `ErrInvalidAMODE`, `ErrAMODEReserved`, `ErrInvalidBSEL`, `ErrInvalidPSEL`. Thread-safe
-  read-path methods (`QConj64`, `QNorm64`, `QMul128`, `QAdd128`, `QRot128`, `QConj128`,
-  `QNorm128`, `QMulHighPrec`) gain mutex guards. Implements
+  read-path fast-path methods acquire `mu.RLock`: `QMul64`, `QAdd64`, `QRot64`, `QConj64`,
+  `QNorm64`, `QMul128`, `QAdd128`, `QRot128`, `QConj128`, `QNorm128` (all 10 quaternion
+  fast-path methods). `QMulHighPrec` acquires the write `mu.Lock` (it snapshot/restores
+  `ActiveWidth` via `SetWidth`, which mutates Gearbox scratchpads). Implements
   `architecture/adr-004-m1-gearbox-state-model.md` direction.
 
 - **QW8 peripheral surface — M1.2** ([#53](https://github.com/JamesPagetButler/qbp-compute-unit/pull/53)).
@@ -123,8 +125,8 @@ Consumers pinned to `emulator/v0.1.0-rc1` continue to compile and behave identic
   Free functions: `PackQW8` (float64→QW8, clamped), `UnpackQW8` (QW8→float64).
   Designed for BMA Theory Addendum 18 §3 hypergraph traversal (spreading-activation inner loop).
 
-- **Peripheral goroutine + OnSeam dispatch — M1.3** ([#54](https://github.com/JamesPagetButler/qbp-compute-unit/pull/54), closes [#38](https://github.com/JamesPagetButler/qbp-compute-unit/issues/38)).
-  `Gearbox.OnSeam(handler SeamHandler)` registers a callback for SeamEvents emitted on
+- **Peripheral goroutine + OnSeam dispatch — M1.3** ([#54](https://github.com/JamesPagetButler/qbp-compute-unit/pull/54)).
+  `Gearbox.OnSeam(cb func(SeamEvent))` registers a callback for SeamEvents emitted on
   cycle boundaries. Goroutine-pair model: peripheral goroutine dispatches events; consumer
   registers handler. `SeamEvent` v0.2: `SeamID uint64`, `Locale LocaleRef`,
   `Magnitude float32`, `DetectionContext []byte`. Per `architecture/adr-004-m1-gearbox-state-model.md`
