@@ -109,7 +109,7 @@ Consumers pinned to `emulator/v0.1.0-rc1` continue to compile and behave identic
 
 ### Added (M1 cohort, post-rc1)
 
-- **CSR-bound stateful Gearbox — M1.1** ([#52](https://github.com/JamesPagetButler/qbp-compute-unit/pull/52), closes [#52](https://github.com/JamesPagetButler/qbp-compute-unit/issues/44)).
+- **CSR-bound stateful Gearbox — M1.1** ([#52](https://github.com/JamesPagetButler/qbp-compute-unit/pull/52)).
   Mutex-protected CSR registers `amode` / `bsel` / `psel` on `*Gearbox`. Accessor methods
   `SetAMODE` / `AMODE` / `SetBSEL` / `BSEL` / `SetPSEL` / `PSEL` with sentinel errors
   `ErrInvalidAMODE`, `ErrAMODEReserved`, `ErrInvalidBSEL`, `ErrInvalidPSEL`. Thread-safe
@@ -119,8 +119,9 @@ Consumers pinned to `emulator/v0.1.0-rc1` continue to compile and behave identic
 
 - **QW8 peripheral surface — M1.2** ([#53](https://github.com/JamesPagetButler/qbp-compute-unit/pull/53)).
   `QW8` type: int8-saturating quaternion (saturate-on-overflow, zero on underflow).
-  Arithmetic: `QW8Add`, `QW8Mul`, `QW8Norm` — no allocations. Designed for BMA Theory
-  Addendum 18 §3 hypergraph traversal (spreading-activation inner loop).
+  Methods on `*Gearbox`: `QMul8`, `QAdd8`, `QRot8`, `QConj8`, `QNorm8` — no allocations.
+  Free functions: `PackQW8` (float64→QW8, clamped), `UnpackQW8` (QW8→float64).
+  Designed for BMA Theory Addendum 18 §3 hypergraph traversal (spreading-activation inner loop).
 
 - **Peripheral goroutine + OnSeam dispatch — M1.3** ([#54](https://github.com/JamesPagetButler/qbp-compute-unit/pull/54), closes [#38](https://github.com/JamesPagetButler/qbp-compute-unit/issues/38)).
   `Gearbox.OnSeam(handler SeamHandler)` registers a callback for SeamEvents emitted on
@@ -137,10 +138,10 @@ Consumers pinned to `emulator/v0.1.0-rc1` continue to compile and behave identic
 ### Fixed (post-rc1)
 
 - **FanoLookup full 7×7 octonion multiplication table** ([#58](https://github.com/JamesPagetButler/qbp-compute-unit/pull/58), closes [#57](https://github.com/JamesPagetButler/qbp-compute-unit/issues/57)).
-  The previous implementation's fallback path returned garbage for (e₄, e₅, e₆) rows.
-  Replaced with a complete, verified 7×7 Fano-plane table. Affects octonion multiplication
-  correctness; not yet on a hot path (octonion dispatch returns `ErrTierUnsupported` in
-  Crawl phase until `Xqbpoct` M1.5+ lands).
+  The previous implementation returned a wrong (index, sign) for every octonion-range
+  product (e₄–e₇); the fix is the complete 7×7 Fano-plane table. Affects octonion
+  multiplication correctness; not yet on a hot path (octonion dispatch returns
+  `ErrTierUnsupported` in Crawl phase until `Xqbpoct` M1.5+ lands).
 
 ### Verification gates (Walk-phase smoke test)
 
