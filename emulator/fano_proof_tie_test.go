@@ -183,14 +183,18 @@ func snapshotDiscrepancies(table [8][8]snapEntry, g *Gearbox, idxROM, signROM []
 func TestFanoProofTie_MatchesKernelProvenTable(t *testing.T) {
 	snapPath := os.Getenv("FANO_SNAPSHOT")
 	if snapPath == "" {
-		if os.Getenv("CI") == "true" {
-			t.Fatal("FANO_SNAPSHOT unset in CI — the prove-before-bake gate must run against " +
-				"QBP's proofs/QBP/Foundations/fanoTableF4.snapshot (issue #59). " +
-				"If this fires, gcg-fano-proof-tie.yml is misconfigured.")
-		}
-		t.Skip("FANO_SNAPSHOT unset — set it to a QBP fanoTableF4.snapshot to run the " +
-			"cross-repo drift gate locally; enforced in CI by gcg-fano-proof-tie.yml. " +
-			"The parser + comparator are covered by the synthetic-fixture tests in this file.")
+		// Skip whenever FANO_SNAPSHOT is unset — INCLUDING under CI. The
+		// cross-repo drift gate runs ONLY under
+		// .github/workflows/gcg-fano-proof-tie.yml, which checks out QBP,
+		// fail-closes at the workflow level if the snapshot is absent, and sets
+		// FANO_SNAPSHOT before invoking this test — that workflow is the real
+		// guard against a silent skip. Every OTHER emulator CI job
+		// (verify-lean-roms, the GCG ladder) runs `go test ./...` WITHOUT that
+		// env, and must skip this cross-repo gate, not fail on it. (A prior
+		// `CI=true`→Fatal guard here was too broad: it broke those unrelated
+		// jobs on every emulator-touching PR.) Parser + comparator are covered
+		// by the synthetic-fixture tests in this file, which always run.
+		t.Skip("FANO_SNAPSHOT unset — the cross-repo drift gate runs only under gcg-fano-proof-tie.yml (which checks out QBP and sets it); skipped here.")
 	}
 
 	f, err := os.Open(snapPath)
