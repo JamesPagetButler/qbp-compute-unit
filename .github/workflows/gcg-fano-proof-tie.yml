@@ -92,14 +92,24 @@ jobs:
             echo "::error::attestation does not reference fanoTableF4_eq_cayleyDickson — wrong or empty attestation."
             exit 1
           fi
-          # A kernel-checked proof must not lean on sorry / native_decide / the
-          # reduce-bool compiler axioms. Any of these ⇒ the table is not
-          # kernel-proven and the prove-before-bake claim is void.
-          if grep -Eiw "sorry|native_decide|ofReduceBool|ofReduceNat|lcProof|trustCompiler" "$AX"; then
-            echo "::error::disallowed axiom/sorry present in the attestation — fanoTableF4_eq_cayleyDickson is not kernel-checked."
+          # Whitelist the ACTUAL axiom lists, not the whole file: every axiom in
+          # each `depends on axioms: [...]` bracket must be in the kernel-safe set
+          # {propext, Classical.choice, Quot.sound}; anything else (sorry,
+          # native_decide, ofReduce*, …) ⇒ the proof is not kernel-checked.
+          # NB: comment lines (`#`) are stripped first — a prose comment such as
+          # "no sorry, no native_decide" must NOT false-positive the gate.
+          BAD=$(grep -v '^[[:space:]]*#' "$AX" \
+                  | grep -oE '\[[^]]*\]' \
+                  | tr -d '[]' | tr ',' '\n' \
+                  | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
+                  | grep -v '^$' \
+                  | grep -vxE 'propext|Classical\.choice|Quot\.sound' || true)
+          if [ -n "$BAD" ]; then
+            echo "::error::disallowed axiom(s) in the attestation — fanoTableF4_eq_cayleyDickson is not kernel-checked:"
+            echo "$BAD"
             exit 1
           fi
-          echo "axiom attestation OK (no disallowed axioms; references fanoTableF4_eq_cayleyDickson)."
+          echo "axiom attestation OK (every listed axiom ⊆ {propext, Classical.choice, Quot.sound}; references fanoTableF4_eq_cayleyDickson)."
           echo "----- fanoTableF4.axioms.txt -----"
           cat "$AX"
 
