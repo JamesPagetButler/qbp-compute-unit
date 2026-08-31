@@ -1,0 +1,121 @@
+# GCG Fano Proof-Tie — the prove-before-bake gate (issue #59).
+#
+# Closes Gap B (live-test seq=516): ties the octonion ROMs (roms/octonion_*.hex)
+# AND the emulator fanoLUT to the KERNEL-PROVEN QBP Foundations table
+# `FanoOrientationF3.fanoTableF4` (forced by the Cayley–Dickson product via
+# `fanoTableF4_eq_cayleyDickson`, kernel `decide`), instead of only to the
+# data-not-proof `lean/QBP/Sedenion.lean`.
+#
+# Producer side (QBP, @qbp-oppenheimer, steps 1–3 of the #59 design):
+#   proofs/QBP/Foundations/fanoTableF4.snapshot     — 64 lines "i j sign index",
+#     generated from the Lean `def` + QBP-CI drift-guarded (regenerate + diff).
+#   proofs/QBP/Foundations/fanoTableF4.axioms.txt    — verbatim
+#     `#print axioms fanoTableF4_eq_cayleyDickson`, closure ⊆
+#     {propext, Classical.choice, Quot.sound} (confluent-trust#96 identity key).
+#
+# Consumer side (this repo): parse the snapshot, assert the ROMs + emulator
+# fanoLUT match it. Cross-repo pattern mirrors wyrd-compatibility.yml — both
+# repos are public, so no token is required.
+#
+# FAIL-CLOSED: if the snapshot or the axiom attestation is absent, this job
+# errors — a missing proof source can never present as a silent pass.
+
+name: GCG Fano Proof-Tie
+
+on:
+  push:
+    branches: ["main", "feat/**"]
+    paths:
+      - "roms/**"
+      - "emulator/**"
+      - ".github/workflows/gcg-fano-proof-tie.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "roms/**"
+      - "emulator/**"
+      - ".github/workflows/gcg-fano-proof-tie.yml"
+  # Nightly: the QBP-side snapshot can change independently of this repo, so
+  # catch upstream proof/table drift even with no local change.
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  fano-proof-tie:
+    name: ROMs + emulator fanoLUT ↔ kernel-proven fanoTableF4
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout qbp-compute-unit (this repo)
+        uses: actions/checkout@v4
+        with:
+          path: qbp-compute-unit
+
+      - name: Checkout QBP (public; kernel-proven fanoTableF4 source)
+        uses: actions/checkout@v4
+        with:
+          repository: JamesPagetButler/QBP
+          path: QBP
+
+      - name: Set up Go (pinned by the emulator module)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: qbp-compute-unit/emulator/go.mod
+
+      - name: Locate snapshot (fail-closed if absent)
+        id: snap
+        run: |
+          SNAP="$GITHUB_WORKSPACE/QBP/proofs/QBP/Foundations/fanoTableF4.snapshot"
+          if [ ! -f "$SNAP" ]; then
+            # Absent-vs-drift distinction: absent = waiting on the producer export
+            # (RED-by-design, expected until QBP steps 1–3 land), NOT a real
+            # ROM↔proof drift. A hard red is reserved for a PRESENT-but-mismatched
+            # artifact (the axiom/drift steps below). See #59.
+            echo "⏳ **PENDING-EXPORT** — fanoTableF4 artifact not yet on QBP master (issue #59 steps 1–3; producer @qbp-oppenheimer, #601 export target). RED-by-design, not a drift failure." >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::fanoTableF4.snapshot not found in the QBP checkout at $SNAP — the prove-before-bake gate cannot run (PENDING-EXPORT, not drift). Producer: @qbp-oppenheimer (QBP Foundations export, issue #59, steps 1–3)."
+            exit 1
+          fi
+          echo "path=$SNAP" >> "$GITHUB_OUTPUT"
+
+      - name: Verify axiom attestation ⊆ {propext, Classical.choice, Quot.sound}
+        run: |
+          AX="$GITHUB_WORKSPACE/QBP/proofs/QBP/Foundations/fanoTableF4.axioms.txt"
+          if [ ! -f "$AX" ]; then
+            echo "::error::fanoTableF4.axioms.txt not found — axiom attestation missing (issue #59, confluent-trust#96 Lean-identity key)."
+            exit 1
+          fi
+          if ! grep -q "fanoTableF4_eq_cayleyDickson" "$AX"; then
+            echo "::error::attestation does not reference fanoTableF4_eq_cayleyDickson — wrong or empty attestation."
+            exit 1
+          fi
+          # Whitelist the ACTUAL axiom lists, not the whole file: every axiom in
+          # each `depends on axioms: [...]` bracket must be in the kernel-safe set
+          # {propext, Classical.choice, Quot.sound}; anything else (sorry,
+          # native_decide, ofReduce*, …) ⇒ the proof is not kernel-checked.
+          # NB: comment lines (`#`) are stripped first — a prose comment such as
+          # "no sorry, no native_decide" must NOT false-positive the gate.
+          BAD=$(grep -v '^[[:space:]]*#' "$AX" \
+                  | grep -oE '\[[^]]*\]' \
+                  | tr -d '[]' | tr ',' '\n' \
+                  | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
+                  | grep -v '^$' \
+                  | grep -vxE 'propext|Classical\.choice|Quot\.sound' || true)
+          if [ -n "$BAD" ]; then
+            echo "::error::disallowed axiom(s) in the attestation — fanoTableF4_eq_cayleyDickson is not kernel-checked:"
+            echo "$BAD"
+            exit 1
+          fi
+          echo "axiom attestation OK (every listed axiom ⊆ {propext, Classical.choice, Quot.sound}; references fanoTableF4_eq_cayleyDickson)."
+          echo "----- fanoTableF4.axioms.txt -----"
+          cat "$AX"
+
+      - name: Run prove-before-bake drift gate
+        env:
+          FANO_SNAPSHOT: ${{ steps.snap.outputs.path }}
+        run: |
+          cd qbp-compute-unit/emulator
+          go test ./... -run 'TestFanoProofTie|TestFanoSnapshotParser' -count=1 -v
