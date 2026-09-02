@@ -6,7 +6,7 @@
 # `fanoTableF4_eq_cayleyDickson`, kernel `decide`), instead of only to the
 # data-not-proof `lean/QBP/Sedenion.lean`.
 #
-# Producer side (QBP, @qbp-oppenheimer, steps 1–3 of the #59 design):
+# Producer side (QBP, @qbp-oppenheimer): landed via QBP #604 —
 #   proofs/QBP/Foundations/fanoTableF4.snapshot     — 64 lines "i j sign index",
 #     generated from the Lean `def` + QBP-CI drift-guarded (regenerate + diff).
 #   proofs/QBP/Foundations/fanoTableF4.axioms.txt    — verbatim
@@ -17,8 +17,25 @@
 # fanoLUT match it. Cross-repo pattern mirrors wyrd-compatibility.yml — both
 # repos are public, so no token is required.
 #
-# FAIL-CLOSED: if the snapshot or the axiom attestation is absent, this job
-# errors — a missing proof source can never present as a silent pass.
+# ─── INFRA-VS-DRIFT RUN PATTERN (issue #66; reusable across cross-repo gates) ───
+# A *required* cross-repo gate MUST distinguish two failure modes, or a producer-
+# side hiccup wedges this repo's entire merge queue:
+#   • REAL DRIFT  → HARD-FAIL. The source was fetched, but the wired artifact is
+#     absent / mismatched / carries a disallowed axiom. This is what the gate
+#     exists to catch; there is NO raisable soft-escape from it.
+#   • INFRA FAIL  → SOFT-PASS. We could not even fetch the source (the QBP
+#     checkout failed: network / rate-limit / repo unavailable / transient). Drift
+#     is then INCONCLUSIVE — soft-pass with a loud summary; the next PR + the
+#     nightly cron re-check. A required gate must not brick unrelated qbp-cu merges
+#     because GitHub hiccuped fetching QBP.
+# Mechanism: the QBP checkout runs `continue-on-error`; on failure the drift steps
+# are skipped (guarded on `steps.checkout_qbp.outcome == 'success'`) and the job
+# ends green. Only a *successful* fetch proceeds to the hard-fail drift assertions.
+# This is the shape @cth-implementor's CTH anchoring trigger-gate + @wyrd-implementor's
+# ℍ-rung gates consume — the three-clause cross-repo-drift-gate invariant (seq=919):
+# (a) candidate set = declared manifest, not `grep` [#65: the specific fanoTableF4
+# artifact + whitelisted axiom lists]; (b) hard-fail on real drift, no raisable
+# escape; (c) infra-soft-pass on cross-repo fetch failure — this file adds (c).
 
 name: GCG Fano Proof-Tie
 
@@ -55,33 +72,48 @@ jobs:
         with:
           path: qbp-compute-unit
 
+      # INFRA boundary (issue #66): this cross-repo fetch is the ONLY step allowed
+      # to soft-pass. `continue-on-error` lets a network / rate-limit / unavailable
+      # failure be *detected* (outcome == failure) instead of hard-failing the job,
+      # so a QBP-side hiccup can't wedge the qbp-cu merge queue.
       - name: Checkout QBP (public; kernel-proven fanoTableF4 source)
+        id: checkout_qbp
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: JamesPagetButler/QBP
           path: QBP
 
+      - name: Infra soft-pass if the QBP checkout failed (INCONCLUSIVE, not drift)
+        if: steps.checkout_qbp.outcome == 'failure'
+        run: |
+          echo "⚠️ **INFRA-SOFT-PASS** — could not check out \`JamesPagetButler/QBP\` (network / rate-limit / repo unavailable / transient). The proof source was NOT fetched, so ROM↔proof drift is **INCONCLUSIVE** — soft-passing rather than wedging the qbp-cu merge queue on a QBP-side infra hiccup. **This is NOT a drift pass**: the next PR + the nightly cron re-check against live QBP master. (issue #66 infra-vs-drift policy.)" >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning::QBP checkout failed (infra, not drift) — gate INCONCLUSIVE, soft-pass; re-checked on next PR + nightly."
+
       - name: Set up Go (pinned by the emulator module)
+        if: steps.checkout_qbp.outcome == 'success'
         uses: actions/setup-go@v5
         with:
           go-version-file: qbp-compute-unit/emulator/go.mod
 
-      - name: Locate snapshot (fail-closed if absent)
+      - name: Locate snapshot (hard-fail if absent — regression, source WAS fetched)
         id: snap
+        if: steps.checkout_qbp.outcome == 'success'
         run: |
           SNAP="$GITHUB_WORKSPACE/QBP/proofs/QBP/Foundations/fanoTableF4.snapshot"
           if [ ! -f "$SNAP" ]; then
-            # Absent-vs-drift distinction: absent = waiting on the producer export
-            # (RED-by-design, expected until QBP steps 1–3 land), NOT a real
-            # ROM↔proof drift. A hard red is reserved for a PRESENT-but-mismatched
-            # artifact (the axiom/drift steps below). See #59.
-            echo "⏳ **PENDING-EXPORT** — fanoTableF4 artifact not yet on QBP master (issue #59 steps 1–3; producer @qbp-oppenheimer, #601 export target). RED-by-design, not a drift failure." >> "$GITHUB_STEP_SUMMARY"
-            echo "::error::fanoTableF4.snapshot not found in the QBP checkout at $SNAP — the prove-before-bake gate cannot run (PENDING-EXPORT, not drift). Producer: @qbp-oppenheimer (QBP Foundations export, issue #59, steps 1–3)."
+            # The export landed via QBP #604. This step runs only on a SUCCESSFUL
+            # QBP fetch, so an ABSENT snapshot now means the producer artifact was
+            # REMOVED / regressed from master after landing — a real break in the
+            # proof-tie, NOT an infra hiccup (that is handled above). HARD-FAIL.
+            echo "🟥 **DRIFT / REGRESSION** — fanoTableF4.snapshot missing from a successfully-fetched QBP master. The proof source was removed after it landed (#604). This breaks the prove-before-bake tie — hard-fail." >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::fanoTableF4.snapshot absent from a fetched QBP master — producer artifact regressed (was landed in #604). Real drift/regression, not infra."
             exit 1
           fi
           echo "path=$SNAP" >> "$GITHUB_OUTPUT"
 
       - name: Verify axiom attestation ⊆ {propext, Classical.choice, Quot.sound}
+        if: steps.checkout_qbp.outcome == 'success'
         run: |
           AX="$GITHUB_WORKSPACE/QBP/proofs/QBP/Foundations/fanoTableF4.axioms.txt"
           if [ ! -f "$AX" ]; then
@@ -114,6 +146,7 @@ jobs:
           cat "$AX"
 
       - name: Run prove-before-bake drift gate
+        if: steps.checkout_qbp.outcome == 'success'
         env:
           FANO_SNAPSHOT: ${{ steps.snap.outputs.path }}
         run: |
