@@ -23,11 +23,17 @@
 #   • REAL DRIFT  → HARD-FAIL. The source was fetched, but the wired artifact is
 #     absent / mismatched / carries a disallowed axiom. This is what the gate
 #     exists to catch; there is NO raisable soft-escape from it.
-#   • INFRA FAIL  → SOFT-PASS. We could not even fetch the source (the QBP
-#     checkout failed: network / rate-limit / repo unavailable / transient). Drift
-#     is then INCONCLUSIVE — soft-pass with a loud summary; the next PR + the
+#   • INFRA FAIL (transient) → SOFT-PASS. We could not even fetch the source (the
+#     QBP checkout failed: network / rate-limit / repo unavailable / transient).
+#     Drift is then INCONCLUSIVE — soft-pass with a loud summary; the next PR + the
 #     nightly cron re-check. A required gate must not brick unrelated qbp-cu merges
 #     because GitHub hiccuped fetching QBP.
+#   • INFRA FAIL (PERSISTENT) → ESCALATE to HARD-FAIL (issue #68). A soft-pass that
+#     never ends silently self-disables a *required* gate (green while checking
+#     nothing). So >= THRESHOLD consecutive infra-soft-passes hard-fails, forcing a
+#     sustained QBP outage (rename / perms-revoked / down) to surface. transient ⊂
+#     soft-pass, persistent ⊂ hard-fail — the same transient-vs-persistent split as
+#     pending-vs-drift.
 # Mechanism: the QBP checkout runs `continue-on-error`; on failure the drift steps
 # are skipped (guarded on `steps.checkout_qbp.outcome == 'success'`) and the job
 # ends green. Only a *successful* fetch proceeds to the hard-fail drift assertions.
@@ -35,7 +41,8 @@
 # ℍ-rung gates consume — the three-clause cross-repo-drift-gate invariant (seq=919):
 # (a) candidate set = declared manifest, not `grep` [#65: the specific fanoTableF4
 # artifact + whitelisted axiom lists]; (b) hard-fail on real drift, no raisable
-# escape; (c) infra-soft-pass on cross-repo fetch failure — this file adds (c).
+# escape; (c) infra-soft-pass on cross-repo fetch failure, transient→soft /
+# persistent→escalate (#66 added transient-(c); #68 adds the persistent sub-rule).
 
 name: GCG Fano Proof-Tie
 
@@ -60,6 +67,7 @@ on:
 
 permissions:
   contents: read
+  actions: read   # issue #68: the persistent-infra escalation reads this workflow's own recent run history
 
 jobs:
   fano-proof-tie:
@@ -89,6 +97,48 @@ jobs:
         run: |
           echo "⚠️ **INFRA-SOFT-PASS** — could not check out \`JamesPagetButler/QBP\` (network / rate-limit / repo unavailable / transient). The proof source was NOT fetched, so ROM↔proof drift is **INCONCLUSIVE** — soft-passing rather than wedging the qbp-cu merge queue on a QBP-side infra hiccup. **This is NOT a drift pass**: the next PR + the nightly cron re-check against live QBP master. (issue #66 infra-vs-drift policy.)" >> "$GITHUB_STEP_SUMMARY"
           echo "::warning::QBP checkout failed (infra, not drift) — gate INCONCLUSIVE, soft-pass; re-checked on next PR + nightly."
+
+      # issue #68: a TRANSIENT fetch failure soft-passes (above); a PERSISTENT one
+      # must NOT soft-pass forever, or the required gate silently self-disables
+      # (green while checking nothing). Count consecutive prior infra-soft-passes
+      # of this workflow on this branch — a run was an infra-soft-pass iff its
+      # "Infra soft-pass…" step ran (conclusion==success); a real-green or
+      # hard-fail breaks the streak. At >= THRESHOLD consecutive, ESCALATE to a
+      # hard fail so a sustained QBP outage surfaces instead of bypassing.
+      - name: Escalate a PERSISTENT infra-soft-pass (issue #68)
+        if: steps.checkout_qbp.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          THRESHOLD: "3"   # consecutive infra-soft-passes (nightly ⇒ ~3 days QBP-unreachable) → hard fail
+        run: |
+          set -o pipefail
+          consecutive=1   # this run is the 1st consecutive infra-soft-pass
+          # Query window MUST exceed THRESHOLD, else the streak can never reach it
+          # (per @wyrd-implementor #69 §I4). Derive it from THRESHOLD + margin so a
+          # future THRESHOLD bump can't silently cap escalation below the threshold.
+          LIMIT=$(( THRESHOLD + 9 ))
+          # Recent COMPLETED runs of this workflow on this branch, newest first, excluding the current run.
+          ids=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow gcg-fano-proof-tie.yml \
+                  --branch "$GITHUB_REF_NAME" --status completed --limit "$LIMIT" \
+                  --json databaseId --jq '.[].databaseId' 2>/dev/null | grep -vx "$GITHUB_RUN_ID" || true)
+          for id in $ids; do
+            # A prior run was an infra-soft-pass iff its "Infra soft-pass…" step ran (conclusion success, not skipped).
+            softpass=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs" \
+                        --jq 'any(.jobs[].steps[]?; (.name|startswith("Infra soft-pass")) and .conclusion=="success")' 2>/dev/null || echo "unknown")
+            if [ "$softpass" = "true" ]; then
+              consecutive=$((consecutive + 1))
+            else
+              # real-green, hard-fail, or unreadable → streak broken (fail-safe: don't over-escalate on a query gap)
+              break
+            fi
+          done
+          echo "Consecutive infra-soft-passes incl. this run: $consecutive (threshold $THRESHOLD)."
+          if [ "$consecutive" -ge "$THRESHOLD" ]; then
+            echo "🟥 **PERSISTENT-INFRA ESCALATION (#68)** — $consecutive consecutive QBP-fetch failures. The prove-before-bake gate has been unable to verify ROM↔proof drift for $consecutive runs: this is no longer a transient hiccup and is now a **HARD FAIL**. Investigate QBP availability / repo rename / permissions revocation. (A required gate must not silently self-disable on a sustained outage.)" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::PERSISTENT infra failure — $consecutive consecutive infra-soft-passes (>= $THRESHOLD). Escalating to hard fail so a sustained QBP-fetch failure surfaces instead of silently bypassing the gate (#68)."
+            exit 1
+          fi
+          echo "::warning::infra-soft-pass $consecutive/$THRESHOLD consecutive — within transient tolerance, soft-passing (#68)."
 
       - name: Set up Go (pinned by the emulator module)
         if: steps.checkout_qbp.outcome == 'success'
