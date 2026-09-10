@@ -113,9 +113,13 @@ jobs:
         run: |
           set -o pipefail
           consecutive=1   # this run is the 1st consecutive infra-soft-pass
+          # Query window MUST exceed THRESHOLD, else the streak can never reach it
+          # (per @wyrd-implementor #69 §I4). Derive it from THRESHOLD + margin so a
+          # future THRESHOLD bump can't silently cap escalation below the threshold.
+          LIMIT=$(( THRESHOLD + 9 ))
           # Recent COMPLETED runs of this workflow on this branch, newest first, excluding the current run.
           ids=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow gcg-fano-proof-tie.yml \
-                  --branch "$GITHUB_REF_NAME" --status completed --limit 12 \
+                  --branch "$GITHUB_REF_NAME" --status completed --limit "$LIMIT" \
                   --json databaseId --jq '.[].databaseId' 2>/dev/null | grep -vx "$GITHUB_RUN_ID" || true)
           for id in $ids; do
             # A prior run was an infra-soft-pass iff its "Infra soft-pass…" step ran (conclusion success, not skipped).
