@@ -6,9 +6,10 @@
 #   make verify-roms     — Verify ROM checksums match Lean source (CI gate)
 #   make test            — Run all emulator tests
 #   make bench           — Run all benchmarks
+#   make baseline        — Capture a durable, env-stamped perf baseline (doc/benchmarks/)
 #   make vet             — Run go vet
 
-.PHONY: sign-roms verify-roms test bench vet
+.PHONY: sign-roms verify-roms test bench baseline vet
 
 # Regenerate all four ROM hex files, Go constants, and asm constants.
 # Runs lean2rom which either invokes Lean (if available) or uses the
@@ -31,6 +32,12 @@ test:
 # Run benchmarks — all should report 0 B/op, 0 allocs/op.
 bench:
 	cd emulator && go test -bench=. -benchmem ./...
+
+# Capture a durable, environment-stamped performance baseline into doc/benchmarks/.
+# Refuses on a busy box (a contended capture mis-sets the record); count defaults to 6
+# for benchstat validity. Compare: benchstat <old-raw> <new-raw>.
+baseline:
+	./scripts/qbp-cu-baseline.sh
 
 # Run go vet across all packages.
 vet:
