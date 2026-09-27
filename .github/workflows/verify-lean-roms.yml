@@ -54,8 +54,12 @@ jobs:
         run: |
           cd emulator
           go test -bench=. -benchmem ./... | tee /tmp/bench.txt
-          # Fail if any benchmark reports >0 allocs/op (regression guard)
-          if grep -E '[0-9]+ allocs/op' /tmp/bench.txt | grep -v ' 0 allocs/op'; then
-            echo "FAIL: benchmark regression — non-zero allocations detected"
+          # Hot-path 0-alloc regression guard. EXEMPT: the QMulHighPrec benchmarks
+          # (W256/W512/W1024) exercise the big.Float software fallback, which
+          # allocates inherently (~36 allocs/op) and is tracked as a first-class
+          # metric in the baseline record (doc/benchmarks/) — it is not a hot path.
+          # Every OTHER benchmark must stay 0-alloc.
+          if grep -E '[0-9]+ allocs/op' /tmp/bench.txt | grep -v ' 0 allocs/op' | grep -v 'QMulHighPrec'; then
+            echo "FAIL: benchmark regression — non-zero allocations detected (non-exempt benchmark)"
             exit 1
           fi

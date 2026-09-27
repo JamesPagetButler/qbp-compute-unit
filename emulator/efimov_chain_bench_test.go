@@ -8,12 +8,13 @@
 //
 // Anti-measurement-artifact discipline (the trap that made the prior native
 // timing flat across N — arch seq=1758):
-//   1. testing.B / ns/op — never wall-clock of a single run.
-//   2. Node values from a RUNTIME slice, not compile-time constants (no folding).
-//   3. One input perturbed per iteration by the loop index (tiny delta, |q|≈1),
-//      so the result is not loop-invariant (no hoisting).
-//   4. Final result assigned to a package-level sink each iteration (no dead-code
-//      elimination of the whole chain).
+//  1. testing.B / ns/op — never wall-clock of a single run.
+//  2. Node values from a RUNTIME slice, not compile-time constants (no folding).
+//  3. One input perturbed per iteration by the loop index (tiny delta, |q|≈1),
+//     so the result is not loop-invariant (no hoisting).
+//  4. Final result assigned to a package-level sink each iteration (no dead-code
+//     elimination of the whole chain).
+//
 // Both sides get identical treatment so the ratio is honest.
 //
 // Caveat that MUST travel with any banked number: this box is AVX+FMA, NO AVX2 —
@@ -26,8 +27,8 @@ import "testing"
 
 // Package-level sinks — defeat dead-code elimination of the chain result.
 var (
-	SinkEmu  [2]float64
-	SinkNat  complex128
+	SinkEmu [2]float64
+	SinkNat complex128
 )
 
 // makeChainNodes builds N unit-ish complex nodes from a runtime seed so the
