@@ -43,6 +43,19 @@
 # artifact + whitelisted axiom lists]; (b) hard-fail on real drift, no raisable
 # escape; (c) infra-soft-pass on cross-repo fetch failure, transient→soft /
 # persistent→escalate (#66 added transient-(c); #68 adds the persistent sub-rule).
+#
+# ─── ALWAYS-REPORT DESIGN (issue #66 — required-check readiness) ───────────────
+# For this to be a *required* status check, it must REPORT on every PR to main. A
+# paths-filtered `pull_request` trigger does NOT run on PRs that miss the paths, so
+# GitHub leaves the required context "Expected — waiting for status" forever and
+# wedges every unrelated PR. Fix: drop the pull_request paths filter (run on every
+# PR) and gate the *work* internally — the `detect` step decides relevance (touches
+# roms/ | emulator/ | this workflow), and an irrelevant PR early-passes green
+# without the cross-repo check. This is ONE job / ONE context on purpose: a second
+# same-named "always-green companion" job is deliberately avoided, because GitHub
+# keys required checks by context name and could adopt the duplicate's green result,
+# MASKING a real drift failure. detect fails CLOSED (relevant=true) if it can't list
+# PR files, so a query gap never skips the gate.
 
 name: GCG Fano Proof-Tie
 
@@ -54,11 +67,16 @@ on:
       - "emulator/**"
       - ".github/workflows/gcg-fano-proof-tie.yml"
   pull_request:
+    # NO paths filter here — issue #66 always-report design. A *required* check that
+    # is paths-filtered does NOT run on PRs that miss the paths, and GitHub then
+    # leaves the required context "Expected — waiting for status" forever, wedging
+    # every unrelated PR. So the job runs on EVERY PR to main and always reports the
+    # required context; an internal change-gate (see the `detect` step) skips the
+    # heavy cross-repo work and early-passes when roms/emulator/this-workflow are
+    # untouched. One job, one context name — deliberately NOT a second same-named
+    # companion job, which would risk masking a real drift failure (GitHub may adopt
+    # the always-green duplicate's result for a shared context).
     branches: ["main"]
-    paths:
-      - "roms/**"
-      - "emulator/**"
-      - ".github/workflows/gcg-fano-proof-tie.yml"
   # Nightly: the QBP-side snapshot can change independently of this repo, so
   # catch upstream proof/table drift even with no local change.
   schedule:
@@ -67,7 +85,8 @@ on:
 
 permissions:
   contents: read
-  actions: read   # issue #68: the persistent-infra escalation reads this workflow's own recent run history
+  actions: read          # issue #68: the persistent-infra escalation reads this workflow's own recent run history
+  pull-requests: read    # issue #66 always-report: the `detect` step lists PR changed files to decide relevance
 
 jobs:
   fano-proof-tie:
@@ -75,7 +94,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ── issue #66 always-report change-gate ──────────────────────────────────
+      # The job runs on every PR (no trigger paths filter) so the required context
+      # always reports. This step decides whether the PR actually needs the heavy
+      # cross-repo drift check: relevant iff it touches roms/, emulator/, or this
+      # workflow. push / schedule / workflow_dispatch are always relevant (they have
+      # no PR diff and are the upstream-drift catchers). When NOT relevant, the real
+      # steps below are skipped and the job early-passes green — reporting the
+      # required context without wedging unrelated PRs and without running the check.
+      - name: Detect relevant changes
+        id: detect
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            echo "event=${{ github.event_name }} → always relevant (no PR diff; upstream-drift catcher)."
+            exit 0
+          fi
+          # List the PR's changed files; fail CLOSED (relevant=true ⇒ run the real
+          # check) if the listing is unavailable, so a query gap can never skip the gate.
+          files=$(gh api "repos/$GITHUB_REPOSITORY/pulls/${{ github.event.pull_request.number }}/files" \
+                    --paginate --jq '.[].filename' 2>/dev/null) || files="__QUERY_FAILED__"
+          if [ "$files" = "__QUERY_FAILED__" ]; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::could not list PR files — failing closed (running the real drift check)."
+            exit 0
+          fi
+          if echo "$files" | grep -qE '^(roms/|emulator/|\.github/workflows/gcg-fano-proof-tie\.yml$)'; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            echo "PR touches roms/ | emulator/ | this workflow → running the real drift check."
+          else
+            echo "relevant=false" >> "$GITHUB_OUTPUT"
+            echo "PR touches none of roms/ | emulator/ | this workflow → early-pass (no ROM↔proof drift possible from this diff)."
+          fi
+
+      - name: Not-relevant — always-report pass (issue #66)
+        if: steps.detect.outputs.relevant != 'true'
+        run: |
+          echo "✅ **ALWAYS-REPORT PASS** — this PR changes no ROM / emulator / gate-workflow file, so it cannot introduce ROM↔proof drift. The required \`ROMs + emulator fanoLUT ↔ kernel-proven fanoTableF4\` context reports green without running the cross-repo check. (issue #66 always-report design — a required gate must report on every PR, but only *work* when the diff can affect it.)" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Checkout qbp-compute-unit (this repo)
+        if: steps.detect.outputs.relevant == 'true'
         uses: actions/checkout@v4
         with:
           path: qbp-compute-unit
@@ -86,6 +147,7 @@ jobs:
       # so a QBP-side hiccup can't wedge the qbp-cu merge queue.
       - name: Checkout QBP (public; kernel-proven fanoTableF4 source)
         id: checkout_qbp
+        if: steps.detect.outputs.relevant == 'true'
         continue-on-error: true
         uses: actions/checkout@v4
         with:
