@@ -1,0 +1,203 @@
+{
+  "schema": "qbp-cu-baseline/v1",
+  "env": {
+    "git_sha": "c4ef642",
+    "date": "2026-09-17",
+    "go_version": "go1.24.2",
+    "cpu_model": "AMD FX(tm)-8350 Eight-Core Processor",
+    "cpu_cores": "8",
+    "gomaxprocs": 2,
+    "count": 6,
+    "avx": true,
+    "avx2": false,
+    "fma": true
+  },
+  "benchmarks": {
+    "BenchmarkCPU_FANO": {
+      "median_ns": 537.25,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkCPU_QADD": {
+      "median_ns": 537.95,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkCPU_QADD128": {
+      "median_ns": 564.25,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkCPU_QCONJ": {
+      "median_ns": 559.45,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkCPU_QCONJ128": {
+      "median_ns": 578.45,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkCPU_QMUL": {
+      "median_ns": 541.75,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkCPU_QMUL128": {
+      "median_ns": 586.9,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkCPU_QNORM": {
+      "median_ns": 541.15,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkCPU_QNORM128": {
+      "median_ns": 620.3,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkCPU_QROT": {
+      "median_ns": 572.75,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkCPU_QROT128": {
+      "median_ns": 841.5,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkGearbox_QMul64_AMODE0": {
+      "median_ns": 43.675,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkNativeX86_ComplexMul64": {
+      "median_ns": 0.499,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkNativeX86_QuatAdd64": {
+      "median_ns": 0.501,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkNativeX86_QuatConj64": {
+      "median_ns": 0.504,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkNativeX86_QuatMul64": {
+      "median_ns": 17.21,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkNativeX86_QuatNormSq64": {
+      "median_ns": 0.5,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkPeripheral_SubmitToCallback": {
+      "median_ns": 105.85,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkPublicAPI_CAdd64": {
+      "median_ns": 2.123,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkPublicAPI_CMul128": {
+      "median_ns": 42.36,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkPublicAPI_CMul64": {
+      "median_ns": 2.806,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkPublicAPI_QAdd64": {
+      "median_ns": 42.185,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkPublicAPI_QConj64": {
+      "median_ns": 40.47,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkPublicAPI_QMul128": {
+      "median_ns": 102.75,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkPublicAPI_QMul64": {
+      "median_ns": 44.345,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkPublicAPI_QMulHighPrec_W1024": {
+      "median_ns": 3776.0,
+      "bytes": 1664,
+      "allocs": 36,
+      "samples": 6
+    },
+    "BenchmarkPublicAPI_QMulHighPrec_W256": {
+      "median_ns": 4042.0,
+      "bytes": 1664,
+      "allocs": 36,
+      "samples": 6
+    },
+    "BenchmarkPublicAPI_QMulHighPrec_W512": {
+      "median_ns": 4045.5,
+      "bytes": 1664,
+      "allocs": 36,
+      "samples": 6
+    },
+    "BenchmarkPublicAPI_QNorm64": {
+      "median_ns": 32.61,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkPublicAPI_QRot64": {
+      "median_ns": 50.225,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    },
+    "BenchmarkQMul8": {
+      "median_ns": 33.275,
+      "bytes": 0,
+      "allocs": 0,
+      "samples": 6
+    }
+  }
+}
