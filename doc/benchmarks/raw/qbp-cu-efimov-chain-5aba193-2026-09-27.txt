@@ -1,0 +1,16 @@
+# Efimov round-2 chained CMul64 overhead — arch spec seq=1758
+# host: AMD FX-8350 (AVX+FMA, NO AVX2); load ~1.5/8 at capture (ratio-valid, not pristine single-number)
+# go: go1.24.2  sha: 5aba193  date: 2026-09-27  count=3
+# native scales linearly across N => anti-const-fold discipline verified
+goos: linux
+goarch: amd64
+pkg: github.com/JamesPagetButler/qbp-compute-unit/emulator
+cpu: AMD FX-8350 Eight-Core Processor
+BenchmarkEfimovChainEmu_N100-8    	  812980	      1475 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEfimovChainNat_N100-8    	 4259134	       282.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEfimovChainEmu_N1000-8   	   81742	     14741 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEfimovChainNat_N1000-8   	  444267	      2719 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEfimovChainEmu_N10000-8  	    8132	    147371 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEfimovChainNat_N10000-8  	   44850	     27045 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEfimovChainEmu_N100000-8 	     823	   1475582 ns/op	       0 B/op	       0 allocs/op
+BenchmarkEfimovChainNat_N100000-8 	    4302	    273214 ns/op	       0 B/op	       0 allocs/op

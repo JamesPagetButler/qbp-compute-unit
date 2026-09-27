@@ -12,6 +12,9 @@ diffed against a fixed point (improvement/regression) and compared to the host x
 ## Latest baseline
 - **2026-09-17** — [`qbp-cu-baseline-2026-09-17.md`](qbp-cu-baseline-2026-09-17.md) · git `c4ef642` ·
   AMD FX-8350 (AVX+FMA, no AVX2). All instructions PASS; every instruction benchmarked.
+- **2026-09-27** — [`qbp-cu-efimov-chain-2026-09-27.md`](qbp-cu-efimov-chain-2026-09-27.md) ·
+  chained-path companion (Efimov round-2 spec): O(N) `CMul64` chain vs native `complex128` →
+  **5.40× overhead** (~14.75 ns/op emulated vs ~2.73 ns native), stable N=100..100k. No-AVX2 caveat applies.
 
 ## Regenerate / compare
 ```
