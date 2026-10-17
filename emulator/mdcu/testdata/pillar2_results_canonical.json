@@ -1,0 +1,29 @@
+{
+  "_provenance": "Canonical Pillar 2 output (results.json) from fix_test_a.py + run_fault_line_tests.py, per web Gemini 2026-10-16. Matches The Case for the MDCU §3. Earlier prose figures in Gemini's reply were transcription errors.",
+  "predictions_sha256": "2867da2abf4c7392",
+  "Test_A_Associator_Bounce": {
+    "results": [
+      {"mode": "pure_gravity", "bounced": false, "plunged": true, "r_min": 0.05222, "final_r": 0.03016, "initial_assoc_norm2": 0.0, "final_assoc_norm2": 0.0, "steps": 2195},
+      {"mode": "g2_conserved", "bounced": true, "plunged": false, "r_min": 0.38075, "final_r": 1.50017, "initial_assoc_norm2": 3.76226, "final_assoc_norm2": 3.76226, "steps": 4719},
+      {"mode": "so8_relaxing_fast_slip", "bounced": false, "plunged": true, "r_min": 0.05968, "final_r": 0.04288, "initial_assoc_norm2": 3.76226, "final_assoc_norm2": 0.0, "steps": 2374},
+      {"mode": "so8_relaxing_high_inertia", "bounced": true, "plunged": false, "r_min": 0.38065, "final_r": 1.50003, "initial_assoc_norm2": 3.76226, "final_assoc_norm2": 3.75193, "steps": 4734}
+    ],
+    "ops": {"omul": 776992, "qassoc": 194248, "float_macs": 49727488}
+  },
+  "Test_B_Frame_Locking": {
+    "initial_hot_soup": {"local_assoc": 2.057019613871531, "global_assoc": 1.7574989239171592, "max_coordinate_fano_share": 0.4981, "top3_subspace_svd_share": 0.5824},
+    "local_plaquette_only": {"local_assoc": 0.698371858070525, "global_assoc": 1.6614282516997148, "max_coordinate_fano_share": 0.5274, "top3_subspace_svd_share": 0.6097},
+    "overlapping_plaquette_locked": {"local_assoc": 0.0019834477323293453, "global_assoc": 0.01642091469790942, "max_coordinate_fano_share": 0.5928, "top3_subspace_svd_share": 0.998},
+    "ops": {"omul": 577056, "qassoc": 144264, "float_macs": 36931584}
+  },
+  "Test_C_Law_Sieve": {
+    "trajectory": {
+      "t0_initial": {"norm_defect_S": 0.102467, "alternativity_defect_S": 0.618782, "associativity_defect_O": 1.16032, "tier_weights": {"H_bulk": 0.2452, "O_fiber": 0.2392, "S_cone": 0.5156}},
+      "t15_intermediate_octonionic": {"norm_defect_S": 0.028105, "alternativity_defect_S": 0.291974, "associativity_defect_O": 0.875411, "tier_weights": {"H_bulk": 0.7281, "O_fiber": 0.1466, "S_cone": 0.1254}},
+      "t100_emergent_spacetime": {"norm_defect_S": 0.000932, "alternativity_defect_S": 0.048362, "associativity_defect_O": 0.195015, "tier_weights": {"H_bulk": 0.9872, "O_fiber": 0.0077, "S_cone": 0.0051}}
+    },
+    "boundary_ground_absorbed": 31.5934,
+    "boundary_containment_radiated": 19.3425,
+    "ops": {"smul": 29664, "omul": 118656, "zdchk": 3296, "float_macs": 7593984}
+  }
+}
