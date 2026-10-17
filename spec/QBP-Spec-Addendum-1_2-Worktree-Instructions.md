@@ -8,7 +8,7 @@ Helpful Engineering — QBP Project
 ---
 
 ## 1. Worktree Metadata Support
-The MuninnDB hypergraph substrate must support native Worktree isolation to facilitate BMA "Playground" investigations.
+The Mímir hypergraph substrate must support native Worktree isolation to facilitate BMA "Playground" investigations.
 
 ### 1.1 Node & Edge Tagging
 - **WorktreeID:** All nodes and edges in the `pkg/gap` and `pkg/mesh` packages shall include a `uint64 WorktreeID`.

@@ -16,7 +16,7 @@ type CPU struct {
 	Q128 [32]QW128 // Hardware-accelerated fast path registers (W128 DD)
 	Q    [32]QWord // High-precision registers (W256+)
 
-	// Q-Mem (Quaternion Memory) - Scalable storage for MuninnDB/Climate nodes
+	// Q-Mem (Quaternion Memory) - Scalable storage for Mímir/Climate nodes
 	Memory []QWord
 
 	// Watchdog channel for passive event emission (M0)

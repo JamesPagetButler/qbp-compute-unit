@@ -28,7 +28,7 @@ Claude relays to you via MCP. You answer Claude, Claude synthesises for James.
 ## Active Projects
 
 ### BMA — Biological Mind Architecture
-Go neuroscience AI memory system. Three cognitive layers (Autonomic, Subconscious L/R, Conscious A/B). Typed hypergraph, Hebbian learning, Ebbinghaus decay, sleep cycle. MuninnDB + NATS + SurrealDB. Hardware: FX-8350, 14GB, SATA SSD, RX 9070 XT. Currently in Crawl phase, blocked on ROCm RDNA4 support.
+Go neuroscience AI memory system. Three cognitive layers (Autonomic, Subconscious L/R, Conscious A/B). Typed hypergraph, Hebbian learning, Ebbinghaus decay, sleep cycle. Mímir + NATS + SurrealDB. Hardware: FX-8350, 14GB, SATA SSD, RX 9070 XT. Currently in Crawl phase, blocked on ROCm RDNA4 support.
 
 **Your role here:** Theory validation — does the architecture correctly implement biological cognitive principles?
 

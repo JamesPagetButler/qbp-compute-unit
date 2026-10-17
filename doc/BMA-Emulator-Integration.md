@@ -134,7 +134,7 @@ Located in `qbp-compute-unit/pkg/`:
 
 - Walk Phase C1: Wire `pkg/gap` into `internal/bma/hg` for O(1) adjacency traversal
 - Walk Phase C5: Wire `pkg/persona` into `internal/bma/ccb` for persona-as-operator cognitive model
-- Walk Phase C1: Evolve MuninnDB from typed nodes to quaternion-valued nodes using `pkg/quat`
+- Walk Phase C1: Evolve Mímir from typed nodes to quaternion-valued nodes using `pkg/quat`
 
 The integration path is: **BMA imports QBP-CU packages**, not the reverse. QBP-CU remains a standalone algebraic engine with no BMA dependencies.
 

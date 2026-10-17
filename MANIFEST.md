@@ -39,7 +39,7 @@ The Markdown corpus is the authoritative source for current architectural decisi
 | `QBP-Compute-Unit-Architecture-v1.0.md` | v1.0 (current) | Hardware blueprint — Q-Pipe, Hamilton Engine, Q-Mem, CTH Watchdog → Constitutional Audit interrupt |
 | `QBP-RISCV-Xqbpoct-Spec-v0.1.md` | **v0.1 (M0.5)** | Octonion extension — six mnemonics carved from v1.1 §2.1; shares `custom-0` opcode space + FP register file with `Xqbpquat` (`or_k ≡ qr_{2k} ∥ qr_{2k+1}`) |
 | `QBP-RISCV-Xqbpvcp-Spec-v0.1.md` | **v0.1 stub (M0.5)** | Coprocessor dispatch interface — modeled on SiFive `XSfvcp` v1.1.0; reserves `qbp.amode/bsel/psel` CSRs + `mstatus.QBP` status bit (silicon-side actuator of ADR-003 §I3.4) |
-| `QBP-Spec-Addendum-1_2-Worktree-Instructions.md` | Addendum | MuninnDB worktree isolation, copy-on-write, hardware resolution gradient |
+| `QBP-Spec-Addendum-1_2-Worktree-Instructions.md` | Addendum | Mímir worktree isolation, copy-on-write, hardware resolution gradient |
 | `QBP-Spec-Addendum-1_3-Cognitive-Git.md` | Addendum | NT_ISSUE / NT_PROPOSAL / `QSUTURE` — topological merge primitive |
 | `QBP-Spec-Addendum-1_4-Stance-Gating.md` | Addendum | RelevanceMask + `QROT_GATED` — zero-tax stance switching |
 | `QBP-Spec-Addendum-1_5-Honing-Metadata.md` | Addendum | NT_HONING_LOG + `QHON` — context-switch back to Primary Persona |

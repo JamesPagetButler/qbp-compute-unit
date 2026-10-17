@@ -8,7 +8,7 @@ Helpful Engineering — QBP Project
 ---
 
 ## 1. Topological Git Node Definitions
-The MuninnDB hypergraph substrate must be extended to support the Cognitive Git workflow defined in BMA Theory 14.0.
+The Mímir hypergraph substrate must be extended to support the Cognitive Git workflow defined in BMA Theory 14.0.
 
 ### 1.1 `NT_ISSUE` (The Gap Descriptor)
 - **Fields:**

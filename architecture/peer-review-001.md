@@ -33,7 +33,7 @@ The reviewer notes that the real victory is in **Cognition (Semantic)** rather t
 ## 4. Architectural Counter-Response
 To address the **Relational Tax** and the **Memory Wall**, we propose the following refinements for the Walk Phase:
 
-1.  **Geometric Adjacency Pointers (GAP)**: Implement edges in the MuninnDB hypergraph that natively encode nearest-neighbor relationships. This transforms a "Search" (KNN) into a "Traversal" (O(1)), eliminating the Relational Tax.
+1.  **Geometric Adjacency Pointers (GAP)**: Implement edges in the Mímir hypergraph that natively encode nearest-neighbor relationships. This transforms a "Search" (KNN) into a "Traversal" (O(1)), eliminating the Relational Tax.
 2.  **State Vector Compression**: Implement a "Dynamic Precision" policy where only the 'Spin' and 'Vorticity' are held at QW128, while 'Pos' and 'State' are downshifted to QW32 or QW64 unless a "Seam" is detected.
 3.  **BMA Integration**: Shift focus to the "Cognitive Retrieval" advantage, using 1024-bit precision as a **prestige mode for truth verification** (Level 5 Earnestness) rather than a brute-force modeling path.
 

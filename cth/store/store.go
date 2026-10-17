@@ -3,7 +3,7 @@ package store
 import "github.com/helpful-engineering/cth/model"
 
 // Store defines the interface for persisting and retrieving CTH inventories.
-// json.go implements this for the Crawl phase; muninn.go implements it for Walk+.
+// json.go implements this for the Crawl phase; mimir.go implements it for Walk+.
 type Store interface {
 	// Load retrieves an inventory by programme ID (e.g., "QBP").
 	Load(id string) (model.Inventory, error)

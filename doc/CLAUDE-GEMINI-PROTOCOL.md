@@ -145,7 +145,7 @@ Decisions that must be recorded: ISA encoding choices, algorithmic choices with 
 For each project, use these context primers when invoking Gemini:
 
 ### BMA (Biological Mind Architecture)
-> Go neuroscience AI memory system. Crawl phase, hardware-constrained (FX-8350, 14GB, SATA). Three cognitive layers, tiered memory, sleep cycle. MuninnDB + NATS + SurrealDB. Current gate: ROCm on RX 9070 XT.
+> Go neuroscience AI memory system. Crawl phase, hardware-constrained (FX-8350, 14GB, SATA). Three cognitive layers, tiered memory, sleep cycle. Mímir + NATS + SurrealDB. Current gate: ROCm on RX 9070 XT.
 
 ### QBP (Quaternion-Based Physics)
 > Research programme: quaternion/octonion algebra as native compute substrate. Key claim: Hurwitz norm multiplicativity gives free error detection. Empirically validated: spinchain benchmark, composition stress test. CTH used to track theory health.

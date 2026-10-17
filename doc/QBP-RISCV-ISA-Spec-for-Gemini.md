@@ -263,7 +263,7 @@ can be considered frozen. For each:
 - QW128 is the physics starting point (172-day algebraic lifetime at 1 GHz)
 
 **Non-goals for this spec:**
-- SurrealDB or MuninnDB integration (that is BMA's job)
+- SurrealDB or Mímir integration (that is BMA's job)
 - Operating system ABI (Linux RISC-V ABI for GP registers is unchanged)
 - Floating-point exception handling (rely on RISC-V F/D exception model)
 - Specific silicon process or area targets
