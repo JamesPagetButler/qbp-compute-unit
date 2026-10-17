@@ -16,9 +16,9 @@
 | A2c | Leaf closed form b0²(∞) | b0²/(b0²+√((1−b0²)²−V0)) | max err 2.2e-6 at t=20 with V0 = flowlib `Potential` (the /4 reading fails at 0.45) | **CONFIRMED** (V0 = N([a,b]) unscaled) |
 | A3 | Leaf break-even vs split/join overhead | amortised over many steps | split+join = 252 ns vs CD-MAC 0-step 74 ns; at **1 step** leaf 583 ns vs CD-MAC 4312 ns | **CONFIRMED**: break-even before the first step |
 | A4 | Albert h₃(𝕆) product, 6 OMUL (Silicon §4) | 66 → 9 cycles | formula ≡ brute 3×3 product (5.3e-15). Model ops 63 → 24 (P=1); 9 cycles = brute at P=8, fast reaches 7 at P=4 / 4 at P=8. Host 10.1 µs → 1.35 µs (7.5×) | **PARTIAL**: algebra confirmed. The "66 → 9" figure mixes tile counts; same-P ratio is ≈ 2.2–2.6× in cycles |
-| A5 | Pillar 2 Test A (bounce) | canon results.json | pure_gravity, g2_conserved, high_inertia **exact** to 5 digits (r_min, final r, ‖A‖², steps). fast_slip: plunge and step count (2374) match, r_min 0.05597 vs 0.05968, final 0.03689 vs 0.04288. QASSOC 201,360 vs 194,248 | **PARTIAL** (3/4 exact; source never shared, so the fast-slip boundary semantics are inferred) |
+| A5 | Pillar 2 Test A (bounce) | canon results.json | All 4 regimes **exact** to 5 dp (r_min, final r, final ‖A‖², steps), hard-gated. Fixed by porting the verbatim `fix_test_a.py` loop: F_r from the pre-update triad, all 3 gradients from the pre-update triad (the earlier port updated Z₁ before g₂/g₃), plunge check before the r_min update. QASSOC 194,251 vs 194,248 (+3 = the port's diagnostic ‖A‖² reads) | **CONFIRMED** |
 | A5 | Pillar 2 Test B (frame locking) | canon | initial / local_only / locked: local, global and SVD-3 match canon to all printed digits (metric = mean ‖A‖²) | **CONFIRMED** (`max_coordinate_fano_share` not reproduced: undefined in spec) |
-| A5 | Pillar 2 Test C (law sieve) | canon | t0 exact (0.102467 / 0.618782 / 1.16032, weights 0.2452/0.2392/0.5156). t15 0.02834/0.2939/0.8500 vs 0.028105/0.291974/0.875411. t100 0.00076/0.0445/0.196 vs 0.000932/0.048362/0.195015, H 0.989 vs 0.9872. Ledgers 30.61/20.30 vs 31.59/19.34 | **PARTIAL**: qualitative gate passes (monotone S→O→H drain, H→~99%), exact match fails. Alternativity metric is `[x,y,y]` (calibrated at t0, where no dynamics are involved). The drain uses the prose `[x,x,y]`. Two other orderings were tried and also missed; I stopped there rather than tune |
+| A5 | Pillar 2 Test C (law sieve) | canon | t0 / t15 / t100 metrics, tier weights and both ledgers (31.5934 / 19.3425) **exact** to printed digits, hard-gated. Fixed with the verbatim loop: `np.roll(+1)` pairs site i with **i−1** (and i−2), not i+1. Alternativity is `[W, W, W_prev]` in both drain and metric. (The t0 match with `[x,y,y]` was a flexibility coincidence) | **CONFIRMED** |
 | A6 | benchstat vs `doc/benchmarks` baseline | — | not run: the mdcu kernels have no counterpart in the frozen baseline suite | **NOT RUN** |
 
 ## 2. Ladder capability matrix (question b)
@@ -60,6 +60,6 @@
 
 ## 5. Caveats
 - FX-8350, no AVX2: CD-MAC's 64/256-way parallelism is serialised on the host. The MAC and cycle columns are the architectural claims; ns only shows that the algorithmic win survives on scalar hardware.
-- Pillar 2 was ported from a prose spec. The original `fix_test_a.py` / `run_fault_line_tests.py` were not available. Exact matches (Test A ×3, Test B) give strong evidence that the port is faithful. The remaining mismatches are reported unchanged.
+- Pillar 2: Test B was ported from prose. Tests A and C use the verbatim loops web-Gemini supplied from `fix_test_a.py` / `run_fault_line_tests.py` (2026-10-16), and all three now match canon exactly.
 - G₂ maximal torus used: fix e₁ and rotate (e₂,e₃) by θ₁, (e₄,e₅) by θ₂, (e₆,e₇) by θ₁+θ₂.
 - Physics claims (KK, α, CTH anchors) are out of scope.

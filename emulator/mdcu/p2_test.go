@@ -70,15 +70,28 @@ func TestPillar2(t *testing.T) {
 	for k := range z0 {
 		z0[k] = za[k]
 	}
+	round := func(v float64, d int) float64 { p := math.Pow(10, float64(d)); return math.Round(v*p) / p }
+	canonA := map[string][3]float64{ // rmin, final r, final ‖A‖² (5 dp), steps
+		"pure_gravity": {0.05222, 0.03016, 0}, "g2_conserved": {0.38075, 1.50017, 3.76226},
+		"so8_fast_slip": {0.05968, 0.04288, 0}, "so8_high_inertia": {0.38065, 1.50003, 3.75193},
+	}
+	canonSteps := map[string]int{"pure_gravity": 2195, "g2_conserved": 4719, "so8_fast_slip": 2374, "so8_high_inertia": 4734}
+	var qa uint64
 	for _, c := range []struct {
 		m    string
 		pure bool
 		I    float64
 	}{{"pure_gravity", true, 0}, {"g2_conserved", false, 0}, {"so8_fast_slip", false, 0.005}, {"so8_high_inertia", false, 2.0}} {
 		r := RunBounce(c.m, z0, c.pure, c.I)
+		qa += r.QAssoc
 		t.Logf("A %-17s bounced=%v plunged=%v rmin=%.5f final=%.5f A2 %.5f→%.5f steps=%d qassoc=%d",
 			r.Mode, r.Bounced, r.Plunged, r.RMin, r.FinalR, r.InitA2, r.FinalA2, r.Steps, r.QAssoc)
+		w := canonA[c.m]
+		if round(r.RMin, 5) != w[0] || round(r.FinalR, 5) != w[1] || round(r.FinalA2, 5) != w[2] || r.Steps != canonSteps[c.m] {
+			t.Errorf("A %s mismatch vs canon %v", c.m, w)
+		}
 	}
+	t.Logf("A total QASSOC %d (canon 194248; includes per-run diagnostic ‖A‖² reads)", qa)
 	zb := loadSeeds(t, "testB_Z")
 	raw, _ := os.ReadFile("testdata/numpy_seeds.json")
 	var m map[string]json.RawMessage
@@ -96,4 +109,9 @@ func TestPillar2(t *testing.T) {
 		t.Logf("C t%-3d %+v", k, snap[k])
 	}
 	t.Logf("C ledgers ground %.4f (canon 31.5934) containment %.4f (canon 19.3425)", g, ct)
+	c100 := snap[100]
+	if round(c100.Norm, 6) != 0.000932 || round(c100.Alt, 6) != 0.048362 || round(c100.Assoc, 6) != 0.195015 ||
+		round(snap[15].Assoc, 6) != 0.875411 || round(g, 4) != 31.5934 || round(ct, 4) != 19.3425 {
+		t.Error("C mismatch vs canon")
+	}
 }

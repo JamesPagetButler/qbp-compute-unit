@@ -63,14 +63,27 @@ func RunBounce(mode string, z0 [3][]float64, pure bool, ispin float64) BounceRes
 	force := func(r, A2 float64) float64 {
 		return -G/(r*r) - 3*alpha/math.Pow(r, 4) + 2*kappa*A2/math.Pow(r, 5)
 	}
-	r, vr := 1.5, -0.6
+	r0 := 1.5
+	r, vr := r0, -0.6
 	res.InitA2 = a2()
 	res.RMin = r
 	for st := 1; st <= maxSteps; st++ {
-		if !pure && ispin > 0 {
-			A := assoc8(Z[0], Z[1], Z[2])
+		res.Steps = st
+		if r <= 0.05 {
+			res.Plunged = true
+			break
+		}
+		var A []float64
+		A2 := 0.0
+		if !pure {
+			A = assoc8(Z[0], Z[1], Z[2])
 			res.QAssoc++
-			for k := 0; k < 3; k++ {
+			A2 = norm2(A)
+		}
+		F := force(r, A2)
+		if !pure && ispin > 0 {
+			var G3 [3][]float64
+			for k := 0; k < 3; k++ { // all gradients from PRE-update Z
 				g := make([]float64, 8)
 				for b := 0; b < 8; b++ {
 					args := [3][]float64{Z[0], Z[1], Z[2]}
@@ -81,24 +94,32 @@ func RunBounce(mode string, z0 [3][]float64, pure bool, ispin float64) BounceRes
 				p := dot(g, Z[k])
 				for i := range g {
 					g[i] -= p * Z[k][i]
-					V[k][i] = 0.95*V[k][i] - kappa/(math.Pow(r, 4)*ispin)*g[i]*dt
+				}
+				G3[k] = g
+			}
+			pref := kappa / (math.Pow(r, 4) * ispin)
+			for k := 0; k < 3; k++ {
+				for i := range G3[k] {
+					V[k][i] = 0.95*V[k][i] - pref*G3[k][i]*dt
 					Z[k][i] += V[k][i] * dt
 				}
 				normalize(Z[k])
 			}
 		}
-		F := force(r, a2())
 		vh := vr + 0.5*F*dt
-		r += vh * dt
-		vr = vh + 0.5*force(r, a2())*dt
-		res.Steps = st
-		if r <= 0.05 {
+		rn := r + vh*dt
+		if rn <= 0.05 {
+			r = math.Max(rn, 0)
 			res.Plunged = true
 			break
 		}
-		res.RMin = math.Min(res.RMin, r)
-		if vr > 0 && r >= 1.5 {
+		res.RMin = math.Min(res.RMin, rn)
+		if vr < 0 && vh >= 0 {
 			res.Bounced = true
+		}
+		vr = vh + 0.5*force(rn, a2())*dt
+		r = rn
+		if res.Bounced && r >= r0 {
 			break
 		}
 	}
@@ -232,9 +253,9 @@ type SieveMetrics struct{ Norm, Alt, Assoc, H, O, S float64 }
 func sieveMetrics(W [][]float64) (m SieveMetrics) {
 	M := len(W)
 	for i := 0; i < M; i++ {
-		x, y, z := W[i], W[(i+1)%M], W[(i+2)%M]
+		x, y, z := W[i], W[(i-1+M)%M], W[(i-2+M)%M]
 		m.Norm += math.Abs(math.Sqrt(norm2(cdMul(x, y))) - 1)
-		m.Alt += math.Sqrt(norm2(QAssoc(TierS, x, y, y)))
+		m.Alt += math.Sqrt(norm2(QAssoc(TierS, x, x, y)))
 		m.Assoc += math.Sqrt(norm2(QAssoc(TierS, x, y, z)))
 		m.H += norm2(x[:4])
 		m.O += norm2(x[4:8])
@@ -257,9 +278,9 @@ func RunSieve(w0 [][]float64, ctr *Counter) (snap map[int]SieveMetrics, ground, 
 	for st := 1; st <= 100; st++ {
 		dS := make([]float64, M)
 		for i := 0; i < M; i++ {
-			x, y := W[i], W[(i+1)%M]
+			x, y := W[i], W[(i-1+M)%M]
 			zd := clip(1-math.Sqrt(norm2(cdMul(x, y))), 0, 1)
-			alt := math.Sqrt(norm2(QAssoc(TierS, x, x, y))) // prose spec: [W_i, W_i, W_i+1]
+			alt := math.Sqrt(norm2(QAssoc(TierS, x, x, y))) // verbatim: [W, W, W_prev], W_prev = np.roll(+1) = i−1
 			dS[i] = clip(0.18*(zd+alt), 0, 0.5)
 		}
 		for i := range W {
@@ -272,7 +293,7 @@ func RunSieve(w0 [][]float64, ctr *Counter) (snap map[int]SieveMetrics, ground, 
 		}
 		dO := make([]float64, M)
 		for i := 0; i < M; i++ {
-			a := math.Sqrt(norm2(QAssoc(TierS, W[i], W[(i+1)%M], W[(i+2)%M])))
+			a := math.Sqrt(norm2(QAssoc(TierS, W[i], W[(i-1+M)%M], W[(i-2+M)%M])))
 			dO[i] = clip(0.06*a, 0, 0.3)
 		}
 		for i := range W {
