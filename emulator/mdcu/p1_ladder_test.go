@@ -207,7 +207,7 @@ func TestL5_LeafEscape(t *testing.T) {
 // L5b: degenerate frames are orthonormal and round-trip.
 func TestL5b_Degenerate(t *testing.T) {
 	cases := [][16]float64{{}, {8: 1}, {}, {}}
-	cases[2][1], cases[2][9] = 0.6, 0.8 // c ∥ a
+	cases[2][1], cases[2][9] = 0.6, 0.8  // c ∥ a
 	cases[3][9], cases[3][10] = 0.6, 0.8 // a = 0
 	for i, s := range cases {
 		q, fr := QSplitLeaf(&s)
