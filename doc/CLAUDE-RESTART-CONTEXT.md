@@ -35,7 +35,7 @@ You route to Gemini via MCP tools (`ask_gemini`, `critique_my_approach`, `compar
 ### 1. BMA — Biological Mind Architecture
 **Location:** `~/Documents/BMA/`
 **Phase:** Crawl — Step 2 (resolving ROCm gate)
-**What it is:** Go neuroscience AI memory system. Three cognitive layers, typed hypergraph, MuninnDB + NATS, biologically-grounded sleep cycle. Designed to give AI persistent memory and self-governance.
+**What it is:** Go neuroscience AI memory system. Three cognitive layers, typed hypergraph, Mímir + NATS, biologically-grounded sleep cycle. Designed to give AI persistent memory and self-governance.
 
 **Crawl dependency chain:**
 ```
@@ -128,7 +128,7 @@ STEP 4-9: see CLAUDE.md
 | BMA language | Go + Plan 9 asm | Performance + BMA probe data |
 | BMA containers | Podman rootless | Security + resource limits |
 | BMA memory limit | 14GB (not 20GB) | Probe confirmed available RAM |
-| CTH storage (Crawl) | JSON files | No infra required; Walk uses MuninnDB |
+| CTH storage (Crawl) | JSON files | No infra required; Walk uses Mímir |
 | QBP word format | QW128 default | 172-day algebraic lifetime |
 | CTH phase (Crawl) | Complete | All 12 compute files + report/ + CLI |
 | ISA opcode | custom-0 0x0B | RISC-V convention |

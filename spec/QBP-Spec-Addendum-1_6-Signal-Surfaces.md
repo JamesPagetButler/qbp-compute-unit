@@ -8,7 +8,7 @@ Helpful Engineering — QBP Project
 ---
 
 ## 1. `NT_SIGNAL` (The Noteworthy Node)
-MuninnDB is extended with the `NT_SIGNAL` node to capture proactive persona scouting.
+Mímir is extended with the `NT_SIGNAL` node to capture proactive persona scouting.
 
 ### 1.1 `NT_SIGNAL` Schema
 - `DetectingPersonaID`: Reference to the persona who identified the signal.

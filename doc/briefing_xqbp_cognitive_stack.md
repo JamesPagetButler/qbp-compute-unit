@@ -28,7 +28,7 @@ We verified the stack using a 50-year dataset (1976-2026) of the Squam Lake wate
 4.  **Consensus Reconciliation:** Demonstrated the **Re-entry Protocol (Addendum 8.4)**, where a disconnected instance reconciled a conflicting model with the global core through the **Corpus Callosum** suture logic.
 
 ## 5. Next Actions for the Walk Phase
-*   **MuninnDB Suture:** Wiring the `pkg/gap` and `pkg/persona` kernels into the production hypergraph store.
+*   **Mímir Suture:** Wiring the `pkg/gap` and `pkg/persona` kernels into the production hypergraph store.
 *   **Holographic Gravity:** Using 1024-bit precision to formalize the bridge between $su(2)$ quantum states and $H = \dot{M}/M$ cosmological acceleration.
 
 ---

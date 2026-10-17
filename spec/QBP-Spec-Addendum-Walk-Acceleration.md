@@ -17,7 +17,7 @@ This addendum re-categorizes the following "Run Phase" hardware features as **So
 - **Use Case:** Mandatory for "Prestige Mode" truth verification and Hypothesis Interrogation.
 
 ### 1.2 Geometric Adjacency Pointers (GAP)
-- **Requirement:** The MuninnDB implementation shall support native `AdjacencyPointer` edges in `Quat8` (int8) precision.
+- **Requirement:** The Mímir implementation shall support native `AdjacencyPointer` edges in `Quat8` (int8) precision.
 - **Complexity:** Gradient calculations and spreading activation shall be performed via $O(1)$ traversal of GAP pointers, bypassing the Relational Tax of KNN searches.
 - **Precision Policy:** GAPs use `Quat8` for storage/traversal and are widened to `Quat64` or `Quat256` only upon "Seam Detection" or "Cognitive Interrogation."
 
@@ -32,7 +32,7 @@ This addendum re-categorizes the following "Run Phase" hardware features as **So
 - [x] **Xqbp Emulator:** 1024-bit math kernels verified.
 - [x] **GAP Prototype:** 140x speedup confirmed in `pkg/gap`.
 - [x] **Persona Interrogation:** Autonomous detection of `PROOF-stelle-no-linear` gap confirmed.
-- [ ] **MuninnDB Suture:** Wire `pkg/gap` into the production hypergraph store.
+- [ ] **Mímir Suture:** Wire `pkg/gap` into the production hypergraph store.
 - [ ] **AVX-512 Shims:** Optimization of `Quat256` kernels for FX-8350/Walk hardware.
 
 ---

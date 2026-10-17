@@ -17,14 +17,14 @@ This engine unifies three formalisms:
 The engine is structured into five core packages:
 - `model/`: Pure data types (Anchors, Chains, Confluences).
 - `compute/`: Pure functions for entropy, fidelity, mutual information, and compression.
-- `store/`: Storage interfaces (JSON, MuninnDB, SurrealDB).
+- `store/`: Storage interfaces (JSON, Mímir, SurrealDB).
 - `report/`: Generation of health dashboards and river-map narratives.
 - `cmd/cth/`: CLI tool for inventory analysis and programme merging.
 
 ## Development Status
 
 - [ ] **Crawl Phase:** Core types, compute functions, JSON storage.
-- [ ] **Walk Phase:** MuninnDB integration, NATS events, Hebbian decay.
+- [ ] **Walk Phase:** Mímir integration, NATS events, Hebbian decay.
 - [ ] **Run Phase:** SurrealDB storage, BMA agent navigation flow field.
 
 ## License

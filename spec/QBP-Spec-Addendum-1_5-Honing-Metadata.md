@@ -7,7 +7,7 @@ Helpful Engineering — QBP Project
 
 ---
 
-## 1. Honing Metadata in MuninnDB
+## 1. Honing Metadata in Mímir
 To support the "Cognitive Honing Protocol," we introduce the `NT_HONING_LOG` node.
 
 ### 1.1 `NT_HONING_LOG` Schema

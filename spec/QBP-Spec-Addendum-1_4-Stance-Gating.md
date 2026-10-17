@@ -7,7 +7,7 @@ Helpful Engineering — QBP Project
 
 ---
 
-## 1. Relevance Tags in MuninnDB
+## 1. Relevance Tags in Mímir
 To support "Reciprocal Focus," all hypergraph nodes and edges shall include a `RelevanceMask` (uint64 bitfield).
 
 ### 1.1 Category Bits
