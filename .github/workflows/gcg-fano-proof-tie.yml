@@ -59,6 +59,12 @@
 
 name: GCG Fano Proof-Tie
 
+# Supersede an in-flight run when a newer commit arrives on the same ref
+# (federation CI convention, inter/github-best-practices §4.2.1 / inter#35, #80).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: ["main", "feat/**"]
