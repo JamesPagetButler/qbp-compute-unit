@@ -63,3 +63,13 @@
 - Pillar 2: Test B was ported from prose. Tests A and C use the verbatim loops web-Gemini supplied from `fix_test_a.py` / `run_fault_line_tests.py` (2026-10-16), and all three now match canon exactly.
 - G₂ maximal torus used: fix e₁ and rotate (e₂,e₃) by θ₁, (e₄,e₅) by θ₂, (e₆,e₇) by θ₁+θ₂.
 - Physics claims (KK, α, CTH anchors) are out of scope.
+
+## 6. Red-team follow-up (studybuddy, 2026-10-17)
+Studybuddy's `chk.py` / `chk2.py` were re-run against flowlib sha256 `7177c9c7…a359`, with copies in [`ref/redteam/`](ref/redteam/). Every number reproduces: Thm 3 residual 8.9e-16, plane drift 8.9e-16, V − 4·GramDet 4.4e-16, V invariant under generic SO(7).
+
+Independent Go checks are in `redteam_test.go`:
+- **RT1:** ∇V computed from 4·GramDet(a,c) needs **0 OMUL** and matches the CD-MAC gradient to 1.7e-15. Timings: 29.6 ns vs 866 ns (CD-MAC) and 4687 ns (basis).
+- **RT2:** the full 400-step 16D trajectory is equivariant under a generic, **non-G₂** SO(7) rotation (automorphism defect 7.3; trajectory error 3.1e-15).
+- **RT3:** in contrast, ‖[x,y,z]‖² is G₂-torus-invariant (5e-12) but changes by up to ~3.6e3 under generic SO(7) (scale 7.7e3). Octonion structure enters only through 3-vector (associator) terms.
+
+**Impact on verdicts:** A1 and A2b are re-labelled *symmetry reduction, not CD-MAC evidence*. The Euclidean Gram gradient beats the 6-OMUL kernel by 29× and needs no CD multiplier. The rule-flow workload can't support claims for the multi-dimensional CU or for octonionic selection.
