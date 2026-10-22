@@ -38,6 +38,21 @@ func TestDetectionContext_EmptyIsLegacy(t *testing.T) {
 	}
 }
 
+// A NON-empty context whose leading byte is 0 still reports the legacy sentinel
+// (never a versioned schema), and its trailing bytes are recovered verbatim as
+// payload — so a stray/pre-#42 buffer that happens to carry data is dispatched
+// as "legacy, do not parse" rather than silently misread as schema-0 data.
+func TestDetectionContext_LeadingZeroNonEmptyIsLegacy(t *testing.T) {
+	dc := []byte{DetectionContextSchemaLegacy, 0xAA, 0xBB}
+	ver, payload := ParseDetectionContext(dc)
+	if ver != DetectionContextSchemaLegacy {
+		t.Fatalf("leading-zero ctx version = %d, want legacy=%d", ver, DetectionContextSchemaLegacy)
+	}
+	if string(payload) != string([]byte{0xAA, 0xBB}) {
+		t.Fatalf("parsed payload = %v, want [170 187]", payload)
+	}
+}
+
 // A payload is allowed to be empty: the version byte alone is a valid V1 context
 // (version present, zero-length payload) — distinct from the legacy sentinel.
 func TestDetectionContext_V1EmptyPayload(t *testing.T) {
