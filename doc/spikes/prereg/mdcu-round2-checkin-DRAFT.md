@@ -6,7 +6,7 @@ Responds to: qbp-architecture seq 3087 (10 refinements) and qbp-cu-implementor s
 Freeze rule: this file is frozen only when qbp-architecture signs off; `sha256sum` is recorded then and every later change is a dated amendment.
 Gate order (per 3087): qbp-architecture reviews the plan → @deming box-safety go → beekeeper run go.
 
-> **Disclosure (so thresholds are not mistaken for blind):** a single seed of each Pillar-2 test has already been seen (Test B: local-only SVD-3 share 0.61, locked 0.998; Test A/C canonical numbers). The null distributions, the multi-seed distributions and every Q2 quantity below have **not** been seen.
+> **Disclosure (so thresholds are not mistaken for blind):** a single seed of each Pillar-2 test has already been seen (Test B: local-only SVD-3 share 0.61, locked 0.998; Test A/C canonical numbers). **Harness smoke (2026-10-23, after draft v2):** one run of every kind at N=12, σ=0.1 was viewed for seed 1000 (a grid seed; first smoke, since moved to out-of-grid seed 9000) and for seed 9000. Observed (2 seeds, N=12 only, NOT evidence): the random alternating-tensor null (rand3) also reaches SVD-3 ≈ 0.975–1.000, while its φ₀ measures stay low (φ₀-fraction 0.00, plane |φ₀| 0.19–0.41, versus overlap 1.00 and 1.00). If that holds across seeds, SVD-3 does not separate octonion structure from a generic alternating-trilinear energy, and the φ₀-based statistics, currently secondary, would carry the null separation. **I have not changed the decision rule on this basis; that is flagged to qbp-architecture as a question, because switching the primary statistic after seeing smoke output is a researcher degree of freedom.** The null distributions across seeds and every Q2 quantity remain unseen.
 
 ## 1. Questions (restated; Pillar 1 is closed as a symmetry reduction)
 - **Q1.** Does Pillar-2 frame locking (Test B) survive an *independent, controlled* repro, with varied N, overlap, seeds and noise, against explicit nulls?
@@ -60,13 +60,23 @@ Answers will be yes / no / inconclusive. "Inconclusive" is allowed and not a fai
 - Hashing: this plan, seeds, parameter grid and the decision rules are hashed at freeze.
 
 ## 6. Resource estimate (assumed, scaled from measured)
-Measured: the whole Pillar-2 A+B+C suite runs in 0.38 s. Test B grid = 3 N × 3 couplings × 3 σ × 200 seeds ≈ 5,400 runs plus 3 null families ≈ 21,600 runs. **Assumed** ≲ 0.2–1 s each at N ≤ 48 → roughly 1–6 CPU-hours single-threaded worst case, run bounded to **1 core**, ≤ 100 MB RAM, ≤ 50 MB JSON output, no network, no GPU. Q2 benchmarks: ≲ 5 minutes. Both can be capped and aborted at a stated wall-clock limit; I would propose 2 h for Q1, to be set by deming.
+Measured: the whole Pillar-2 A+B+C suite runs in 0.38 s. **Harness measurement (2026-10-23):** one seed of all 6 kinds at N=12 takes 0.33 s (rand3 0.18 s, overlap 0.05 s, others <= 0.03 s). The grid is 9 cells x 200 seeds x 6 kinds = 10,800 runs (the three layouts and the nulls share one init per (N, σ, seed); null 2 is the disjoint layout). **Assumed** cost grows about linearly in N, so N=24 ≈ 0.7 s and N=48 ≈ 1.3 s per seed-of-6-kinds, giving roughly 3 σ x 200 seeds x (0.33+0.7+1.3 s) ≈ **23 min single-threaded** (assumed from the N=12 measurement; not measured at N=24/48). Run bounded to **1 core**, ≤ 100 MB RAM, ≤ 50 MB JSONL output, no network, no GPU. Q2 benchmarks: ≲ 5 minutes. The 2 h wall-clock cap proposed earlier stays as a conservative backstop, to be set by deming.
 
 ## 7. Capability-gap list
 No width or vector-tier dispatch in `CPU.Exec` (functional only); ZDCHK is a class check, not a detector (rename to `ZDCLASSCHK` is optional and pending); leaf engine only applies where the potential has the plane-rotation symmetry; Test B was ported from prose; no hardware or silicon numbers (model cycles only); FX-8350 has no AVX2; QW256 is a fixed-width reference, not arbitrary precision; the physics claims are out of scope.
 
 ## 8. Hygiene status
 `.pyc` removed and ignored; `albert_triality_test.go` committed (RT4 with the bracketing note); RT5 added; width-ladder label corrected. The `aa45861` tag is untouched.
+
+## 8b. Q1 harness (built, tested, NOT run as a grid)
+Code: `emulator/mdcu/q1grid.go`, `q1grid_test.go`, driver `emulator/cmd/mdcu-q1/main.go` (`-dry-run` only so far). Checks passing: `RunRingGen` is **bit-identical** to canonical `RunRing` for local and overlap on the canonical seed; `Q1Measure.SVD3` equals canonical `ringMetrics` (0.6097 / 0.9980); the random null is exactly alternating in (a,b,c) and has the same Frobenius norm as the true associator tensor; the true associator is antisymmetric. Driver kill conditions: wall cap, memory cap, free-disk floor, output cap, NaN.
+Deviations from the text above, for the reviewer:
+1. **Seeds** use Go `math/rand/v2` PCG (seeds 1000–1199), not numpy `default_rng`, so they are not the canonical numpy draws.
+2. **Null 3** is a random *alternating vector-valued trilinear map* with the associator tensor's Frobenius norm, not a scalar 3-form: the associator is vector-valued, so a scalar form cannot enter ‖A‖².
+3. **Disjoint** uses the true gradient of the plaquette energy; local/overlap keep the canonical (non-symmetrised) gradient so the main cell is the canonical dynamics.
+4. **"Frame"** is axis-aligned (7 Fano lines), but a locked plane may be any associative 3-plane (a G₂/SO(4) family), so the axis-aligned frame is coarse. The harness also stores the top-3 plane basis and `PlanePhi0` so a frame-independent spread analysis (pairwise principal angles across seeds) is possible. Question for qbp-architecture.
+5. `shuffle` permutes sites after an i.i.d. init, so it is distributionally the same as `overlap`; it is a realisation control only.
+
 
 ## 9. Amendment log
 | Date | Source | Change |
