@@ -31,7 +31,7 @@
 | Leaf 𝕊 ↔ 5D | QSPLIT.LEAF / QJOIN.LEAF | T-L4 per-step ≤ 2e-15 | ✅ 2.2e-16 per step; 2.1e-15 at t=8 (doc 1.72e-15) | 2 + 2 | 169 ns round-trip |
 | Leaf escape | LEAFCHK vs **CSR-locked** frame | T-L5 detects off-plane; no false trips | ✅ unperturbed r² ≤ 3.8e-30. A 1e-6 perturbation trips; a fresh re-extraction would miss it (asserted) | 2 | — |
 | Degenerate leaf | fallback frame | T-L5b orthonormal + round-trip | ✅ 4/4 cases | — | — |
-| Width QW64↔QW128 | QWIDEN / QNARROW | T-L6 widen exact, narrow ≤ 0.5 ulp, seam flag | ✅ exact; 0.000 ulp; seam fires | 1 | — |
+| Width QW64↔QW128 | QWIDEN / QNARROW | T-L6 widen exact, narrow ≤ 0.5 ulp, seam flag | ✅ exact; narrowed products equal RN(exact) in every component (0 ulp vs the float64-rounded 256-bit reference, hence ≤ 0.5 ulp vs exact); seam fires | 1 | — |
 | Diagonal | lift∘OMUL = SMUL∘lift | T-L7 bit-exact | ✅ 20k/20k | — | — |
 | Soak | 10⁶ leaf steps | T-L8 drift, escape | ✅ ‖q‖²−1 = 0, escape r² 3.6e-33 | — | 0.27 s |
 | ISA core | `CPU.Exec` program | split/join/assoc/leaf via Exec | ✅ 11 cycles, 7 ops | — | — |

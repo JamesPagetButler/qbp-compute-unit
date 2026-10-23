@@ -18,3 +18,5 @@ cmd/hw-eval/hw-eval
 # infrastructure/pkg/gap/gap_gated.go, removed in v0.3 prereqs) was an
 # initial-commit-era artifact pre-dating the worktrees pattern.
 worktrees/
+__pycache__/
+*.pyc

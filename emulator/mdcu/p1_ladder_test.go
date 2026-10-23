@@ -244,7 +244,7 @@ func TestL6_Width(t *testing.T) {
 		}
 		worstULP = math.Max(worstULP, ulpErr(z, MulBig(ToBig(x), ToBig(y))))
 	}
-	t.Logf("QW128→QW64 product worst %.3f ulp; seam fired %d/20000 at budget 1e-30", worstULP, seams)
+	t.Logf("QW128→QW64 product: worst deviation from RN(exact) %.3f ulp (0 ⇒ correctly rounded ⇒ ≤ 0.5 ulp vs exact); seam fired %d/20000 at budget 1e-30", worstULP, seams)
 	if worstULP > 0.5+1e-9 || seams == 0 {
 		t.Fatal("L6 gate failed")
 	}
