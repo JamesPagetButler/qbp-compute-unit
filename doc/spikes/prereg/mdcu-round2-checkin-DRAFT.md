@@ -1,6 +1,6 @@
 # MDCU spike, round 2: check-in and pre-registration (DRAFT)
 
-**Status: DRAFT. Not posted, not frozen. Nothing in this plan has been run.**
+**Status: DRAFT v2 (amended per mdcu-spike seq 2, 3, 4). Posted for review, NOT frozen. Nothing in this plan has been run.**
 Author: Antigravity seat · 2026-10-23 · branch `spike/mdcu-xqbp-v2` (record tag `spike-record/mdcu-xqbp-v2-aa45861`, which I will not touch)
 Responds to: qbp-architecture seq 3087 (10 refinements) and qbp-cu-implementor seq 3080.
 Freeze rule: this file is frozen only when qbp-architecture signs off; `sha256sum` is recorded then and every later change is a dated amendment.
@@ -33,9 +33,11 @@ Answers will be yes / no / inconclusive. "Inconclusive" is allowed and not a fai
 4. *Initial-condition control:* shuffle sites after initialisation to remove any ordering bias.
 **Statistics, reported as full distributions with quantiles (5/25/50/75/95):** top-3 SVD share of `Z[:,1:]`; mean ‖[Z_{i-1},Z_i,Z_{i+1}]‖²; fraction of consecutive triples whose 3-plane has φ₀ ≥ 1−δ (δ = 0.05) under the *standard* φ₀; frame-indexed and 7-frame-averaged associator measures.
 **Pre-registered decision rule (proposed; qbp-architecture to amend before freeze):**
-- **Q1 = yes** iff, in the overlapping/N=24/σ=0.1 cell, the SVD-3 share is ≥ 0.95 in ≥ 90% of seeds **and** the 95th percentile of the same statistic under nulls 1–3 is < 0.80, **and** the effect persists (≥ 0.90 in ≥ 80% of seeds) at N = 12 and 48.
+- **Q1 = yes** iff, in the overlapping/N=24/σ=0.1 cell, the SVD-3 share is ≥ 0.95 in ≥ 90% of seeds **and** the 95th percentile of the same statistic under nulls 1–3 is < 0.80, **and** the effect persists (≥ 0.90 in ≥ 80% of seeds) at N = 12 and 48, **and** (v2, arch #1) the median SVD-3 gap (overlap minus null 3) is ≥ 0.15 with a bootstrap 95% CI excluding 0, **and** (v2, arch #2) the selection is spontaneous: no single Fano frame is selected in > 50% of seeds.
 - **Q1 = no** iff nulls 2 or 3 reach ≥ 0.95 in ≥ 50% of seeds.
 - Otherwise **inconclusive**.
+- **Frame-selection definition (v2, proposed, for arch to confirm):** per seed, take the 3-D top-SVD subspace of `Z[:,1:]` and assign the Fano line (of the 7) with the largest squared projection of that subspace onto its three axes. Report the 7-bin histogram across seeds. ("Up to G₂" means the 7 lines are interchangeable by automorphism, so the histogram, not the label, is what matters.)
+- **Run order (v2, arch #3, pre-registered so the cap truncates the least important part):** (1) main cell overlap/N=24/σ=0.1 plus all 4 nulls; (2) N=12 and N=48; (3) the remaining σ and coupling cells. If deming's cap bites, report the completed cells and what was skipped.
 **Known concern, flagged for reviewers:** minimising an energy built from φ₀ and finding φ₀-calibrated planes may be close to tautological. The φ₀-calibration statistic is therefore *secondary*; the primary claim is only robustness and null-separation of the locking, not that dynamics "chooses" octonions.
 
 ## 4. Q2 design
@@ -46,7 +48,9 @@ Answers will be yes / no / inconclusive. "Inconclusive" is allowed and not a fai
 - **B1** the CD-MAC path.
 - Not used: the 34-OMUL loop, and any exact-invariant method vs an unrelated approximation (SPINN confound).
 **Prediction (pre-registered, falsifiable):** B0 matches or beats B1 in MACs and in host ns/op, so **Q2 = no for the MDCU on host speed**. Any MDCU advantage, if it exists, will be in the *model-cycle* column (tile model) at equal P and I expect it, if present, to be ≤ 2×. I record this so the result is a genuine test; it is not a hoped-for outcome.
-**Q2 decision rule:** yes iff B1's model cycles are ≤ 0.5× B0's at P=8 *and* the workload passes the admission rule; no iff B0 ≤ B1 on every column; else inconclusive. Branch: **B** (spike), per inter#197.
+**Agreement gate (v2, arch #4):** B0 and B1 must agree normwise (≤ 1e-12 relative) on the same inputs, or the comparison does not count.
+**B0 tiling rule (v2, arch #5 and qbp-cu-implementor seq 4; proposed, for review):** B0's multiplies are scheduled as independent scalar-MAC streams on the same P tiles with the same per-tile multiplier budget m that `sched.go` gives a CD-MAC tile (m read from the code at freeze, not hand-assigned). B0's model cycles come from the same code path that computes its op count. A model-cycle "yes" is reported only as *advantage under a symmetrically-applied ISA cost model (sched.go), not silicon*.
+**Q2 decision rule:** yes iff B1's model cycles are ≤ 0.5× B0's at P=8 *and* the workload passes the admission rule *and* the agreement gate passes; no iff B0 ≤ B1 on every column; else inconclusive. Branch: **B** (spike/napkin grade), per inter#197.
 
 ## 5. Controls and honesty rules (points 4–8)
 - RT2/RT3 as a reusable gate helper, run on every claim.
@@ -63,6 +67,16 @@ No width or vector-tier dispatch in `CPU.Exec` (functional only); ZDCHK is a cla
 
 ## 8. Hygiene status
 `.pyc` removed and ignored; `albert_triality_test.go` committed (RT4 with the bracketing note); RT5 added; width-ladder label corrected. The `aa45861` tag is untouched.
+
+## 9. Amendment log
+| Date | Source | Change |
+|---|---|---|
+| 2026-10-23 | arch seq 2 #1 | Q1 effect-size floor (gap ≥ 0.15, bootstrap CI excludes 0) |
+| 2026-10-23 | arch seq 2 #2 | Spontaneity test: frame histogram, no frame > 50% of seeds |
+| 2026-10-23 | arch seq 2 #3 | Pre-registered run order |
+| 2026-10-23 | arch seq 2 #4 | Q2 agreement gate ≤ 1e-12 relative |
+| 2026-10-23 | arch #5, impl seq 4 | B0 tiling rule pre-registered; same code path for ops and cycles; "symmetrically-applied cost model" wording |
+| 2026-10-23 | arch #9 | `ZDCLASSCHK` rename recommended by arch and impl; the unit's name is the beekeeper's call, not applied |
 
 ---
 ## Bridge-ready summary (≤ one message; not posted)
