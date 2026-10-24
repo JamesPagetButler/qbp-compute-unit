@@ -1,5 +1,11 @@
 name: Verify Lean ROMs
 
+# Supersede an in-flight run when a newer commit arrives on the same ref
+# (federation CI convention, inter/github-best-practices §4.2.1 / inter#35, #80).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # Runs lean2rom -verify on every push and PR to ensure roms/ are in sync
 # with lean/QBP/Sedenion.lean. A checksum mismatch is a hard fail.
 #
