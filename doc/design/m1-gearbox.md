@@ -377,7 +377,17 @@ SeamEvent (substrate, peripheral goroutine)
 
 **Cross-tenant origin attribution (clarification per `@qbp-implementor` consultative F1):** when a Seam fires on a node imported from the Wyrd graph (e.g., an `NT_SIGNAL` hyperedge minted by a QBP scout-daemon), the v0.2 `Locale.WorkingTreeNodeID` references the BMA-side working-tree node that held the imported signal at peripheral-scan time — not the originating Wyrd graph node. Cross-tenant origin attribution back to the QBP-scout-minted Wyrd node is reconstructed by the BMA consumer joining `Locale.WorkingTreeNodeID` against its working-tree-node → Wyrd-graph-node back-pointer table. The substrate does not see Wyrd graph state directly.
 
-**`DetectionContext` schema discipline (per `@bma-implementor` + `@qbp-architecture` non-blocking observations):** at v0.2 the payload format is co-designed between substrate emitter (m1.3 OnSeam impl PR) and the BMA harness consumer; both ship simultaneously, so a version tag is not load-bearing yet. v0.3+ when independent evolution begins (likely Walk-α as QBP-CU Gearbox iterations diverge from BMA harness iterations), the impl PR should reserve the first byte of `DetectionContext` as a schema-version tag so consumers can dispatch parsers correctly across versions. Tracked as a v0.3 housekeeping follow-up; not blocking the v0.2 design surface.
+**`DetectionContext` schema discipline (RATIFIED, issue #42 — per `@bma-implementor` + `@qbp-architecture` §I4 convergence on option (a), leading version-byte):** the first byte of `DetectionContext` is a `uint8` schema-version tag; bytes `1..N` are the schema-specific payload, still opaque to the substrate.
+
+```
+byte 0      schema version (uint8); 0 reserved = "unversioned/legacy" sentinel; real schemas 1..255
+byte 1..N   opaque payload (substrate emits verbatim; consumer dispatches on byte 0)
+```
+
+- Substrate helpers: `NewDetectionContextV1(payload)` stamps byte 0 = `DetectionContextSchemaV1` (1) and appends the payload verbatim; `ParseDetectionContext(dc)` returns `(version, payload)`, with an empty/nil context yielding `(DetectionContextSchemaLegacy=0, nil)` so an unpopulated field is never mistaken for a versioned one (`emulator/detection_context.go`).
+- Substrate stamps/strips the version byte only — it never interprets the payload, preserving the substrate-emits-verbatim discipline above.
+- **Consumer contract:** dispatch parsers on byte 0 and explicitly refuse unrecognized versions (clean "I don't recognize this format" instead of silent garbage). The BMA harness adopts `ParseDetectionContext`-style dispatch when it begins reading/populating `DetectionContext`.
+- **Non-breaking:** nothing populates `DetectionContext` today (zero-by-default), so this is additive forward-compat scaffolding — the first populated format simply starts at V1; there is no legacy wire format to migrate. The version-byte becomes load-bearing at Walk-α when QBP-CU Gearbox iterations diverge from the BMA-harness iterations.
 
 **Implementation sequencing:** the v0.2 SeamEvent struct + LocaleRef type land as part of the m1.3 OnSeam implementation PR (impl-side; per §8 PR 3 scope-glob). The struct shape committed here is the design surface those implementation PRs ride on.
 
