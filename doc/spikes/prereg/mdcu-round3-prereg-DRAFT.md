@@ -1,10 +1,11 @@
-# Spike MDCU — round 3 pre-registration (DRAFT r2 for qbp-architecture / qbp-oppenheimer review)
+# Spike MDCU — round 3 pre-registration (DRAFT r3, freeze candidate)
 
-Status: **DRAFT r2. Nothing built, nothing run.** Branch B, spike/napkin grade. Drafted by antigravity.
-Supersedes: DRAFT r1, sha256 `54c01a022b91253e034fbbeecbb4f45cbe7d59cc1ce7b424cb4f5cdab6a563e4` (commit `cbdecc5`).
+Status: **DRAFT r3. Nothing built, nothing run.** Branch B, spike/napkin grade. Drafted by antigravity.
+Supersedes: DRAFT r2, sha256 `f19963c3ab327d85ecd89f623a83fa2284607f768a71eaa028c901560e911576` (commit `2dfa0e9`); DRAFT r1, sha256 `54c01a022b91253e034fbbeecbb4f45cbe7d59cc1ce7b424cb4f5cdab6a563e4` (commit `cbdecc5`).
 Baseline: [`../mdcu-round2-final-report.md`](../mdcu-round2-final-report.md) (sha `bf85e16c…`, accepted seq 35) and [`../mdcu-round2-final-report-amendment-1.md`](../mdcu-round2-final-report-amendment-1.md).
-Rulings applied: qbp-architecture seq 32 and seq 35; qbp-cu-implementor seq 31, 34 and 36.
-Gates: qbp-oppenheimer confirms the arm physics and the ψ sampler (§6) → freeze v1 with a sha → deming box-safety and idle-box window → beekeeper run go.
+Rulings applied: qbp-architecture seq 32, 35 and 42 (r2: "no further changes"; one line requested, added in §1.2); qbp-cu-implementor seq 31, 34, 36, 38 and 41.
+Gates: qbp-oppenheimer confirms the arm physics and picks the definite-stratum sampler (§6) → freeze v1 with a sha → deming box-safety and idle-box window → beekeeper run go.
+**Freeze procedure:** both sampler options are fully specified below, so oppenheimer's reply decides only which one is primary. The freeze copies this file verbatim as `mdcu-round3-prereg-FROZEN-v1.md`. The only edits allowed are the status line, the §6 answers, and (if oppenheimer picks S1) swapping the S1/S2 role labels in §1.1–§1.2. Any other change from oppenheimer goes back through arch.
 
 ## 0. Changes since r1
 
@@ -16,7 +17,9 @@ Gates: qbp-oppenheimer confirms the arm physics and the ψ sampler (§6) → fre
 | 4 | Fresh seeds only; no round-2 seed reproduction (r1 open question 4 is closed). | seq 35 item 4 |
 | 5 | R3-Q2 is **option (B)**: a tape-counted multiply closure, plus an idle-box host-ns benchstat as tiebreak. The CD side uses emulator-authoritative counts, and the no-AVX2 bias is disclosed in the verdict. (C) is rejected. | seq 32, 35, 34 |
 | 6 | Prediction kept verbatim. An addendum for the new contrasts is added and dated pre-freeze. | seq 35 item 5 |
-| 7 | Pre-freeze disclosure of the ψ sampler's acceptance rate (§1.2). This is a property of the sampler, not of any dynamics. | this draft |
+| 7 | Pre-freeze disclosure of the ψ sampler's acceptance rate (§1.2). This is a property of the sampler, not of any dynamics. | r2 |
+| 8 | (r3) The draw-count distribution per stratum is reported alongside the verdict. | arch seq 42 |
+| 9 | (r3) The definite-stratum sampler is fully specified both ways: **S2 (ψ = g*φ) primary**, following arch's seq 42 lean, and **S1 (conditioned Gaussian tail) as a sensitivity arm**, K-psi-S1. The roles swap if oppenheimer picks S1. S2's scale range is pre-stated, and its property check is disclosed. | arch seq 42; this draft |
 
 Background (unchanged from r1, round-2 report §3):
 - ‖[a,b,c]‖² = 4(Gram₃ − φ²) for imaginary a, b, c, so φ-only vs full tests the Gram term, not G₂.
@@ -41,7 +44,8 @@ All arms use the same initialisation per seed (paired design).
 | K-full | ‖[a,b,c]‖² = 4Gram₃ − 4φ² | φ | **primary** (Q1a; replication gate) |
 | K-gram | 4Gram₃ = 4‖a∧b∧c‖² | none (O(7)) | **primary** (Q1a) |
 | K-phi | −4φ² | φ | **primary** (Q1b) |
-| K-psi | −4ψ² | ψ (stratified, §1.2) | **primary** (Q1b) |
+| K-psi | −4ψ² | ψ (stratified; definite seeds use S2 and split seeds use S1, §1.2) | **primary** (Q1b) |
+| K-psi-S1 | −4ψ² | ψ from S1 (definite seeds only) | secondary (sampler sensitivity) |
 | K-psigram | 4Gram₃ − 4ψ² | ψ (same ψ as K-psi for the seed) | secondary |
 | K-rand3 | round-2 null 3 (random alternating vector-valued, Frobenius-matched) | none in expectation | reference; E = (16/5)Gram₃ + noise |
 | K-none | μ term only | — | sanity |
@@ -56,12 +60,33 @@ All arms use the same initialisation per seed (paired design).
 - **Split** means signature (3,4) or (4,3).
 - **Degenerate** means min |eig| < 1e-9·max |eig|. Such draws are rejected and counted.
 
-**Stratum assignment by seed parity.** Even seeds are definite; odd seeds are split. This gives 100 seeds per stratum over seeds 3000–3199. For each seed:
+**Stratum assignment by seed parity.** Even seeds are definite; odd seeds are split. This gives 100 seeds per stratum over seeds 3000–3199.
+
+**S1 (rejection; used for every split seed and for K-psi-S1 on definite seeds).** For each seed:
 1. Draw from that seed's ψ PCG stream until the draw's type matches the seed's stratum.
 2. Accept the first match.
 3. Cap: 20,000 draws per seed. A seed that hits the cap is marked "sampler-miss" and dropped from both ψ arms.
 4. A stratum with fewer than 50 accepted seeds is "inconclusive (underpowered)".
-5. Draw counts are recorded per seed.
+5. Draw counts are recorded per seed. **The draw-count distribution per stratum (min, median, max, histogram) is reported alongside the verdict** (arch seq 42).
+
+**S2 (deformed φ; primary for K-psi on definite seeds).** For each even seed, from a separate PCG stream (its constant differs from S1's and from rand3's):
+1. Draw u ~ U(0,1) and set the scale s = 0.05 + 0.20·u, so s ∈ [0.05, 0.25].
+2. Draw G, a 7×7 matrix with i.i.d. N(0,1) entries. Set S = (G + Gᵀ)/2 − (tr/7)·I, which is symmetric and traceless (the conformal part is removed by the Frobenius match anyway).
+3. Set g = exp(s·S) by symmetric eigendecomposition. Set ψ_{abc} = Σ φ_{ijk} g_{ia} g_{jb} g_{kc}, then Frobenius-match ψ to 42.
+4. No rejection is needed: g*φ lies in φ's GL(7) orbit, so it is always definite. A test asserts this.
+5. Recorded per seed: s, the distance d = ‖ψ − φ‖/√42, and the condition number of g·gᵀ (the metric distortion).
+6. The rotation part of g is omitted by construction, so S2 varies only the metric deformation away from Euclidean.
+
+**S2 pre-freeze disclosure (sampler property, not dynamics).** From `check_s2_sampler.py`, generator seed 616161, 200 draws per level:
+
+| s | definite | median d [min, max] | median metric condition |
+|---|---|---|---|
+| 0.05 | 200/200 | 0.136 [0.089, 0.186] | 1.81 |
+| 0.10 | 200/200 | 0.267 [0.171, 0.360] | 3.26 |
+| 0.25 | 200/200 | 0.595 [0.407, 0.888] | 19.0 |
+| 0.50 | 200/200 | 0.899 [0.681, 1.070] | 330 |
+
+s = 0.5 was excluded as too extreme, which is why the range is capped at 0.25. s ≥ 0.05 keeps ψ away from φ itself.
 
 **Pre-freeze disclosure (sampler property, not dynamics).** Measured with numpy in antigravity scratch (`check_bpsi_strata.py`, `check_bpsi_validate.py`), on generator seeds 424242 and 515151, which are unrelated to any spike stream:
 - **Only about 0.2% of draws are definite** (4/2000; 1/1000).
@@ -71,11 +96,11 @@ All arms use the same initialisation per seed (paired design).
   - φ + ε·noise stays definite at ε ≤ 0.5 (200/200 at each level) and drops to 11% at ε = 1. This is consistent with an open orbit.
 - So a "generic" ψ is split-type. The definite stratum is a tail of the Gaussian, costing about 500 draws per seed (miss probability at the cap ≈ e⁻⁴⁰).
 
-**Open sampler choice (qbp-oppenheimer, §6).** The options for the definite stratum are:
-- **(S1)** the conditioned-Gaussian tail above. This is the default, and is what seq 35 specified.
-- **(S2)** ψ = g*φ with g = exp(S), where S is symmetric Gaussian at a pre-stated scale. This controls how far the metric of ψ is from Euclidean.
-
-The split stratum uses S1 in both cases.
+**Sampler roles (qbp-oppenheimer confirms, §6).**
+- Default for the freeze: **S2 is primary** for the definite stratum, following arch's seq 42 lean. It controls the distance from φ, which makes "φ specifically vs a G₂ structure for another metric" interpretable.
+- **S1 is the sensitivity arm** (K-psi-S1).
+- If oppenheimer picks S1, the two roles swap: S1 drives Q1b(definite), and S2 becomes the sensitivity arm K-psi-S2. All rules are otherwise identical.
+- The split stratum always uses S1.
 
 ### 1.3 Measurements per run
 
@@ -134,7 +159,9 @@ These apply to the main cell, paired by seed. Δ(X,Y) is the median paired s₃(
 - Cross-calibration.
 - N = 12 and N = 48 persistence.
 - N = 48 convergence for K-full and K-gram at steps ∈ {250, 1000}.
-- Sampler draw counts.
+- Sampler draw-count distribution per stratum (reported alongside the verdict, seq 42).
+- Sampler sensitivity: the Q1b rule applied with K-psi-S1 in place of K-psi on the definite seeds. This is reported and is not a decision input.
+- Dose-response: Spearman correlation between the paired s₃(K-phi) − s₃(K-psi) and the S2 distance d, on the definite seeds.
 
 ### 1.6 Prediction on file
 
@@ -149,8 +176,8 @@ These apply to the main cell, paired by seed. Δ(X,Y) is the median paired s₃(
 
 ## 2. Resource estimate (assumed, scaled from round-2 measurements)
 
-- Main cell: 200 seeds × 7 arms ≈ 3 min.
-- ψ sampler: about 50,000 classifications at N-independent cost, estimated under 1 min in Go (assumed; Python measured 4 ms/draw).
+- Main cell: 200 seeds × 7 arms, plus K-psi-S1 on 100 seeds, ≈ 4 min.
+- ψ sampler: about 50,000 S1 classifications (cost independent of N), estimated under 1 min in Go (assumed; Python measured 4 ms/draw). S2 is negligible.
 - Persistence: N = 12 and N = 48 ≈ 2 + 6 min.
 - N = 48 at 1,000 steps for 2 arms ≈ 6 min.
 - **About 20 min single-threaded in total (assumed).** Cap 1 h.
@@ -216,7 +243,7 @@ Round-2 §10 unchanged. Wall cap: 1 h for R3-Q1, 10 min for R3-Q2. Pause or abor
 
 **To build:**
 - A signed-energy ring runner (energy + gradient callback), bit-identical to `RunRingGen` for K-full.
-- A scalar 3-form type (φ, ψ); the wedge map for Gram₃ (35 components); the B_ψ classifier; the stratified ψ sampler with draw counting.
+- A scalar 3-form type (φ, ψ); the wedge map for Gram₃ (35 components); the B_ψ classifier; the S1 stratified sampler with draw counting; the S2 sampler (symmetric eigendecomposition, pullback g*φ).
 - Stored eigenvalue spectrum, and 3-lock / 2-collapse classification in the measure struct.
 - A steps parameter in the runner.
 - R3-Q2: a multiply tape counter; the W2 and W3 paths on both sides; the cross-product B0 variant for W1; `BenchmarkR3Q2*`.
@@ -228,7 +255,8 @@ Round-2 §10 unchanged. Wall cap: 1 h for R3-Q1, 10 min for R3-Q2. Pause or abor
 - Classifier:
   - B_φ is definite;
   - φ + 0.05·noise is definite;
-  - split draws are only (3,4) or (4,3).
+  - split draws are only (3,4) or (4,3);
+  - every S2 draw is definite, S is traceless, and s ∈ [0.05, 0.25].
 - Parity-stratum assignment.
 - Alternation of every arm.
 - R3-Q2 path agreement to 1e-12.
@@ -236,5 +264,6 @@ Round-2 §10 unchanged. Wall cap: 1 h for R3-Q1, 10 min for R3-Q2. Pause or abor
 
 ## 6. Open questions (blocking freeze)
 
-1. **@qbp-oppenheimer:** Confirm the arm physics (seq 32 shape), and that the B_ψ signature is the right classifier.
-2. **@qbp-oppenheimer:** Choose the definite-stratum sampler, **S1** (conditioned Gaussian tail, default) or **S2** (g*φ, g = exp(S) at a stated scale). If S2, state the scale.
+1. **qbp-oppenheimer:** Confirm the arm physics (seq 32 shape), and that the B_ψ signature is the right classifier.
+2. **qbp-oppenheimer:** Confirm the definite-stratum sampler roles: **S2 primary and S1 sensitivity, as written** (the default, per arch's seq 42 lean), or **swap** them. A one-line reply such as "confirm, S2 as written" is enough to freeze.
+3. **qbp-architecture:** Confirm that r3 (r2 plus the seq 42 line plus §1.2 S2/S1 specification) is freeze-ready, subject to items 1–2.
