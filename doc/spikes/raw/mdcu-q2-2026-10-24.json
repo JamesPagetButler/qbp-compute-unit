@@ -1,0 +1,462 @@
+{
+ "date": "2026-10-24",
+ "agreement_worst_normwise": 5.8141373003245e-16,
+ "loadavg_at_start": "3.58 3.27 3.00 2/2360 27",
+ "loadavg_at_end": "4.37 3.49 3.08 3/2392 27",
+ "wall_seconds": 34.320120868,
+ "host_ns_complete": true,
+ "rows": [
+  {
+   "variant": "B1lit",
+   "side": "B1",
+   "macs_per_det": 157,
+   "critical_path_batches": 3,
+   "cells": [
+    {
+     "batch": 1,
+     "p": 1,
+     "ideal_cycles": 3,
+     "dep_cycles": 5
+    },
+    {
+     "batch": 1,
+     "p": 2,
+     "ideal_cycles": 2,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 1,
+     "p": 4,
+     "ideal_cycles": 1,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 1,
+     "p": 8,
+     "ideal_cycles": 1,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 1,
+     "p": 16,
+     "ideal_cycles": 1,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 64,
+     "p": 1,
+     "ideal_cycles": 157,
+     "dep_cycles": 320
+    },
+    {
+     "batch": 64,
+     "p": 2,
+     "ideal_cycles": 79,
+     "dep_cycles": 161
+    },
+    {
+     "batch": 64,
+     "p": 4,
+     "ideal_cycles": 40,
+     "dep_cycles": 81
+    },
+    {
+     "batch": 64,
+     "p": 8,
+     "ideal_cycles": 20,
+     "dep_cycles": 41
+    },
+    {
+     "batch": 64,
+     "p": 16,
+     "ideal_cycles": 10,
+     "dep_cycles": 22
+    },
+    {
+     "batch": 512,
+     "p": 1,
+     "ideal_cycles": 1256,
+     "dep_cycles": 2560
+    },
+    {
+     "batch": 512,
+     "p": 2,
+     "ideal_cycles": 628,
+     "dep_cycles": 1281
+    },
+    {
+     "batch": 512,
+     "p": 4,
+     "ideal_cycles": 314,
+     "dep_cycles": 641
+    },
+    {
+     "batch": 512,
+     "p": 8,
+     "ideal_cycles": 157,
+     "dep_cycles": 321
+    },
+    {
+     "batch": 512,
+     "p": 16,
+     "ideal_cycles": 79,
+     "dep_cycles": 162
+    }
+   ],
+   "host_ns_samples": [
+    277.63920396467404,
+    273.2919111686186,
+    275.0405312585366,
+    276.002302905264,
+    273.81403239831513,
+    288.554029555643
+   ],
+   "host_ns_median": 276.002302905264
+  },
+  {
+   "variant": "B1lean",
+   "side": "B1",
+   "macs_per_det": 101,
+   "critical_path_batches": 3,
+   "cells": [
+    {
+     "batch": 1,
+     "p": 1,
+     "ideal_cycles": 2,
+     "dep_cycles": 5
+    },
+    {
+     "batch": 1,
+     "p": 2,
+     "ideal_cycles": 1,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 1,
+     "p": 4,
+     "ideal_cycles": 1,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 1,
+     "p": 8,
+     "ideal_cycles": 1,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 1,
+     "p": 16,
+     "ideal_cycles": 1,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 64,
+     "p": 1,
+     "ideal_cycles": 101,
+     "dep_cycles": 320
+    },
+    {
+     "batch": 64,
+     "p": 2,
+     "ideal_cycles": 51,
+     "dep_cycles": 161
+    },
+    {
+     "batch": 64,
+     "p": 4,
+     "ideal_cycles": 26,
+     "dep_cycles": 81
+    },
+    {
+     "batch": 64,
+     "p": 8,
+     "ideal_cycles": 13,
+     "dep_cycles": 41
+    },
+    {
+     "batch": 64,
+     "p": 16,
+     "ideal_cycles": 7,
+     "dep_cycles": 22
+    },
+    {
+     "batch": 512,
+     "p": 1,
+     "ideal_cycles": 808,
+     "dep_cycles": 2560
+    },
+    {
+     "batch": 512,
+     "p": 2,
+     "ideal_cycles": 404,
+     "dep_cycles": 1281
+    },
+    {
+     "batch": 512,
+     "p": 4,
+     "ideal_cycles": 202,
+     "dep_cycles": 641
+    },
+    {
+     "batch": 512,
+     "p": 8,
+     "ideal_cycles": 101,
+     "dep_cycles": 321
+    },
+    {
+     "batch": 512,
+     "p": 16,
+     "ideal_cycles": 51,
+     "dep_cycles": 162
+    }
+   ],
+   "host_ns_samples": [
+    161.6845134446895,
+    201.17682643577675,
+    161.83675881522282,
+    175.2213622678298,
+    167.56246290918534,
+    160.53531749879917
+   ],
+   "host_ns_median": 167.56246290918534
+  },
+  {
+   "variant": "B0a",
+   "side": "B0",
+   "macs_per_det": 157,
+   "critical_path_batches": 3,
+   "cells": [
+    {
+     "batch": 1,
+     "p": 1,
+     "ideal_cycles": 3,
+     "dep_cycles": 5
+    },
+    {
+     "batch": 1,
+     "p": 2,
+     "ideal_cycles": 2,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 1,
+     "p": 4,
+     "ideal_cycles": 1,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 1,
+     "p": 8,
+     "ideal_cycles": 1,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 1,
+     "p": 16,
+     "ideal_cycles": 1,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 64,
+     "p": 1,
+     "ideal_cycles": 157,
+     "dep_cycles": 320
+    },
+    {
+     "batch": 64,
+     "p": 2,
+     "ideal_cycles": 79,
+     "dep_cycles": 161
+    },
+    {
+     "batch": 64,
+     "p": 4,
+     "ideal_cycles": 40,
+     "dep_cycles": 81
+    },
+    {
+     "batch": 64,
+     "p": 8,
+     "ideal_cycles": 20,
+     "dep_cycles": 41
+    },
+    {
+     "batch": 64,
+     "p": 16,
+     "ideal_cycles": 10,
+     "dep_cycles": 22
+    },
+    {
+     "batch": 512,
+     "p": 1,
+     "ideal_cycles": 1256,
+     "dep_cycles": 2560
+    },
+    {
+     "batch": 512,
+     "p": 2,
+     "ideal_cycles": 628,
+     "dep_cycles": 1281
+    },
+    {
+     "batch": 512,
+     "p": 4,
+     "ideal_cycles": 314,
+     "dep_cycles": 641
+    },
+    {
+     "batch": 512,
+     "p": 8,
+     "ideal_cycles": 157,
+     "dep_cycles": 321
+    },
+    {
+     "batch": 512,
+     "p": 16,
+     "ideal_cycles": 79,
+     "dep_cycles": 162
+    }
+   ],
+   "host_ns_samples": [
+    237.7417800964848,
+    237.7434516369607,
+    233.50514562677486,
+    237.5222415059462,
+    240.62711084397117,
+    240.95376750772843
+   ],
+   "host_ns_median": 237.7434516369607
+  },
+  {
+   "variant": "B0b",
+   "side": "B0",
+   "macs_per_det": 118,
+   "critical_path_batches": 3,
+   "cells": [
+    {
+     "batch": 1,
+     "p": 1,
+     "ideal_cycles": 2,
+     "dep_cycles": 5
+    },
+    {
+     "batch": 1,
+     "p": 2,
+     "ideal_cycles": 1,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 1,
+     "p": 4,
+     "ideal_cycles": 1,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 1,
+     "p": 8,
+     "ideal_cycles": 1,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 1,
+     "p": 16,
+     "ideal_cycles": 1,
+     "dep_cycles": 3
+    },
+    {
+     "batch": 64,
+     "p": 1,
+     "ideal_cycles": 118,
+     "dep_cycles": 320
+    },
+    {
+     "batch": 64,
+     "p": 2,
+     "ideal_cycles": 59,
+     "dep_cycles": 161
+    },
+    {
+     "batch": 64,
+     "p": 4,
+     "ideal_cycles": 30,
+     "dep_cycles": 81
+    },
+    {
+     "batch": 64,
+     "p": 8,
+     "ideal_cycles": 15,
+     "dep_cycles": 41
+    },
+    {
+     "batch": 64,
+     "p": 16,
+     "ideal_cycles": 8,
+     "dep_cycles": 22
+    },
+    {
+     "batch": 512,
+     "p": 1,
+     "ideal_cycles": 944,
+     "dep_cycles": 2560
+    },
+    {
+     "batch": 512,
+     "p": 2,
+     "ideal_cycles": 472,
+     "dep_cycles": 1281
+    },
+    {
+     "batch": 512,
+     "p": 4,
+     "ideal_cycles": 236,
+     "dep_cycles": 641
+    },
+    {
+     "batch": 512,
+     "p": 8,
+     "ideal_cycles": 118,
+     "dep_cycles": 321
+    },
+    {
+     "batch": 512,
+     "p": 16,
+     "ideal_cycles": 59,
+     "dep_cycles": 162
+    }
+   ],
+   "host_ns_samples": [
+    95.57859262072871,
+    113.57804655628215,
+    92.93673131361803,
+    92.36748477309457,
+    94.40051203619402,
+    92.66177233160371
+   ],
+   "host_ns_median": 94.40051203619402
+  }
+ ],
+ "verdict_primary": {
+  "b1": "B1lit",
+  "b0": "B0b",
+  "yes_rule": false,
+  "no_rule": true,
+  "result": "no",
+  "ordering_measured_columns": "B0,B0,B0"
+ },
+ "verdict_b1lean_sensitivity": {
+  "b1": "B1lean",
+  "b0": "B0b",
+  "yes_rule": false,
+  "no_rule": false,
+  "result": "inconclusive",
+  "ordering_measured_columns": "B1,B0,B0"
+ },
+ "verdict_of_record": "inconclusive (B1-variant-sensitive)",
+ "notes": [
+  "MACs are fixed by construction (arithmetic, not evidence).",
+  "Model cycles: symmetric tile model, 64 lanes/tile, one batch per tile-cycle, identical parameters both sides; assumed, not silicon.",
+  "Bound (i) ideal = ceil(mults/(64P)); bound (ii) dep = greedy list schedule on P tiles.",
+  "Host ns measured on this box, GOMAXPROCS=1, median of 6. Columns never merged.",
+  "Decisive cell batch 64, P=8. Batch 1/512 at P=1/8 is a secondary, non-deciding sweep."
+ ]
+}
