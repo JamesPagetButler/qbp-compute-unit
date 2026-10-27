@@ -1,0 +1,83 @@
+# R3-Q2 host-ns raw output
+# started: 2026-10-26T22:09:30-04:00
+# load_start: 1.17 0.99 1.04
+# cpu: AMD FX(tm)-8350 Eight-Core Processor
+# go: go version go1.24.2 linux/amd64
+goos: linux
+goarch: amd64
+pkg: github.com/JamesPagetButler/qbp-compute-unit/emulator/mdcu
+cpu: AMD FX(tm)-8350 Eight-Core Processor           
+BenchmarkR3Q2W1CD_B1lean     	   23857	     10201 ns/op
+BenchmarkR3Q2W1CD_B1lean     	   23730	     10159 ns/op
+BenchmarkR3Q2W1CD_B1lean     	   23578	      9944 ns/op
+BenchmarkR3Q2W1CD_B1lean     	   23994	     10069 ns/op
+BenchmarkR3Q2W1CD_B1lean     	   23662	     10130 ns/op
+BenchmarkR3Q2W1CD_B1lean     	   23712	     10187 ns/op
+BenchmarkR3Q2W1CD_B1lean     	   23404	     10172 ns/op
+BenchmarkR3Q2W1CD_B1lean     	   23689	     10193 ns/op
+BenchmarkR3Q2W1CD_B1lean     	   23688	     10234 ns/op
+BenchmarkR3Q2W1CD_B1lean     	   23408	     10145 ns/op
+BenchmarkR3Q2W1NonCD_B0b     	   40485	      5875 ns/op
+BenchmarkR3Q2W1NonCD_B0b     	   40242	      6164 ns/op
+BenchmarkR3Q2W1NonCD_B0b     	   40372	      5957 ns/op
+BenchmarkR3Q2W1NonCD_B0b     	   39771	      5890 ns/op
+BenchmarkR3Q2W1NonCD_B0b     	   41102	      6019 ns/op
+BenchmarkR3Q2W1NonCD_B0b     	   38617	      6035 ns/op
+BenchmarkR3Q2W1NonCD_B0b     	   39112	      6064 ns/op
+BenchmarkR3Q2W1NonCD_B0b     	   40012	      6028 ns/op
+BenchmarkR3Q2W1NonCD_B0b     	   39800	      7546 ns/op
+BenchmarkR3Q2W1NonCD_B0b     	   40688	      5928 ns/op
+BenchmarkR3Q2W1NonCD_B0cross 	   14539	     16520 ns/op
+BenchmarkR3Q2W1NonCD_B0cross 	   14450	     16547 ns/op
+BenchmarkR3Q2W1NonCD_B0cross 	   14557	     16612 ns/op
+BenchmarkR3Q2W1NonCD_B0cross 	   14637	     16546 ns/op
+BenchmarkR3Q2W1NonCD_B0cross 	   14589	     16656 ns/op
+BenchmarkR3Q2W1NonCD_B0cross 	   14414	     16584 ns/op
+BenchmarkR3Q2W1NonCD_B0cross 	   14505	     16619 ns/op
+BenchmarkR3Q2W1NonCD_B0cross 	   14371	     16534 ns/op
+BenchmarkR3Q2W1NonCD_B0cross 	   14337	     16703 ns/op
+BenchmarkR3Q2W1NonCD_B0cross 	   14544	     16541 ns/op
+BenchmarkR3Q2W2CD            	   28446	      8539 ns/op
+BenchmarkR3Q2W2CD            	   28119	      8458 ns/op
+BenchmarkR3Q2W2CD            	   28570	      8435 ns/op
+BenchmarkR3Q2W2CD            	   28314	      8480 ns/op
+BenchmarkR3Q2W2CD            	   28556	      9575 ns/op
+BenchmarkR3Q2W2CD            	   28303	      9027 ns/op
+BenchmarkR3Q2W2CD            	   28477	      8394 ns/op
+BenchmarkR3Q2W2CD            	   28131	      8436 ns/op
+BenchmarkR3Q2W2CD            	   28465	      8454 ns/op
+BenchmarkR3Q2W2CD            	   28335	      8458 ns/op
+BenchmarkR3Q2W2NonCD         	   10000	     23118 ns/op
+BenchmarkR3Q2W2NonCD         	   10000	     23125 ns/op
+BenchmarkR3Q2W2NonCD         	   10000	     23136 ns/op
+BenchmarkR3Q2W2NonCD         	   10000	     23108 ns/op
+BenchmarkR3Q2W2NonCD         	   10000	     23123 ns/op
+BenchmarkR3Q2W2NonCD         	   10000	     23111 ns/op
+BenchmarkR3Q2W2NonCD         	   10000	     23101 ns/op
+BenchmarkR3Q2W2NonCD         	   10000	     23098 ns/op
+BenchmarkR3Q2W2NonCD         	   10000	     23396 ns/op
+BenchmarkR3Q2W2NonCD         	   10000	     23078 ns/op
+BenchmarkR3Q2W3CD            	    6626	     36258 ns/op
+BenchmarkR3Q2W3CD            	    6766	     35422 ns/op
+BenchmarkR3Q2W3CD            	    6808	     35670 ns/op
+BenchmarkR3Q2W3CD            	    6787	     35437 ns/op
+BenchmarkR3Q2W3CD            	    6678	     35439 ns/op
+BenchmarkR3Q2W3CD            	    6824	     35333 ns/op
+BenchmarkR3Q2W3CD            	    6676	     35486 ns/op
+BenchmarkR3Q2W3CD            	    6452	     36103 ns/op
+BenchmarkR3Q2W3CD            	    6848	     35567 ns/op
+BenchmarkR3Q2W3CD            	    6799	     35431 ns/op
+BenchmarkR3Q2W3NonCD         	    7003	     34081 ns/op
+BenchmarkR3Q2W3NonCD         	    7100	     34120 ns/op
+BenchmarkR3Q2W3NonCD         	    7074	     34045 ns/op
+BenchmarkR3Q2W3NonCD         	    7064	     34087 ns/op
+BenchmarkR3Q2W3NonCD         	    7045	     34095 ns/op
+BenchmarkR3Q2W3NonCD         	    7011	     34385 ns/op
+BenchmarkR3Q2W3NonCD         	    7086	     34144 ns/op
+BenchmarkR3Q2W3NonCD         	    7106	     33962 ns/op
+BenchmarkR3Q2W3NonCD         	    6949	     34142 ns/op
+BenchmarkR3Q2W3NonCD         	    7042	     34385 ns/op
+PASS
+# exit: 0
+# load_end: 1.34 1.04 1.05
+# finished: 2026-10-26T22:09:51-04:00
