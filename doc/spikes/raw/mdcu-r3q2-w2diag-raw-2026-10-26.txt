@@ -1,0 +1,43 @@
+# R3-Q2 W2 POST-HOC DIAGNOSTIC raw output (no verdict change)
+# started: 2026-10-26T22:31:53-04:00
+# load_start: 0.90 1.32 1.32
+# cpu: AMD FX(tm)-8350 Eight-Core Processor
+# go: go version go1.24.2 linux/amd64
+goos: linux
+goarch: amd64
+pkg: github.com/JamesPagetButler/qbp-compute-unit/emulator/mdcu
+cpu: AMD FX(tm)-8350 Eight-Core Processor           
+BenchmarkR3Q2W2CD               	   28528	      8435 ns/op
+BenchmarkR3Q2W2CD               	   28297	      8480 ns/op
+BenchmarkR3Q2W2CD               	   28204	      8465 ns/op
+BenchmarkR3Q2W2CD               	   28494	      8404 ns/op
+BenchmarkR3Q2W2CD               	   28416	      8436 ns/op
+BenchmarkR3Q2W2CD               	   28462	      8432 ns/op
+BenchmarkR3Q2W2CD               	   28464	      8413 ns/op
+BenchmarkR3Q2W2CD               	   28369	      8396 ns/op
+BenchmarkR3Q2W2CD               	   28576	      8581 ns/op
+BenchmarkR3Q2W2CD               	   28039	      8360 ns/op
+BenchmarkR3Q2W2NonCD            	   10000	     23096 ns/op
+BenchmarkR3Q2W2NonCD            	   10000	     23110 ns/op
+BenchmarkR3Q2W2NonCD            	   10000	     23086 ns/op
+BenchmarkR3Q2W2NonCD            	   10000	     23052 ns/op
+BenchmarkR3Q2W2NonCD            	   10000	     23066 ns/op
+BenchmarkR3Q2W2NonCD            	   10000	     23073 ns/op
+BenchmarkR3Q2W2NonCD            	   10000	     23049 ns/op
+BenchmarkR3Q2W2NonCD            	   10000	     23084 ns/op
+BenchmarkR3Q2W2NonCD            	   10000	     23078 ns/op
+BenchmarkR3Q2W2NonCD            	   10000	     23284 ns/op
+BenchmarkPostHocW2NonCDUnrolled 	  101259	      2323 ns/op
+BenchmarkPostHocW2NonCDUnrolled 	  106635	      2457 ns/op
+BenchmarkPostHocW2NonCDUnrolled 	  103869	      2315 ns/op
+BenchmarkPostHocW2NonCDUnrolled 	  103746	      2301 ns/op
+BenchmarkPostHocW2NonCDUnrolled 	  103312	      2306 ns/op
+BenchmarkPostHocW2NonCDUnrolled 	  103153	      2273 ns/op
+BenchmarkPostHocW2NonCDUnrolled 	  105475	      2302 ns/op
+BenchmarkPostHocW2NonCDUnrolled 	  104595	      2256 ns/op
+BenchmarkPostHocW2NonCDUnrolled 	  104676	      2301 ns/op
+BenchmarkPostHocW2NonCDUnrolled 	  104091	      2305 ns/op
+PASS
+# exit: 0
+# load_end: 1.00 1.32 1.32
+# finished: 2026-10-26T22:32:01-04:00
