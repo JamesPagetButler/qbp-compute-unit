@@ -68,7 +68,7 @@ H-A1 holds, H-A2 holds, H-A3 untestable (no φ arm locks).
 - L = κ: n = 100, ρ = −0.687, CI [−0.771, −0.568]. H-B holds.
 - L = 1: n = 100, ρ = −0.038, CI [−0.223, 0.151]. H-B killed.
 
-**S-C finding (a) at matched coupling:** rates K-full@κ 0.5%, K-gram@κ 0.5%, K-phi@κ 0.0%. The rule fails on K-full@κ ≥ 90%. The frozen fallback label is "(a) fails at matched coupling: a single term locks". That label is the frozen wording, but it does not describe this data: no single term locks, and K-full@κ itself does not lock. At κ the combined and single-term arms mostly 2-collapse (K-full@κ 87.5%, K-gram@κ 80.0% at 250 steps).
+**S-C finding (a) at matched coupling:** rates K-full@κ 0.5%, K-gram@κ 0.5%, K-phi@κ 0.0%. The rule fails on K-full@κ ≥ 90%. The frozen fallback label is "(a) fails at matched coupling: a single term locks". That label is the frozen wording, but it does not describe this data: no single term locks, and K-full@κ itself does not lock. At κ the combined and single-term arms mostly 2-collapse (K-full@κ 87.5%, K-gram@κ 80.0% at 250 steps). Recorded as (oppenheimer, seq 135): "(a) does not hold at κ: no term 3-locks and K-full at κ mostly 2-collapses — R3's finding (a) is coupling-specific".
 
 **S-D dose ladder** (K-psi@1 vs K-phi, comass 1; K-phi is 0.0% in every cell):
 
@@ -101,6 +101,16 @@ These are descriptions of the table above, not findings. Naming mechanisms is op
 2. **Lock rate falls as the ψ scale rises.** K-psi@1 100%, native K-psi 72.5% (native comass median 1.885), K-psi@κ 52.0%. The comass 1 arm locks most.
 3. **S-D threshold-like rise.** K-psi@1 is at the floor for s ≤ 0.01 and near ceiling by s = 0.05.
 4. **K-full@κ does not 3-lock.** In this run the whole-triple κ² arm is 0.5% 3-lock (87.5% 2-collapse) against 99.5% for K-full.
+5. **S-D is the strongest single observation of the round** (oppenheimer seq 135, arch seq 133). At comass 1, K-psi@1 locks 0% at s ≤ 0.01, 42–58% at s = 0.02 and 98–100% at s = 0.05, while K-phi is 0% throughout: a clean, monotone dose-response, falling to K-phi's 0% as ψ → φ, with the kill not fired. Arch rules it answers the metric question at napkin grade, so there is no further mdcu round on φ vs ψ.
+6. **H-A3 caveat.** φ never locks, so H-A3 (a locking φ arm is Haar-consistent) is untestable here, and the Haar half of any mechanism stays unconfirmed.
+
+### Hypotheses named for the FORM row (oppenheimer seq 135/136; hypotheses with kills, not adopted, no claim)
+
+- **M1, degenerate maximiser family (supported at napkin grade).** φ's maximisers form the 8-dimensional associative Grassmannian G₂/SO(4), so the −φ² landscape has an 8-dimensional flat valley at every associative plane and the ring has no gradient toward a plane. **Kill:** the Hessian zero-mode count of −φ² at an associative plane is not 8 on the Grassmannian (not 11 on the Stiefel frame space). Oppenheimer's expectation, registered before computing: 8 zero / 4 negative on the Grassmannian, 11 zero / 4 negative on the Stiefel space; generic stable ψ at its Euclidean-unit maximiser 3 zero / 12 negative. A computation, not a run.
+- **M2, coupling window, not form alone.** ψ locking falls 100% → 72.5% → 52% from level 1 to native to κ, and K-full@κ 2-collapses. **Kill:** a K-full ladder in coupling (0.5, 1, κ) at fixed form showing lock rate monotone in coupling would refute the window.
+- **M3, metric mismatch (gψ vs Euclidean) as the dose variable.** S-B at κ, ρ = −0.687. Consistent with M1 and not separable from it in this design (at level 1 the ceiling makes S-B unreadable).
+
+**Dispositions** (arch seq 133, from the pre-data planning table): no φ claim; ψ-locks-more is not G₂ evidence. Q4a: an energy term using φ alone is not a locking driver on this ring at any coupling or step count tested. Kill COUPLING-ONLY fired, so the flat (φ) vs funnelled (ψ) mechanism is supported at napkin grade and is a design input to QBP#776 rung 2 (E6) and a theory item; it is not an anchor. Compute side: a generic programmable 3-form unit, no φ-hardwired unit.
 
 ## 7. Interpretation choices (fixed before the run, no change to the frozen text)
 
@@ -115,10 +125,10 @@ Posted at seq 113; all twelve settled by arch seq 115/118/122 and oppenheimer se
 ## 8. Deviations and disclosures
 
 1. **Tier C guard.** Decided by the frozen explicit rule (4 × probe mean at 1000 steps > 2.5 s), as ruled (arch seq 118/119/122/129). Probe mean 0.019271 s, so 4 × mean = 0.0771 s: no fallback. Info, not a decision: the extrapolated total, 3400 × t₁₀₀₀ = 65.5 s, against 3600 × 0.9 = 3240 s. The two readings do not diverge.
-2. **Probe load.** The probe started at load1 2.18 (rule ≤ 1.0): the quiet check had passed 12 minutes earlier and I did not re-check before it ran. A busy box inflates times, which biases toward fallback; the decision margin is about 32 times. Not rerun.
-3. **Grid end load.** Start load1 0.43 (met). End load1 1.64, above the frozen end rule (≤ 1.5) by 0.14. The run is one runnable thread and adds about 1.0 to load1 by itself; the background share is not known. Timing is not a verdict input.
+2. **Probe load.** The probe started at load1 2.18. FROZEN-v1 contains no load rule (arch seq 133/139); the box convention I posted as the run order was start load1 ≤ 1.0, carried from the R3-Q2 rule. The quiet check had passed 12 minutes earlier and I did not re-check before the probe ran, so the probe broke that posted convention. A busy box inflates times, which biases toward fallback; the decision margin is about 32 times. Not rerun.
+3. **Grid end load.** Start load1 0.43 (within the posted convention of ≤ 1.0). End load1 1.64, above the R3-Q2 end convention of ≤ 1.5 by 0.14. That convention is not in FROZEN-v1; arch ruled this note-only, no rerun (seq 133), because the R4 verdicts are lock rates from deterministic dynamics (the regression is bit-identical) and are load-insensitive. The run is one runnable thread and adds about 1.0 to load1 by itself; the background share is not known. Timing is not a verdict input. (My bridge post at seq 131/132 called 1.5 a "frozen end rule"; that was wrong.)
 4. **Crossed ruling.** I built an amendment to a Tier C ruling that arch had already retracted (my seq 123 crossed seq 118). The implementor caught it; I reverted it locally (revert `3622166`). The tree that ran is identical to `d2c29d1`.
-5. **Local commits since `d2c29d1`:** `2fabe67` and its revert `3622166` (tree-neutral), `bbfc813` (probe), `9bbdb7b` (grid raw), and this results commit. Not pushed.
+5. **Commits since `d2c29d1`:** `2fabe67` and its revert `3622166` (tree-neutral), `bbfc813` (probe), `9bbdb7b` (grid raw), `9f58f88` (analysis and results doc), all pushed by the implementor to origin `spike/mdcu-xqbp-v2`, tip `9f58f88` (seq 134). The edit that corrected this section is a later commit.
 6. **Beekeeper condition.** "Don't freeze until the R3 report has been read" was read as the reviewers' read (seq 108). The beekeeper has not confirmed. FROZEN-v1 is unaffected by how that resolves.
 7. **Wall.** 357 s against the frozen estimate of about 22 min; per-run cost was far below the assumed 0.1/0.4/1.6 s.
 
