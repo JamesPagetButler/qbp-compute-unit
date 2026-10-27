@@ -1,0 +1,9 @@
+# R4 probe meta
+# started: 2026-10-27T13:52:53-04:00
+# load_start: 2.18 1.41 1.08
+# cpu: AMD FX(tm)-8350 Eight-Core Processor
+# go: go version go1.24.2 linux/amd64
+# binary_sha256: e6296fa218f61328cb21dbac7c992df911d4da72536763c5c63a96e7f9e1ac2c
+# exit: 0
+# load_end: 2.18 1.41 1.08
+# finished: 2026-10-27T13:52:53-04:00
