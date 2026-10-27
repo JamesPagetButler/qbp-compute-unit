@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"math"
 	"os"
 	"reflect"
 	"testing"
@@ -72,19 +73,81 @@ func TestR4SDScaleFor(t *testing.T) {
 	}
 }
 
+// Tier C guard, as ruled by qbp-architecture (bridge seq 115): the frozen sentence
+// "fall back if the measured wall time extrapolates past the cap" is implemented as
+//
+//	predicted total wall = Σ over tiers (frozen run count × probe-measured per-run
+//	cost at that tier's step count), with Tier C at its full 200 seeds;
+//	fall back to 100 Tier C seeds iff predicted > 3600 s × (1 − 0.10).
+//
+// The frozen run counts are §2: Tier A 10 arms × 200 seeds at 250 steps, Tier B
+// 4 × 200 at 1000, Tier C 2 × 200 at 4000, S-D 200 seeds × 2 arms × (250, 1000).
+func TestR4PredictedWallFormula(t *testing.T) {
+	// The frozen §2 per-run assumptions (0.1 s, 0.4 s, 1.6 s).
+	c := R4StepCost{A250: 0.1, B1000: 0.4, C4000: 1.6}
+	// 2000×0.1 + 800×0.4 + 400×1.6 + 400×0.1 + 400×0.4 = 200 + 320 + 640 + 40 + 160
+	if got := R4PredictedWall(c); math.Abs(got-1360) > 1e-9 {
+		t.Fatalf("predicted wall %g s, want 1360", got)
+	}
+	// Linear in the per-run costs, and each term is separately weighted.
+	if got := R4PredictedWall(R4StepCost{A250: 1}); math.Abs(got-2400) > 1e-9 { // 2000 + 400
+		t.Fatalf("A250 weight: %g, want 2400", got)
+	}
+	if got := R4PredictedWall(R4StepCost{B1000: 1}); math.Abs(got-1200) > 1e-9 { // 800 + 400
+		t.Fatalf("B1000 weight: %g, want 1200", got)
+	}
+	if got := R4PredictedWall(R4StepCost{C4000: 1}); math.Abs(got-400) > 1e-9 {
+		t.Fatalf("C4000 weight: %g, want 400", got)
+	}
+}
+
 func TestR4TierCGuard(t *testing.T) {
-	// 4 × probe-mean > 2.5 s ⇒ Tier C on the first 100 seeds; otherwise all 200.
+	base := R4StepCost{A250: 0.1, B1000: 0.4, C4000: 1.6} // predicted 1360 s
+	scale := func(k float64) R4StepCost {
+		return R4StepCost{A250: base.A250 * k, B1000: base.B1000 * k, C4000: base.C4000 * k}
+	}
+	// 3240 s = 3600 × 0.9 is the threshold: 1360·k = 3240 at k ≈ 2.38235.
 	for _, c := range []struct {
-		mean float64
+		cost R4StepCost
 		want int
-	}{{0.1, 200}, {0.4, 200}, {0.625, 200}, {0.6250001, 100}, {0.9, 100}} {
-		n, trig := R4TierCSeeds(c.mean)
+	}{
+		{scale(1), 200},
+		{scale(2.38), 200}, // 3236.8 s: still fits
+		{scale(2.39), 100}, // 3250.4 s: over the margin
+		{scale(10), 100},
+		{R4StepCost{}, 200}, // zero cost never falls back
+	} {
+		n, trig := R4TierCSeeds(c.cost)
 		if n != c.want || trig != (c.want == 100) {
-			t.Fatalf("mean %g s: (%d, %v), want %d", c.mean, n, trig, c.want)
+			t.Fatalf("predicted %g s: (%d, %v), want %d", R4PredictedWall(c.cost), n, trig, c.want)
 		}
 	}
-	if R4TierCCap != 2.5 || R4TierCFactor != 4 || R4TierCFallback != 100 {
-		t.Fatal("guard constants differ from the frozen text")
+	// The old numeric trigger (4 × t1000 > 2.5 s, i.e. t1000 > 0.625 s) must NOT decide:
+	// at t1000 = 0.7 s with small other costs the plan fits, so no fallback.
+	if n, _ := R4TierCSeeds(R4StepCost{A250: 0.05, B1000: 0.7, C4000: 0.7}); n != 200 {
+		t.Fatalf("t1000 above 0.625 s alone must not trigger a fallback; got %d", n)
+	}
+	// The 4000-step cost matters: a cheap t1000 with an expensive t4000 falls back.
+	if n, _ := R4TierCSeeds(R4StepCost{A250: 0.1, B1000: 0.4, C4000: 7}); n != 100 { // 200+320+2800+40+160 = 3520
+		t.Fatalf("expensive 4000-step runs must trigger the fallback; got %d", n)
+	}
+	if R4WallCapSec != 3600 || R4WallMargin != 0.10 || R4TierCFallback != 100 || R4TierCFull != 200 {
+		t.Fatal("guard constants differ from the ruling (seq 115) / frozen §2")
+	}
+}
+
+func TestR4ProbeTimesMean(t *testing.T) {
+	p := R4ProbeTimes{
+		Per250:  []float64{0.1, 0.3},
+		Per1000: []float64{1, 3},
+		Per4000: []float64{4, 8},
+	}
+	m := p.Mean()
+	if math.Abs(m.A250-0.2) > 1e-12 || math.Abs(m.B1000-2) > 1e-12 || math.Abs(m.C4000-6) > 1e-12 {
+		t.Fatalf("means %+v", m)
+	}
+	if (R4ProbeTimes{}).Mean() != (R4StepCost{}) {
+		t.Fatal("empty probe must give zero cost, not NaN")
 	}
 }
 
