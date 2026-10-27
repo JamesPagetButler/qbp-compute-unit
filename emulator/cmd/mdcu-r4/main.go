@@ -68,20 +68,6 @@ type runRec struct {
 	mdcu.R3Run
 }
 
-// probeSteps are the step counts the probe measures, in record order.
-var probeSteps = []int{mdcu.R4StepsA, mdcu.R4StepsB, mdcu.R4StepsC}
-
-func stepKey(s int) string { return fmt.Sprintf("%d", s) }
-
-// probeCost converts per-step-count timings into the guard's input.
-func probeCost(per map[string][]float64) mdcu.R4ProbeTimes {
-	return mdcu.R4ProbeTimes{
-		Per250:  per[stepKey(mdcu.R4StepsA)],
-		Per1000: per[stepKey(mdcu.R4StepsB)],
-		Per4000: per[stepKey(mdcu.R4StepsC)],
-	}
-}
-
 // readProbe validates a probe file and returns the Tier C seed count it decided.
 func readProbe(path string) (int, error) {
 	f, err := os.Open(path)
@@ -93,13 +79,13 @@ func readProbe(path string) (int, error) {
 	sc.Buffer(make([]byte, 1<<20), 1<<20)
 	for sc.Scan() {
 		var p struct {
-			Type       string               `json:"type"`
-			Seeds      []uint64             `json:"seeds"`
-			Arm        string               `json:"arm"`
-			PerRun     map[string][]float64 `json:"per_run_s"`
-			MeanS      map[string]float64   `json:"mean_s"`
-			Predicted  float64              `json:"predicted_wall_s"`
-			TierCSeeds int                  `json:"tierc_seeds"`
+			Type       string    `json:"type"`
+			Seeds      []uint64  `json:"seeds"`
+			Steps      int       `json:"steps"`
+			Arm        string    `json:"arm"`
+			PerRun     []float64 `json:"per_run_s"`
+			MeanS      float64   `json:"mean_s"`
+			TierCSeeds int       `json:"tierc_seeds"`
 		}
 		if json.Unmarshal(sc.Bytes(), &p) != nil || p.Type != "probe" {
 			continue
@@ -113,27 +99,18 @@ func readProbe(path string) (int, error) {
 				return 0, fmt.Errorf("probe seeds differ from 9960–9969")
 			}
 		}
-		if p.Arm != string(mdcu.ArmPhi) {
-			return 0, fmt.Errorf("probe is not K-phi (arm %q)", p.Arm)
+		if p.Steps != mdcu.R4StepsB || p.Arm != string(mdcu.ArmPhi) || len(p.PerRun) != len(want) {
+			return 0, fmt.Errorf("probe is not K-phi at %d steps on %d seeds", mdcu.R4StepsB, len(want))
 		}
-		for _, st := range probeSteps {
-			k := stepKey(st)
-			if len(p.PerRun[k]) != len(want) {
-				return 0, fmt.Errorf("probe has %d timings at %d steps, want %d", len(p.PerRun[k]), st, len(want))
-			}
-			var tot float64
-			for _, v := range p.PerRun[k] {
-				tot += v
-			}
-			if m := tot / float64(len(p.PerRun[k])); math.Abs(m-p.MeanS[k]) > 1e-9 {
-				return 0, fmt.Errorf("probe mean %g at %d steps does not match its per-run times (%g)", p.MeanS[k], st, m)
-			}
+		var tot float64
+		for _, v := range p.PerRun {
+			tot += v
 		}
-		cost := probeCost(p.PerRun).Mean()
-		if w := mdcu.R4PredictedWall(cost); math.Abs(w-p.Predicted) > 1e-6*math.Max(1, w) {
-			return 0, fmt.Errorf("probe predicted wall %g does not follow from its timings (%g)", p.Predicted, w)
+		mean := tot / float64(len(p.PerRun))
+		if math.Abs(mean-p.MeanS) > 1e-9 {
+			return 0, fmt.Errorf("probe mean %g does not match its per-run times (%g)", p.MeanS, mean)
 		}
-		n, _ := mdcu.R4TierCSeeds(cost)
+		n, _ := mdcu.R4TierCSeeds(mean)
 		if n != p.TierCSeeds {
 			return 0, fmt.Errorf("probe decision %d does not follow from its timings (rule gives %d)", p.TierCSeeds, n)
 		}
@@ -222,8 +199,8 @@ func main() {
 	fmt.Printf("mdcu-r4  mode=%s  prereg sha %s…\n", strings.ToUpper(mode), preregSHA[:8])
 	switch mode {
 	case "probe":
-		fmt.Printf("  timing probe: K-phi at %d, %d and %d steps (each measured, none scaled) on seeds %d..%d (K=%d); guard: predicted total wall > %g s × (1 − %g) ⇒ Tier C on %d seeds, else %d\n",
-			mdcu.R4StepsA, mdcu.R4StepsB, mdcu.R4StepsC, mdcu.R4ProbeLo, mdcu.R4ProbeHi, len(mdcu.R4ProbeSeeds()), mdcu.R4WallCapSec, mdcu.R4WallMargin, mdcu.R4TierCFallback, mdcu.R4TierCFull)
+		fmt.Printf("  timing probe: K-phi at %d steps on seeds %d..%d (K=%d); guard: %g × mean > %g s ⇒ Tier C on %d seeds, else %d\n",
+			mdcu.R4StepsB, mdcu.R4ProbeLo, mdcu.R4ProbeHi, len(mdcu.R4ProbeSeeds()), mdcu.R4TierCFactor, mdcu.R4TierCCap, mdcu.R4TierCFallback, mdcu.R4TierCFull)
 	default:
 		fmt.Printf("  grid seeds %d (%d..%d) · S-D seeds %d · Tier C on the first %d grid seeds\n", len(gridSeeds), first0(gridSeeds), last0(gridSeeds), len(sdSeeds), tierCN)
 		fmt.Printf("  Tier A %d steps: %v\n  Tier B %d steps: %v\n  Tier C %d steps: %v\n  S-D: K-psi@1, K-phi at %d and %d steps; scales %v × %d seeds\n",
@@ -303,35 +280,25 @@ func main() {
 	// ---- probe mode -----------------------------------------------------------
 	if mode == "probe" {
 		seeds := mdcu.R4ProbeSeeds()
-		var all mdcu.R4ProbeTimes
+		var per []float64
+		var tot float64
 		for _, s := range seeds {
 			if why, code := check(); why != "" {
 				finish("abort", fmt.Sprintf("during the probe (seed %d): %s", s, why), code)
 			}
-			p := mdcu.R4TimingProbe([]uint64{s})
-			all.Per250 = append(all.Per250, p.Per250...)
-			all.Per1000 = append(all.Per1000, p.Per1000...)
-			all.Per4000 = append(all.Per4000, p.Per4000...)
+			m, p := mdcu.R4TimingProbe([]uint64{s})
+			per = append(per, p[0])
+			tot += m
 		}
-		cost := all.Mean()
-		predicted := mdcu.R4PredictedWall(cost)
-		n, fb := mdcu.R4TierCSeeds(cost)
+		mean := tot / float64(len(seeds))
+		n, fb := mdcu.R4TierCSeeds(mean)
 		emit(map[string]any{
-			"type": "probe", "arm": string(mdcu.ArmPhi), "seeds": seeds,
-			"per_run_s": map[string][]float64{
-				stepKey(mdcu.R4StepsA): all.Per250, stepKey(mdcu.R4StepsB): all.Per1000, stepKey(mdcu.R4StepsC): all.Per4000},
-			"mean_s": map[string]float64{
-				stepKey(mdcu.R4StepsA): cost.A250, stepKey(mdcu.R4StepsB): cost.B1000, stepKey(mdcu.R4StepsC): cost.C4000},
-			"predicted_wall_s": predicted, "wall_cap_s": mdcu.R4WallCapSec, "margin": mdcu.R4WallMargin,
-			"threshold_s": mdcu.R4WallCapSec * (1 - mdcu.R4WallMargin),
-			// Informational only (reporting, never a decision): the superseded frozen-text
-			// trigger 4 × t1000 vs 2.5 s, so the record shows whether the readings differ.
-			"info_old_rule_4xt1000_s": 4 * cost.B1000, "info_old_rule_cap_s": 2.5,
+			"type": "probe", "arm": string(mdcu.ArmPhi), "steps": mdcu.R4StepsB, "seeds": seeds, "per_run_s": per, "mean_s": mean,
+			"factor": mdcu.R4TierCFactor, "cap_s": mdcu.R4TierCCap, "projected_tier_c_s": mdcu.R4TierCFactor * mean,
 			"tierc_seeds": n, "fallback": fb, "loadavg": loadavg(),
 		})
-		fmt.Printf("probe: mean s per K-phi run: %.4f at 250, %.4f at 1000, %.4f at 4000 steps; predicted total wall %.0f s vs threshold %.0f s (cap %.0f × (1 − %g)) ⇒ Tier C on %d seeds (fallback=%v)\n",
-			cost.A250, cost.B1000, cost.C4000, predicted, mdcu.R4WallCapSec*(1-mdcu.R4WallMargin), mdcu.R4WallCapSec, mdcu.R4WallMargin, n, fb)
-		fmt.Printf("info (not a decision): superseded rule 4 x t1000 = %.3f s vs 2.5 s\n", 4*cost.B1000)
+		fmt.Printf("probe: mean %.4f s per K-phi run at %d steps; projected Tier C per-run %.3f s vs cap %.1f s ⇒ Tier C on %d seeds (fallback=%v)\n",
+			mean, mdcu.R4StepsB, mdcu.R4TierCFactor*mean, mdcu.R4TierCCap, n, fb)
 		finish("end", fmt.Sprintf("probe complete: Tier C on %d seeds", n), 0)
 		return
 	}

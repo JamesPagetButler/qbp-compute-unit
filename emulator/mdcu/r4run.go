@@ -25,17 +25,12 @@ import (
 	"time"
 )
 
-// Tier C guard (frozen §2, "trigger = measured wall time extrapolated past the cap"),
-// implemented as ruled by qbp-architecture (bridge seq 115): the probe measures K-phi
-// at each tier's step count; predicted total wall = Σ over tiers of (frozen run count ×
-// probe-measured per-run cost at that tier's step count), with Tier C at its full 200
-// seeds; Tier C falls back to R4TierCFallback seeds iff predicted > R4WallCapSec ×
-// (1 − R4WallMargin). The 10% margin is fixed before any data. (The bare "4 × t1000 >
-// 2.5 s" sentence in the frozen text is superseded by this ruling; the frozen file is
-// not edited.)
+// Tier C guard (frozen §2): probe K-phi at 1000 steps on seeds 9960–9969. If
+// R4TierCFactor × (probe mean per-run seconds) > R4TierCCap, Tier C runs on the
+// first R4TierCFallback seeds instead of all 200.
 const (
-	R4WallCapSec    = 3600.0
-	R4WallMargin    = 0.10
+	R4TierCCap      = 2.5
+	R4TierCFactor   = 4.0
 	R4TierCFallback = 100
 	R4TierCFull     = 200
 )
@@ -64,68 +59,29 @@ func R4ProbeSeeds() []uint64 {
 	return out
 }
 
-// R4StepCost is the probe-measured mean seconds per K-phi run (ring run plus
-// measurement), measured separately at each tier's step count (not scaled by steps).
-type R4StepCost struct{ A250, B1000, C4000 float64 }
-
-// R4ProbeTimes are the per-seed probe timings behind an R4StepCost.
-type R4ProbeTimes struct{ Per250, Per1000, Per4000 []float64 }
-
-func meanOf(x []float64) float64 {
-	if len(x) == 0 {
-		return 0
-	}
-	var s float64
-	for _, v := range x {
-		s += v
-	}
-	return s / float64(len(x))
-}
-
-// Mean returns the per-step-count means (zero cost for an empty probe, never NaN).
-func (p R4ProbeTimes) Mean() R4StepCost {
-	return R4StepCost{A250: meanOf(p.Per250), B1000: meanOf(p.Per1000), C4000: meanOf(p.Per4000)}
-}
-
-// R4PredictedWall is the predicted total wall (seconds) of the frozen plan with Tier C
-// at its full 200 seeds: Tier A (10 arms × 200 seeds at 250 steps) + Tier B (4 × 200 at
-// 1000) + Tier C (2 × 200 at 4000) + S-D (200 seeds × 2 arms × rungs 250 and 1000).
-// Every cell is costed as an independent run (conservative: the real runs are chained
-// snapshots). The ψ sampler and comass work (frozen §2: < 30 s) is outside the formula.
-func R4PredictedWall(c R4StepCost) float64 {
-	grid := float64(R4GridHi - R4GridLo + 1)
-	sd := float64(R4SDHi - R4SDLo + 1)
-	return grid*(float64(len(R4TierAArms))*c.A250+float64(len(R4TierBArms))*c.B1000+float64(len(R4TierCArms))*c.C4000) +
-		sd*2*(c.A250+c.B1000)
-}
-
-// R4TierCSeeds applies the guard to the probe's measured costs: the number of seeds
-// Tier C runs on, and whether the guard fired.
-func R4TierCSeeds(c R4StepCost) (n int, fallback bool) {
-	if R4PredictedWall(c) > R4WallCapSec*(1-R4WallMargin) {
+// R4TierCSeeds applies the frozen guard to a probe mean (seconds per K-phi run at
+// 1000 steps): the number of seeds Tier C runs on, and whether the guard fired.
+func R4TierCSeeds(probeMeanSec float64) (n int, fallback bool) {
+	if R4TierCFactor*probeMeanSec > R4TierCCap {
 		return R4TierCFallback, true
 	}
 	return R4TierCFull, false
 }
 
-// R4TimingProbe times K-phi (ring run plus measurement, calibrated under φ) on each seed
-// at each tier's step count, 250, 1000 and 4000, as independent runs. It looks at no
-// outcome.
-func R4TimingProbe(seeds []uint64) R4ProbeTimes {
-	var p R4ProbeTimes
+// R4TimingProbe times K-phi at R4StepsB steps (ring run plus measurement, calibrated
+// under φ) on each seed and returns the mean seconds per run. It looks at no outcome.
+func R4TimingProbe(seeds []uint64) (mean float64, per []float64) {
+	var tot float64
 	for _, s := range seeds {
-		for _, rung := range []struct {
-			steps int
-			dst   *[]float64
-		}{{R4StepsA, &p.Per250}, {R4StepsB, &p.Per1000}, {R4StepsC, &p.Per4000}} {
-			z0 := Q1Init(24, 0.1, newRNG(s))
-			t0 := time.Now()
-			Z := RunRingEnergy(z0, R4EnergyFor(ArmPhi, nil, nil, nil), rung.steps)
-			_ = R3Measure(Z, Phi())
-			*rung.dst = append(*rung.dst, time.Since(t0).Seconds())
-		}
+		z0 := Q1Init(24, 0.1, newRNG(s))
+		t0 := time.Now()
+		Z := RunRingEnergy(z0, R4EnergyFor(ArmPhi, nil, nil, nil), R4StepsB)
+		_ = R3Measure(Z, Phi())
+		d := time.Since(t0).Seconds()
+		per = append(per, d)
+		tot += d
 	}
-	return p
+	return tot / float64(len(seeds)), per
 }
 
 // R4Seed is everything the arms need for one seed, plus its per-seed record
