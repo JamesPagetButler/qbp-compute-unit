@@ -28,3 +28,19 @@ Each round's raw output was hashed and committed **before** its analyzer ran (pr
 ## Provenance
 
 Spike branch tip at this record: see the PR description. Raw artifacts in `raw/`; studybuddy red-team reference scripts in `ref/`. Directing seat: `@qbp-architecture` (inter#197 director). Compute side: `qbp-cu-implementor`.
+
+## Record-convention block (inter#224 items 4–6)
+
+**(4) Claims, sorted.**
+- *Grounded:* Q1a = no (the Gram term alone does not drive 3-locking, 3%); 3-locking needs the **`4·Gram − 4φ²` combination** (99% vs 3%/0% for the parts); the R3-Q2 **multiply closure = NO** (no workload gives CD a ≥2× advantage: W1 1.03× · W2 0.69× · W3 0.49×, counts measured + independently cross-derived).
+- *Unverified:* any G₂- or φ-specific reading. Q1b is **inconclusive** — φ-only never locks (0/200) and the φ-vs-ψ gap is **comass-scale-confounded** (post-hoc: ψ-forms' comass median 1.88 vs φ's 1; collinear with d at ρ 0.97). Napkin, no claim.
+- *Mislabeled-risk:* the R3-Q2 **host-ns tiebreak "YES"**. It rests on **W2 alone**, where CD does *more* multiplies (71 vs 49) yet is 2.7× faster — arithmetic cannot produce that, so it reads as an **implementation-shape artefact** (non-CD table-lookup overhead), not an architectural CD win. A table-free unrolled-W2 post-hoc diagnostic is **pending (post-hoc, no verdict change)**; if W2's 2.7× vanishes, the tiebreak is recorded as an artefact. **No CD speed claim.**
+
+**(5) Fired planning rows → dispositions.**
+- R3 planning-consequence table: inter#194 issuecomment-6391302019.
+- Q1 "inconclusive/mixed" → **`mdcu-r4`** (inter#224 shelf row; R4 table inter#194 issuecomment-6431920143).
+- Q2 "closure vs benchstat disagree" → **no speed claim**, plus the W2 post-hoc diagnostic (mdcu-spike seq 89).
+- Joint **QASSOC design-closure** → inter#197 issuecomment-6432217737: QASSOC stays a **correctness / tier-gated** op (prove-before-bake tie + S5-oracle role), **no performance justification**; φ-hardwired-vs-programmable-3-form deferred to `mdcu-r4`.
+- **Recorded negative:** "CD-multiplier speed advantage" — not established on this hardware; **reopens only on non-serialising (AVX2+/wide-SIMD) hardware** where the CD-MAC's lane parallelism isn't serialised.
+
+**(6) Lock.** There is **no CI lock on `main` for this spike**, by design. The spike's regression gate — the K-full signed-energy runner being **bit-identical to `RunRingGen`** — lives with the spike code on the **unmerged** branch `spike/mdcu-xqbp-v2` (spike rule 1: no spike code on `main`). This is a **known gap, not an omission**: the record is doc-only, so nothing on `main` is under a drift-gate for it; the gate travels with the code if/when the direction is promoted out of spike.
