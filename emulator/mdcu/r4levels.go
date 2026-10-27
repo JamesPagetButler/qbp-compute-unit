@@ -103,6 +103,17 @@ type ComassRescale struct {
 // whose two sets differ by more than R4ComassTol (relative) is reported
 // unconverged; the caller drops its rescaled arms and counts it.
 func RescaleToComass(f *Form3, seed uint64, L float64) ComassRescale {
+	r := ComassCheck(f, seed)
+	if r.Comass > 0 {
+		r.Form = ScaleForm3(f, L/r.Comass)
+	}
+	return r
+}
+
+// ComassCheck is the two-restart-set comass estimate of RescaleToComass without
+// building a rescaled form (Form is nil). The seed builders call it once per seed
+// and derive the level-1 and level-κ forms from the same estimate.
+func ComassCheck(f *Form3, seed uint64) ComassRescale {
 	a := ComassEstimate(f, newRNG(seed^r4ComassSeedA), R4ComassStarts, R4ComassIters)
 	b := ComassEstimate(f, newRNG(seed^r4ComassSeedB), R4ComassStarts, R4ComassIters)
 	hi, lo := math.Max(a, b), math.Min(a, b)
@@ -110,11 +121,7 @@ func RescaleToComass(f *Form3, seed uint64, L float64) ComassRescale {
 	if hi > 0 {
 		rel = (hi - lo) / hi
 	}
-	r := ComassRescale{Comass: hi, ComassB: lo, RelDiff: rel, Converged: rel <= R4ComassTol}
-	if hi > 0 {
-		r.Form = ScaleForm3(f, L/hi)
-	}
-	return r
+	return ComassRescale{Comass: hi, ComassB: lo, RelDiff: rel, Converged: rel <= R4ComassTol}
 }
 
 // R4EnergyFor returns the triple energy of an arm. psiNative is the seed's R3
