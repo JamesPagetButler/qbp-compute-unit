@@ -162,6 +162,10 @@ func buildR4SD(seed uint64, s float64) *R4Seed {
 // BuildR4SD builds the S-D seed at its ladder scale.
 func BuildR4SD(seed uint64) *R4Seed { return buildR4SD(seed, R4SDScaleFor(seed)) }
 
+// BuildR4SDAt builds an S-D-style seed at an explicit scale. The driver's smoke mode
+// uses it on out-of-range seeds; the grid uses BuildR4SD.
+func BuildR4SDAt(seed uint64, s float64) *R4Seed { return buildR4SD(seed, s) }
+
 // R4ArmsFor lists the Tier A arms that run on this seed, in reporting order. A
 // sampler miss drops the ψ arms; an unconverged comass drops exactly the
 // comass-rescaled ψ arms (K-psi@1, K-psi@κ), which are the arms whose form
