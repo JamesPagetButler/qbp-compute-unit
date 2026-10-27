@@ -1,0 +1,181 @@
+# R4 analysis (frozen rules, prereg sha256 699a8a21…587a5d)
+input ../doc/spikes/raw/mdcu-r4-2026-10-27.jsonl · mode=grid · grid seeds=200 · S-D seeds=200 · Tier C seeds=200 · run end: end: complete: 3998 runs
+
+> No CD speed claim is permitted at any reading. Branch B, spike/napkin grade. Interpretation choices not spelled out in the frozen text are fixed in mdcu/r4rules.go (header comment) and apply here.
+
+## Sampler and comass record
+- S1-split sampler: 0 misses in 100 calls (0.0%) → ok
+- Comass two-set check: 0 unconverged of 200 grid seeds with a ψ (0.0%) → ok
+- Native ψ comass (grid): median 1.885 [min 1.160, max 2.302]; two-set relative difference max 8.72e-16 (tolerance 1e-06)
+- S-D: 200 seeds, 1 unconverged (their K-psi@1 arm is dropped)
+
+## Cell A250 — all seeds
+| arm | n | 3-lock | 2-collapse | diffuse | median S3 | median λ₃ share |
+|---|---|---|---|---|---|---|
+| K-full | 200 |  99.5% |   0.0% |   0.5% | 1.000 | 0.276 |
+| K-gram | 200 |   4.5% |  74.0% |  21.5% | 1.000 | 0.000 |
+| K-phi | 200 |   0.0% |   0.0% | 100.0% | 0.639 | 0.179 |
+| K-psi | 200 |  72.5% |   0.0% |  27.5% | 1.000 | 0.203 |
+| K-psi@1 | 200 | 100.0% |   0.0% |   0.0% | 1.000 | 0.333 |
+| K-phi@κ | 200 |   0.0% |   0.0% | 100.0% | 0.624 | 0.173 |
+| K-psi@κ | 200 |  52.0% |   0.0% |  48.0% | 1.000 | 0.195 |
+| K-full@κ | 200 |   0.5% |  87.5% |  12.0% | 0.976 | 0.016 |
+| K-gram@κ | 200 |   0.5% |  80.0% |  19.5% | 0.978 | 0.021 |
+| K-none | 200 |   0.0% |   0.0% | 100.0% | 0.603 | 0.169 |
+
+### A250 · stratum definite
+| arm | n | 3-lock | 2-collapse | diffuse | median S3 | median λ₃ share |
+|---|---|---|---|---|---|---|
+| K-full | 100 | 100.0% |   0.0% |   0.0% | 1.000 | 0.277 |
+| K-gram | 100 |   4.0% |  69.0% |  27.0% | 1.000 | 0.000 |
+| K-phi | 100 |   0.0% |   0.0% | 100.0% | 0.638 | 0.179 |
+| K-psi | 100 |  74.0% |   0.0% |  26.0% | 1.000 | 0.261 |
+| K-psi@1 | 100 | 100.0% |   0.0% |   0.0% | 1.000 | 0.333 |
+| K-phi@κ | 100 |   0.0% |   0.0% | 100.0% | 0.624 | 0.174 |
+| K-psi@κ | 100 |  48.0% |   0.0% |  52.0% | 0.999 | 0.270 |
+| K-full@κ | 100 |   0.0% |  93.0% |   7.0% | 0.975 | 0.017 |
+| K-gram@κ | 100 |   1.0% |  81.0% |  18.0% | 0.978 | 0.021 |
+| K-none | 100 |   0.0% |   0.0% | 100.0% | 0.601 | 0.169 |
+
+### A250 · stratum split
+| arm | n | 3-lock | 2-collapse | diffuse | median S3 | median λ₃ share |
+|---|---|---|---|---|---|---|
+| K-full | 100 |  99.0% |   0.0% |   1.0% | 1.000 | 0.274 |
+| K-gram | 100 |   5.0% |  79.0% |  16.0% | 1.000 | 0.000 |
+| K-phi | 100 |   0.0% |   0.0% | 100.0% | 0.640 | 0.179 |
+| K-psi | 100 |  71.0% |   0.0% |  29.0% | 1.000 | 0.187 |
+| K-psi@1 | 100 | 100.0% |   0.0% |   0.0% | 1.000 | 0.333 |
+| K-phi@κ | 100 |   0.0% |   0.0% | 100.0% | 0.623 | 0.173 |
+| K-psi@κ | 100 |  56.0% |   0.0% |  44.0% | 1.000 | 0.162 |
+| K-full@κ | 100 |   1.0% |  82.0% |  17.0% | 0.976 | 0.016 |
+| K-gram@κ | 100 |   0.0% |  79.0% |  21.0% | 0.978 | 0.021 |
+| K-none | 100 |   0.0% |   0.0% | 100.0% | 0.605 | 0.169 |
+
+## Cell B1000 — all seeds
+| arm | n | 3-lock | 2-collapse | diffuse | median S3 | median λ₃ share |
+|---|---|---|---|---|---|---|
+| K-phi | 200 |   0.0% |   0.0% | 100.0% | 0.639 | 0.177 |
+| K-psi@1 | 200 | 100.0% |   0.0% |   0.0% | 1.000 | 0.333 |
+| K-phi@κ | 200 |   0.0% |   0.0% | 100.0% | 0.626 | 0.172 |
+| K-psi@κ | 200 |  53.5% |   0.0% |  46.5% | 1.000 | 0.200 |
+
+### B1000 · stratum definite
+| arm | n | 3-lock | 2-collapse | diffuse | median S3 | median λ₃ share |
+|---|---|---|---|---|---|---|
+| K-phi | 100 |   0.0% |   0.0% | 100.0% | 0.639 | 0.179 |
+| K-psi@1 | 100 | 100.0% |   0.0% |   0.0% | 1.000 | 0.333 |
+| K-phi@κ | 100 |   0.0% |   0.0% | 100.0% | 0.629 | 0.174 |
+| K-psi@κ | 100 |  53.0% |   0.0% |  47.0% | 1.000 | 0.266 |
+
+### B1000 · stratum split
+| arm | n | 3-lock | 2-collapse | diffuse | median S3 | median λ₃ share |
+|---|---|---|---|---|---|---|
+| K-phi | 100 |   0.0% |   0.0% | 100.0% | 0.641 | 0.176 |
+| K-psi@1 | 100 | 100.0% |   0.0% |   0.0% | 1.000 | 0.333 |
+| K-phi@κ | 100 |   0.0% |   0.0% | 100.0% | 0.625 | 0.171 |
+| K-psi@κ | 100 |  54.0% |   0.0% |  46.0% | 1.000 | 0.163 |
+
+## Cell C4000 — all seeds
+| arm | n | 3-lock | 2-collapse | diffuse | median S3 | median λ₃ share |
+|---|---|---|---|---|---|---|
+| K-phi | 200 |   0.0% |   0.0% | 100.0% | 0.638 | 0.179 |
+| K-psi@1 | 200 | 100.0% |   0.0% |   0.0% | 1.000 | 0.333 |
+
+### C4000 · stratum definite
+| arm | n | 3-lock | 2-collapse | diffuse | median S3 | median λ₃ share |
+|---|---|---|---|---|---|---|
+| K-phi | 100 |   0.0% |   0.0% | 100.0% | 0.640 | 0.178 |
+| K-psi@1 | 100 | 100.0% |   0.0% |   0.0% | 1.000 | 0.333 |
+
+### C4000 · stratum split
+| arm | n | 3-lock | 2-collapse | diffuse | median S3 | median λ₃ share |
+|---|---|---|---|---|---|---|
+| K-phi | 100 |   0.0% |   0.0% | 100.0% | 0.637 | 0.179 |
+| K-psi@1 | 100 | 100.0% |   0.0% |   0.0% | 1.000 | 0.333 |
+
+## Cell SD250 — all seeds
+| arm | n | 3-lock | 2-collapse | diffuse | median S3 | median λ₃ share |
+|---|---|---|---|---|---|---|
+| K-phi | 200 |   0.0% |   0.0% | 100.0% | 0.646 | 0.180 |
+| K-psi@1 | 199 |  35.2% |   0.0% |  64.8% | 0.703 | 0.205 |
+
+## Cell SD1000 — all seeds
+| arm | n | 3-lock | 2-collapse | diffuse | median S3 | median λ₃ share |
+|---|---|---|---|---|---|---|
+| K-phi | 200 |   0.0% |   0.0% | 100.0% | 0.643 | 0.181 |
+| K-psi@1 | 199 |  39.7% |   0.0% |  60.3% | 0.692 | 0.199 |
+
+## Decision rules
+
+**G4 (replication gate)**: K-full 3-lock rate at 250 steps  99.5% (needs ≥ 90%) → **pass**
+
+**Q4a — does φ lock if given more steps?** K-phi: 250 steps: n=200   0.0%; 1000 steps: n=200   0.0%; 4000 steps: n=200   0.0%;
+→ **does not lock by 4000**
+
+**Q4b — coupling scale or form?** (Tier A, 200 paired seeds at least)
+| arm | all | definite | split |
+|---|---|---|---|
+| K-phi |   0.0% |   0.0% |   0.0% |
+| K-phi@κ |   0.0% |   0.0% |   0.0% |
+| K-psi@1 | 100.0% | 100.0% | 100.0% |
+| K-psi@κ |  52.0% |  48.0% |  56.0% |
+- Δ(K-psi@1, K-phi): n=200 rates 100.0% vs   0.0%, Δ median +0.361, 95% CI [+0.353, +0.367]
+- Δ(K-psi@κ, K-phi@κ): n=200 rates  52.0% vs   0.0%, Δ median +0.366, 95% CI [+0.360, +0.374]
+- Δ(K-phi@κ, K-phi): n=200 rates   0.0% vs   0.0%, Δ median -0.017, 95% CI [-0.029, -0.009]
+- equivalent(K-psi@1, K-phi)=false · equivalent(K-psi@κ, K-phi@κ)=false · clearly-higher(K-phi@κ, K-phi)=false · clearly-higher(K-psi@1, K-phi)=true · clearly-higher(K-psi@κ, K-phi@κ)=true
+→ **FORM**
+
+**Q4c (definite) — does φ specifically matter at matched coupling?** first qualifying cell: none
+→ **inconclusive (φ never locks)**
+
+**Q4c (split) — does φ specifically matter at matched coupling?** first qualifying cell: none
+→ **inconclusive (φ never locks)**
+
+**Reading** (G4=true, Q4b=FORM, Q4c definite=inconclusive (φ never locks), split=inconclusive (φ never locks)):
+> The gap is not coupling scale. ψ locks where φ does not at matched comass. Reported; ψ-locks-more is not read as G₂ evidence. Candidate mechanisms are for oppenheimer to name. (FORM)
+
+## Secondaries (each carries its own hypothesis and kill; never a decision input)
+
+**S-A Spontaneity** (Haar-G₂ KS, MC p over 1000 reps; arms with ≥ 20 three-locked runs)
+- K-full @ A250: n=199 locked planes, D=0.0052, p=0.968 → consistent with Haar-G₂
+- K-psi @ A250: n=145 locked planes, D=0.0782, p=0.000 → not Haar-G₂
+- K-psi@1 @ A250: n=200 locked planes, D=0.0709, p=0.000 → not Haar-G₂
+- K-psi@κ @ A250: n=104 locked planes, D=0.0898, p=0.000 → not Haar-G₂
+- K-phi@κ @ A250: 0 locked runs → untestable
+- K-phi@κ @ B1000: 0 locked runs → untestable
+- K-phi @ A250: 0 locked runs → untestable
+- K-phi @ B1000: 0 locked runs → untestable
+- K-phi @ C4000: 0 locked runs → untestable
+- H-A1 (K-full Haar-consistent; R3 p=0.545): **holds** · H-A2 (every ψ arm non-Haar): **holds** · H-A3 (every locking φ arm Haar-consistent): **untestable**
+
+**Mechanism reading** (oppenheimer seq 77; no claim): COUPLING-ONLY killed: K-phi@κ lags K-psi@1, or locks Haar-uniform while K-psi@1 clusters
+- Δ(K-phi@κ, K-psi@1): n=200 rates   0.0% vs 100.0%, Δ median -0.376, 95% CI [-0.380, -0.370]
+- Kill FORM=false · Kill COUPLING-ONLY=true
+
+**S-B Dose-response on the rescaled arm** (definite seeds, 250 steps; Spearman of paired s₃(K-phi@L) − s₃(K-psi@L) vs d; R3: ρ = −0.258 raw)
+- L=κ: n=100, ρ=-0.687, 95% CI [-0.771, -0.568] → H-B **holds**
+- L=1: n=100, ρ=-0.038, 95% CI [-0.223, 0.151] → H-B **killed**
+
+**S-C Finding (a) at matched coupling:** (a) fails at matched coupling: a single term locks (K-full@κ 0.5%, K-gram@κ 0.5%, K-phi@κ 0.0%)
+
+**S-D Dose ladder** (no decision weight; K-psi@1 vs K-phi; 'falls continuously' has no numeric rule, so only the kill is evaluated)
+| s | cell | n | K-psi@1 | K-phi |
+|---|---|---|---|---|
+| 0.005 | SD250 | 50 |   0.0% |   0.0% |
+| 0.010 | SD250 | 50 |   0.0% |   0.0% |
+| 0.020 | SD250 | 50 |  42.0% |   0.0% |
+| 0.050 | SD250 | 50 |  98.0% |   0.0% |
+| 0.005 | SD1000 | 50 |   0.0% |   0.0% |
+| 0.010 | SD1000 | 50 |   0.0% |   0.0% |
+| 0.020 | SD1000 | 50 |  58.0% |   0.0% |
+| 0.050 | SD1000 | 50 | 100.0% |   0.0% |
+→ H-D kill (at s=0.005, rate(K-psi@1) − rate(K-phi) ≥ 50 points, at either cell): **false**
+
+**R3 K-psi replication (diagnostic, not a gate):** native K-psi 3-lock rate  72.5% vs R3's 79% → within ±15 points
+
+## On-file prediction (§1.6, unedited in the frozen file) — mechanical scoring, record only
+- P1 (Q4b = MIXED; K-phi@κ 20–80%; K-psi@1 30–80%): Q4b=FORM, K-phi@κ   0.0%, K-psi@1 100.0% → **false**
+- P2 (Q4a = locks slowly): Q4a=does not lock by 4000 → **false**
+- P3 (S-C holds): **false**
+- P4 (S-B |ρ| < 0.15 on the rescaled arm; scored as true iff both L=κ and L=1 are below 0.15): ρ(κ)=-0.687, ρ(1)=-0.038 → **false**
+- P5 (K-psi@1 stays non-Haar, p < 0.01): see the S-A line for K-psi@1 above.
