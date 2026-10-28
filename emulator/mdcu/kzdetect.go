@@ -30,13 +30,20 @@ package mdcu
 
 import "math"
 
-// Z2Params carries the one tunable of the detector. The frozen text sets
-// AmbigAngle = pi; DefaultZ2Params returns that.
+// Z2Params carries the tunables of the detector. The frozen text sets
+// AmbigAngle = pi (triangle holonomy) and has no edge clause; DefaultZ2Params returns
+// that (EdgeAngle 0 = clause off). Amend1Z2Params is the rule of the dated amendment
+// mdcu-kz-prereg-FROZEN-v1-amend-1: a triangle is also ambiguous iff any of its three
+// edge rotations has angle >= pi/2.
 type Z2Params struct {
 	AmbigAngle float64
+	EdgeAngle  float64 // 0 = no edge clause
 }
 
 func DefaultZ2Params() Z2Params { return Z2Params{AmbigAngle: math.Pi} }
+
+// Amend1Z2Params is the resolution rule in force after amend-1.
+func Amend1Z2Params() Z2Params { return Z2Params{AmbigAngle: math.Pi, EdgeAngle: math.Pi / 2} }
 
 // Z2Result is one detector pass over an L³ periodic lattice. Cell ids are the
 // site index of the cell's minimum corner.
@@ -163,15 +170,38 @@ func topEigenvector4(a [4][4]float64) [4]float64 {
 
 // TriangleZ2 returns the sign (neg = the lift is on the -1 side of the nearest-
 // identity branch) and the ambiguity flag of one triangle with edge lifts
-// eab, ebc, eca (a->b, b->c, c->a).
+// eab, ebc, eca (a->b, b->c, c->a), under the frozen holonomy-angle rule only.
 func TriangleZ2(eab, ebc, eca [4]float64, ambigAngle float64) (neg, ambiguous bool) {
+	return TriangleZ2P(eab, ebc, eca, Z2Params{AmbigAngle: ambigAngle})
+}
+
+// edgeAngle is the SO(3) rotation angle of an edge lift (sign of the lift irrelevant).
+func edgeAngle(e [4]float64) float64 {
+	aw := math.Abs(e[0])
+	if aw > 1 {
+		aw = 1
+	}
+	return 2 * math.Acos(aw)
+}
+
+// TriangleZ2P is TriangleZ2 under a full parameter set: ambiguous iff the holonomy
+// angle >= AmbigAngle, or (EdgeAngle > 0) any edge rotation angle >= EdgeAngle.
+func TriangleZ2P(eab, ebc, eca [4]float64, p Z2Params) (neg, ambiguous bool) {
 	l := QuatMul(QuatMul(eab, ebc), eca)
 	aw := math.Abs(l[0])
 	if aw > 1 {
 		aw = 1
 	}
 	theta := 2 * math.Acos(aw) // rotation angle of the holonomy, in [0, pi]
-	return l[0] < 0, theta >= ambigAngle-1e-9
+	ambiguous = theta >= p.AmbigAngle-1e-9
+	if p.EdgeAngle > 0 {
+		for _, e := range [3][4]float64{eab, ebc, eca} {
+			if edgeAngle(e) >= p.EdgeAngle-1e-9 {
+				ambiguous = true
+			}
+		}
+	}
+	return l[0] < 0, ambiguous
 }
 
 // ---- overlaps -----------------------------------------------------------------
@@ -224,7 +254,7 @@ func CellZ2Planes(c [8][3][7]float64, p Z2Params) (sign int, ambiguous bool) {
 			D := A | 1<<bit[e2]
 			C := B | D
 			for _, tri := range [2][3]int{{A, B, C}, {A, C, D}} {
-				neg, amb := TriangleZ2(lift(tri[0], tri[1]), lift(tri[1], tri[2]), lift(tri[2], tri[0]), p.AmbigAngle)
+				neg, amb := TriangleZ2P(lift(tri[0], tri[1]), lift(tri[1], tri[2]), lift(tri[2], tri[0]), p)
 				if neg {
 					sign = -sign
 				}
@@ -254,13 +284,20 @@ func Z2DetectPlanes(L int, f [][3][7]float64, p Z2Params) Z2Result {
 }
 
 // Z2DetectS3 is the S³ null adapter (frozen §4 control 2): q -> Ad_q ∈ SO(3), the
-// frame being the 3x3 rotation matrix, with the global SU(2) lift q. It reuses the
-// same transport and lift code, so any -1 is a false positive of that code.
+// frame being the 3x3 rotation matrix. Since amend-1 item 3 the detector receives
+// only the SO(3) frames (Z2DetectSO3Frames); q itself is never passed on, and the
+// lift is made per edge exactly as in the main arm.
 func Z2DetectS3(L int, q [][4]float64, p Z2Params) Z2Result {
 	rm := make([][3][3]float64, len(q))
 	for i := range q {
 		rm[i] = QuatToMat(q[i])
 	}
+	return Z2DetectSO3Frames(L, rm, p)
+}
+
+// Z2DetectSO3Frames runs the detector on an SO(3) frame field (site index as in
+// Z2DetectPlanes), with per-edge lifts and the same transport code as the main arm.
+func Z2DetectSO3Frames(L int, rm [][3][3]float64, p Z2Params) Z2Result {
 	return z2Lattice(L, func(a, b int) [3][3]float64 { return rotOverlap(&rm[a], &rm[b]) }, p)
 }
 
@@ -304,9 +341,9 @@ func z2Lattice(L int, ov func(a, b int) [3][3]float64, p Z2Params) Z2Result {
 			Dd := nbr[A][e2]
 			var r triRes
 			// triangle (A,B,C): A->B, B->C, C->A
-			r.neg[0], r.amb[0] = TriangleZ2(E[e1][A], E[e2][B], QuatConj(Dg[d][A]), p.AmbigAngle)
+			r.neg[0], r.amb[0] = TriangleZ2P(E[e1][A], E[e2][B], QuatConj(Dg[d][A]), p)
 			// triangle (A,C,D): A->C, C->D, D->A
-			r.neg[1], r.amb[1] = TriangleZ2(Dg[d][A], QuatConj(E[e1][Dd]), QuatConj(E[e2][A]), p.AmbigAngle)
+			r.neg[1], r.amb[1] = TriangleZ2P(Dg[d][A], QuatConj(E[e1][Dd]), QuatConj(E[e2][A]), p)
 			tri[d][s] = r
 		}
 	}
