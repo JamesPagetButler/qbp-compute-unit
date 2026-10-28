@@ -22,8 +22,8 @@ func KZPlaneCorrelationLength(L int, f [][3][7]float64) (xi float64, capped bool
 		for i := 0; i < L; i++ {
 			for j := 0; j < L; j++ {
 				for k := 0; k < L; k++ {
-					a := kzSite(L, i, j, k)
-					for _, b := range [3]int{kzSite(L, (i+r)%L, j, k), kzSite(L, i, (j+r)%L, k), kzSite(L, i, j, (k+r)%L)} {
+					a := kzSiteIdx(L, i, j, k)
+					for _, b := range [3]int{kzSiteIdx(L, (i+r)%L, j, k), kzSiteIdx(L, i, (j+r)%L, k), kzSiteIdx(L, i, j, (k+r)%L)} {
 						m := kzOverlap(&f[a], &f[b])
 						t := 0.0
 						for x := 0; x < 3; x++ {
@@ -46,4 +46,10 @@ func KZPlaneCorrelationLength(L int, f [][3][7]float64) (xi float64, capped bool
 		}
 	}
 	return float64(half), true
+}
+
+// kzSiteIdx is the periodic site index (i*L+j)*L+k.
+func kzSiteIdx(L, i, j, k int) int {
+	i, j, k = ((i%L)+L)%L, ((j%L)+L)%L, ((k%L)+L)%L
+	return (i*L+j)*L + k
 }
