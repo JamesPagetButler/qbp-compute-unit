@@ -34,8 +34,8 @@ FROZEN-v1 §3 test (g): "reflection and global G₂ rotations leave the count un
 
 FROZEN-v1 says "the saturation reference outside tolerance blocks the grid" and names no tolerance. **Frozen by the director (arch seq 206), proposed by oppenheimer (seq 205):** the **raw** density of −1 cells over **20 i.i.d. Haar-G₂ plane fields at the run's L** must be **0.50 ± 0.05**. Outside it is a code bug and the grid is blocked. It is a code sanity check, not a physics reference. Test (f)'s "n_∞" is read as this raw density.
 
-- Saturation fields use seeds **5400–5419** (one seed per field), out of the reserved range 5400–5599. They are used only for this check.
-- **Measured value, disclosed pre-data** (code `1ca237b`, 20-field blocks, seeds 12300+ and 12000+, outside every frozen range): L = 8: 0.459–0.482; L = 12: 0.463–0.466; L = 16: 0.467 (three blocks); L = 24: 0.465–0.467. The raw density sits at 0.466 and is **not** 0.50, because the sign of a cell is a product of 12 correlated triangle signs. The gate passes with a margin of about 0.016 to its lower edge. The number is the director's; it is flagged here for the signers, not changed.
+- Saturation fields use seeds **5630–5649** (one seed per field), a fresh range after Stage 0's 5600–5629 (arch seq 212). The reserved range 5400–5599 stays reserved for the deferred split-G₂ round 2 and is not touched. The range was checked against every used range (R3 3000–3199; R4 4000–4399 and 9960–9969; tests and probes 9100–9979; kz main 5000–5199, null 5200–5399, Stage 0 5600–5629, probe 9930–9949). Used only for this check.
+- **Measured value, disclosed pre-data** (code `1ca237b`, 20-field blocks, seeds 12300+ and 12000+, outside every frozen range): L = 8: 0.459–0.482; L = 12: 0.463–0.466; L = 16: 0.467 (three blocks); L = 24: 0.465–0.467. The raw density sits at 0.466 and is **not** 0.50, because the sign of a cell is a product of 12 correlated triangle signs. The gate passes with a margin of about 0.016 to its lower edge. **The gate stays at 0.50 ± 0.05 as frozen by the director (arch seq 212: recentring a sanity gate on the code's own output would make it circular).** The 0.034 offset is recorded here as an observation, not a gate. If oppenheimer derives the expected value pre-data, the gate is re-set to the derived number ± 0.05 in this section before signing.
 
 ## 5. S³ null: detector input (item 3) — **RULING PENDING**
 
@@ -49,7 +49,7 @@ Ruled (oppenheimer seq 205, arch seq 206): the S³ arm's detector receives only 
 
 ## 6. What does not change
 
-All numbers, seed ranges (apart from the use of 5400–5419 in §4), the ladder, η rule, quench, Stage 0, the §6 timing probe and L/R rule, predictions P1–P7 as filed (P4's 50% and P7's 85% stay on file as written; P7 is read on raw counts per §2), Q5a/Q5b/Q5c thresholds, the count floor, the 5% resolution kill, and the S³ ratio kill threshold of 0.10.
+All numbers, seed ranges (apart from the new saturation range 5630–5649 in §4), the ladder, η rule, quench, Stage 0, the §6 timing probe and L/R rule, predictions P1–P7 as filed (P4's 50% and P7's 85% stay on file as written; P7 is read on raw counts per §2), Q5a/Q5b/Q5c thresholds, the count floor, the 5% resolution kill, and the S³ ratio kill threshold of 0.10.
 
 ## 7. Signatures
 
