@@ -44,9 +44,24 @@ func KZFrozenSeeds() KZSeeds {
 	}
 }
 
-// KZFrozenRunConfig is the run configuration on the frozen seeds; the caller adds the
-// field factories, Check and Emit. R seeds are the first R of each range.
-func KZFrozenRunConfig(L, R int, eta float64) KZRunConfig {
+// KZTiltSeed0 is the first run tilt seed (amend-1 item 3): replicate j of the null uses
+// tilt seed KZTiltSeed0 + j, so tilt seeds 5650-5849 for R <= 200.
+const KZTiltSeed0 = 5650
+
+// kzSigmaStarPinned is the σ* table pinned in amend-1 (σ*(16), σ*(24)), read by the
+// probe-selected L. It is EMPTY until the calibration is run, its sha pinned and amend-1
+// signed; the driver refuses -run-grid for an L with no pinned entry.
+var kzSigmaStarPinned = map[int]float64{}
+
+// KZPinnedSigma returns the pinned σ* for the lattice size, if there is one.
+func KZPinnedSigma(L int) (float64, bool) {
+	s, ok := kzSigmaStarPinned[L]
+	return s, ok
+}
+
+// KZFrozenRunConfig is the run configuration on the frozen seeds; the caller adds
+// Check and Emit. R seeds are the first R of each range. sigma is the null's σ*.
+func KZFrozenRunConfig(L, R int, eta, sigma float64) KZRunConfig {
 	s := KZFrozenSeeds()
 	return KZRunConfig{
 		L: L, R: R, Eta: eta, Ladder: KZLadder, Stage0: DefaultKZStage0Params(),
@@ -55,7 +70,13 @@ func KZFrozenRunConfig(L, R int, eta float64) KZRunConfig {
 		NullStage0a: s.NullStage0a, NullStage0b: s.NullStage0b,
 		SatSeed0: s.Saturation[0], SatN: len(s.Saturation),
 		MkMain: func(seed uint64) KZArm { return &KZMainArm{F: NewKZPlaneFieldHaar(L, seed)} },
-		MkNull: func(seed uint64) KZArm { return &KZNullArm{F: NewKZS3FieldHaar(L, seed)} },
+		MkNull: func(seed uint64) KZArm {
+			arm := &KZNullArm{F: NewKZS3FieldHaar(L, seed), Sigma: sigma}
+			if seed >= s.Null[0] && seed < s.Null[0]+uint64(R) { // a ladder replicate, not Stage 0
+				arm.TiltSeed = KZTiltSeed0 + (seed - s.Null[0])
+			}
+			return arm
+		},
 	}
 }
 

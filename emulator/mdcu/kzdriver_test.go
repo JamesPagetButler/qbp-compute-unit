@@ -44,7 +44,7 @@ func TestKZFrozenSeedsAreInTheirClasses(t *testing.T) {
 }
 
 func TestKZFrozenRunConfig(t *testing.T) {
-	cfg := KZFrozenRunConfig(16, 100, 0.2)
+	cfg := KZFrozenRunConfig(16, 100, 0.2, 0.10)
 	if cfg.L != 16 || cfg.R != 100 || cfg.Eta != 0.2 || cfg.MainSeed0 != 5000 || cfg.NullSeed0 != 5200 ||
 		cfg.SatSeed0 != 5630 || cfg.SatN != 20 || len(cfg.Ladder) != 7 {
 		t.Fatalf("%+v", cfg)
@@ -54,6 +54,19 @@ func TestKZFrozenRunConfig(t *testing.T) {
 	}
 	if cfg.MainStage0a[0] != 5600 || cfg.NullStage0a[0] != 5605 || cfg.MainStage0b[0] != 5610 || cfg.NullStage0b[0] != 5620 {
 		t.Fatal("stage 0 seeds")
+	}
+	// replicate j of the null reads with tilt seed 5650+j, in the tilt class; Stage 0 arms carry none
+	for _, j := range []uint64{0, 7, 99} {
+		n := cfg.MkNull(5200 + j).(*KZNullArm)
+		if n.Sigma != 0.10 || n.TiltSeed != 5650+j || KZClassifySeed(n.TiltSeed) != KZSeedTilt {
+			t.Fatalf("null replicate %d: sigma %v tilt seed %d", j, n.Sigma, n.TiltSeed)
+		}
+	}
+	if cfg.MkNull(5620).(*KZNullArm).TiltSeed != 0 {
+		t.Fatal("a Stage 0 null arm has no tilt seed")
+	}
+	if _, ok := KZPinnedSigma(16); ok {
+		t.Fatal("no sigma* may be pinned before the calibration is run and amend-1 is signed")
 	}
 }
 

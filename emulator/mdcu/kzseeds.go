@@ -21,10 +21,12 @@ const (
 	KZSeedSaturation
 	KZSeedProbe
 	KZSeedUsed
+	KZSeedTilt    // 5650-5849: B null tilt seeds, one per replicate (amend-1 item 3)
+	KZSeedTiltCal // 5850-5889: sigma* calibration seeds (20 tilt + 20 field)
 )
 
 func (c KZSeedClass) String() string {
-	return [...]string{"free", "main", "null", "reserved", "stage0", "saturation", "probe", "used"}[c]
+	return [...]string{"free", "main", "null", "reserved", "stage0", "saturation", "probe", "used", "tilt", "tilt-calibration"}[c]
 }
 
 // KZClassifySeed returns the class of a seed.
@@ -40,6 +42,10 @@ func KZClassifySeed(seed uint64) KZSeedClass {
 		return KZSeedStage0
 	case seed >= 5630 && seed <= 5649:
 		return KZSeedSaturation
+	case seed >= 5650 && seed <= 5849:
+		return KZSeedTilt
+	case seed >= 5850 && seed <= 5889:
+		return KZSeedTiltCal
 	case seed >= 9930 && seed <= 9949:
 		return KZSeedProbe
 	case seed >= 3000 && seed <= 3199, seed >= 4000 && seed <= 4399,

@@ -247,7 +247,8 @@ func TestKZSeedGuard(t *testing.T) {
 		{3000, KZSeedUsed}, {3199, KZSeedUsed}, {4000, KZSeedUsed}, {4399, KZSeedUsed},
 		{9960, KZSeedUsed}, {9979, KZSeedUsed}, {9100, KZSeedUsed}, {9929, KZSeedUsed}, {9950, KZSeedUsed},
 		{5630, KZSeedSaturation}, {5649, KZSeedSaturation}, // amend-1 §4 (arch seq 212)
-		{12000, KZSeedFree}, {1, KZSeedFree}, {5650, KZSeedFree}, {9980, KZSeedFree},
+		{5650, KZSeedTilt}, {5849, KZSeedTilt}, {5850, KZSeedTiltCal}, {5889, KZSeedTiltCal}, // amend-1 item 3
+		{12000, KZSeedFree}, {1, KZSeedFree}, {5890, KZSeedFree}, {9980, KZSeedFree},
 	}
 	for _, c := range cases {
 		if got := KZClassifySeed(c.seed); got != c.want {
@@ -257,7 +258,7 @@ func TestKZSeedGuard(t *testing.T) {
 	if err := KZCheckSmokeSeeds([]uint64{12000, 12001}); err != nil {
 		t.Errorf("free seeds refused: %v", err)
 	}
-	for _, bad := range [][]uint64{{5000}, {5200}, {5400}, {5600}, {5630}, {5649}, {9930}, {3000}, {4000}, {9960}, {12000, 5100}} {
+	for _, bad := range [][]uint64{{5000}, {5200}, {5400}, {5600}, {5630}, {5649}, {5650}, {5849}, {5850}, {5889}, {9930}, {3000}, {4000}, {9960}, {12000, 5100}} {
 		if err := KZCheckSmokeSeeds(bad); err == nil {
 			t.Errorf("smoke seeds %v were accepted", bad)
 		}

@@ -69,7 +69,10 @@ func main() {
 	dry := flag.Bool("dry-run", false, "print the plan and exit; run nothing")
 	out := flag.String("out", "", "output JSONL (default depends on the mode)")
 	runProbe := flag.Bool("run-probe", false, "REQUIRED to touch seeds 9930–9949: the outcome-blind probe")
-	runGrid := flag.Bool("run-grid", false, "REQUIRED to touch the frozen main/null/Stage 0/saturation seeds: THE RUN")
+	runGrid := flag.Bool("run-grid", false, "REQUIRED to touch the frozen main/null/Stage 0/saturation/tilt seeds: THE RUN")
+	runCal := flag.Bool("run-calibration", false, "REQUIRED to touch the sigma* calibration seeds 5850–5889: the pre-run calibration (no dynamics)")
+	calEns := flag.String("cal-ensemble", "", "calibration only: field ensemble, aligned or haar (no default: it is a ruled choice)")
+	smokeSigma := flag.Float64("sigma", 0.20, "smoke: the null's tilt sigma")
 	probeFile := flag.String("probe-file", "", "probe JSONL whose (L, R, eta) the grid run uses (required with -run-grid)")
 	amendSHA := flag.String("amend-sha", "", "sha256 of the signed amend-1 file (required with -run-grid; recorded in meta)")
 	analyze := flag.String("analyze", "", "analyze a finished raw JSONL and exit; touches no seed")
@@ -85,23 +88,34 @@ func main() {
 	flag.Parse()
 
 	if *analyze != "" {
-		if *runGrid || *runProbe {
+		if *runGrid || *runProbe || *runCal {
 			die(4, "refusing: -analyze is its own step and touches no seed")
 		}
 		os.Exit(analyzeFile(*analyze))
 	}
 
 	mode := "smoke"
-	switch {
-	case *runGrid && *runProbe:
-		die(4, "refusing: -run-grid and -run-probe are separate steps; the probe is posted before the grid starts")
-	case *runGrid:
-		mode = "grid"
-	case *runProbe:
-		mode = "probe"
+	nmodes := 0
+	for _, m := range []struct {
+		on   bool
+		name string
+	}{{*runGrid, "grid"}, {*runProbe, "probe"}, {*runCal, "calibration"}} {
+		if m.on {
+			mode = m.name
+			nmodes++
+		}
+	}
+	if nmodes > 1 {
+		die(4, "refusing: -run-grid, -run-probe and -run-calibration are separate steps")
 	}
 	if *out == "" {
-		*out = map[string]string{"grid": "mdcu-kz-grid.jsonl", "probe": "mdcu-kz-probe.jsonl", "smoke": "mdcu-kz-smoke.jsonl"}[mode]
+		*out = map[string]string{"grid": "mdcu-kz-grid.jsonl", "probe": "mdcu-kz-probe.jsonl", "smoke": "mdcu-kz-smoke.jsonl", "calibration": "mdcu-kz-calibration.jsonl"}[mode]
+	}
+	if mode == "calibration" {
+		if *calEns != "aligned" && *calEns != "haar" {
+			die(8, "refusing: -run-calibration needs -cal-ensemble aligned|haar")
+		}
+		os.Exit(runCalibration(*calEns, *out, *pause))
 	}
 
 	// ---- configuration and guards ---------------------------------------------------
@@ -123,7 +137,11 @@ func main() {
 		if decision, err = mdcu.KZValidateProbe(probeRep); err != nil {
 			die(8, "refusing: bad probe file: %v", err)
 		}
-		cfg = mdcu.KZFrozenRunConfig(decision.L, decision.R, probeRep.Eta)
+		sigma, pinned := mdcu.KZPinnedSigma(decision.L)
+		if !pinned {
+			die(8, "refusing: no sigma* is pinned for L=%d (the calibration must be run, its sha pinned and amend-1 signed first)", decision.L)
+		}
+		cfg = mdcu.KZFrozenRunConfig(decision.L, decision.R, probeRep.Eta, sigma)
 	case "probe":
 		// the probe seeds are fixed
 	default:
@@ -131,7 +149,7 @@ func main() {
 			die(1, "bad smoke parameters")
 		}
 		var etaSeeds []uint64
-		cfg, etaSeeds = smokeConfig(*first, *smokeLsz, *smokeR, *smokeRungs)
+		cfg, etaSeeds = smokeConfig(*first, *smokeLsz, *smokeR, *smokeRungs, *smokeSigma)
 		if err := mdcu.KZCheckSmokeSeeds(append(smokeSeeds(cfg), etaSeeds...)); err != nil {
 			die(4, "refusing: %v; use -run-grid / -run-probe after the go", err)
 		}
@@ -214,6 +232,9 @@ func main() {
 	if mode != "probe" {
 		meta["L"], meta["R"], meta["eta"], meta["ladder"] = cfg.L, cfg.R, cfg.Eta, cfg.Ladder
 		meta["z2_rule"] = "amend-1: pi + edge pi/2"
+		if n, ok := cfg.MkNull(0).(*mdcu.KZNullArm); ok {
+			meta["null_sigma"] = n.Sigma
+		}
 	}
 	emit(meta)
 	if err := check(); err != nil {
@@ -300,7 +321,7 @@ func readProbe(path string) (mdcu.KZProbeReport, error) {
 
 // smokeConfig is a reduced, out-of-range configuration: free seeds from first, a short
 // ladder, and shortened Stage 0. It exercises the code path only; its verdicts mean nothing.
-func smokeConfig(first uint64, L, R, rungs int) (mdcu.KZRunConfig, []uint64) {
+func smokeConfig(first uint64, L, R, rungs int, sigma float64) (mdcu.KZRunConfig, []uint64) {
 	s := first
 	take := func(n int) []uint64 {
 		out := make([]uint64, n)
@@ -310,7 +331,11 @@ func smokeConfig(first uint64, L, R, rungs int) (mdcu.KZRunConfig, []uint64) {
 		s += uint64(n)
 		return out
 	}
-	cfg := mdcu.KZFrozenRunConfig(L, R, 0)
+	cfg := mdcu.KZFrozenRunConfig(L, R, 0, sigma)
+	// smoke tilt seeds are the null seeds themselves (free range), never the pinned 5650+ block
+	cfg.MkNull = func(seed uint64) mdcu.KZArm {
+		return &mdcu.KZNullArm{F: mdcu.NewKZS3FieldHaar(L, seed), Sigma: sigma, TiltSeed: seed}
+	}
 	cfg.Ladder = mdcu.KZLadder[:rungs]
 	cfg.Stage0 = mdcu.KZStage0Params{NT: 40, Tmin: 0.05, Tmax: 8, Equil: 30, Meas: 30, TauQ: 200, RecEvery: 10, NGrid: 41}
 	cfg.MainSeed0 = take(R)[0]

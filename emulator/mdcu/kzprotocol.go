@@ -44,12 +44,20 @@ func (a *KZMainArm) Detect(p Z2Params) Z2Result {
 	return Z2DetectPlanes(a.F.L, a.F.Frames(), p)
 }
 
-// KZNullArm wraps the S³ field; the detector gets only the SO(3) frames (amend-1 item 3).
-type KZNullArm struct{ F *KZS3Field }
+// KZNullArm wraps the S³ field. Since amend-1 item 3 (option B) the detector gets only
+// SO(3)-derived frames: at read time each site's frame plane is tilted by exp(σ ξ_x) with
+// ξ_x fixed by TiltSeed (one pinned seed per replicate); Sigma = 0 is the plain adapter.
+type KZNullArm struct {
+	F        *KZS3Field
+	Sigma    float64
+	TiltSeed uint64
+}
 
 func (a *KZNullArm) Step(eta, T float64, rng *rand.Rand) { a.F.Step(eta, T, rng) }
 func (a *KZNullArm) Order() float64                      { return a.F.OrderM() }
-func (a *KZNullArm) Detect(p Z2Params) Z2Result          { return Z2DetectS3(a.F.L, a.F.Q, p) }
+func (a *KZNullArm) Detect(p Z2Params) Z2Result {
+	return KZDetectS3Tilted(a.F.L, a.F.Q, a.Sigma, a.TiltSeed, p)
+}
 
 // KZRungResult is the single read at the end of a run.
 type KZRungResult struct {
