@@ -15,12 +15,15 @@ Runner: antigravity. Code `c739a62` (origin `spike/mdcu-xqbp-v2`), binary sha256
 | Saturation gate (20 Haar-G₂ fields, L = 16) | raw −1 density **0.4642**, inside 0.50 ± 0.05 | grid raw |
 | Stage 0a, main arm (3 seeds) | ordered = true; T_c = 1.0666 (midpoint of the steepest-drop pair) | grid raw |
 | Stage 0a mean S near T_c | T = 0.8756: 0.7102; T = 0.9973: 0.6405; **T = 1.1359: 0.0534**; T = 1.2938: 0.0258 (SE ≤ 0.004 at each) | grid raw |
-| Stage 0b, main arm (10 seeds, τ_Q = 200) | **pass = false**; max \|cool − heat\| = **0.5176** of S_max; largest recorded-step jump 0.0374 (cool) and 0.0570 (heat) | grid raw |
+| Stage 0b, main arm (10 seeds, τ_Q = 1600, the slowest rung; ramp [1.5 T_c, 0.5 T_c]) | **pass = false**; max \|cool − heat\| = **0.5176** of S_max; largest recorded-step jump 0.0374 (cool) and 0.0570 (heat) | grid raw |
 | Stage 0b reason string | "hysteresis gap 0.0856 > 5% of S_max at grid point 27" | grid raw |
 
 Grid raw file: `doc/spikes/raw/mdcu-kz-grid-raw.jsonl`, sha256 `ba20ddb29cace852ecc19b991f12998912de2565890d788e47bfe1fde2f1390e`, posted at seq 249 before any analysis. Wall 1,384 s, exit 0, no abort, pause file absent. `-analyze` refuses a "premise failed" file (no grid to analyse), so there is no analyzer output.
 
 ## What this does and does not show
+
+- **Frozen prediction P5** ("Stage 0 finds a continuous-looking transition with no hysteresis beyond tolerance", about 60%) did **not** hold on the main arm.
+- Stage 0a ran on 3 seeds per arm (5600–5602 main). FROZEN-v1's seed list names 5 (5600–5604) while its wall formula counts 3; the harness used 3, within the named range, and said so in check-in 2.
 
 - The Stage 0b rule fires on the hysteresis gap test, not on the jump test (both jumps are below the 10% limit). The frozen rule reads this as "first-order or glassy, premise fails".
 - **Reading of the reason string.** The reason shows the gap at the *last* failing grid point (point 27, 0.0856). The largest gap is 0.5176 (`max_gap`). The code overwrites the reason on each failing point, so the string is not the maximum. This is a reporting quirk of the harness, not a change of any threshold or of the verdict.
