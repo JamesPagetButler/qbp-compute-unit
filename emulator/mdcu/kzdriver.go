@@ -49,9 +49,12 @@ func KZFrozenSeeds() KZSeeds {
 const KZTiltSeed0 = 5650
 
 // kzSigmaStarPinned is the σ* table pinned in amend-1 (σ*(16), σ*(24)), read by the
-// probe-selected L. It is EMPTY until the calibration is run, its sha pinned and amend-1
-// signed; the driver refuses -run-grid for an L with no pinned entry.
-var kzSigmaStarPinned = map[int]float64{}
+// probe-selected L. Values come from the one E1 calibration (aligned S³ field, tilt seeds
+// 5850-5869, ruled in seq 227): raw sha256
+// 3e5e16c433e65459c2ba7a74d0ca3e34928488dbb7d2b5e9b45d6033d5a1b5d5, pooled ambiguous
+// fraction 0 at every σ of the grid at both L, so σ* = 0.40 with no fallback. The driver
+// refuses -run-grid for an L with no pinned entry.
+var kzSigmaStarPinned = map[int]float64{16: 0.40, 24: 0.40}
 
 // KZPinnedSigma returns the pinned σ* for the lattice size, if there is one.
 func KZPinnedSigma(L int) (float64, bool) {

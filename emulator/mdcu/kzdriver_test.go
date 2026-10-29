@@ -65,8 +65,16 @@ func TestKZFrozenRunConfig(t *testing.T) {
 	if cfg.MkNull(5620).(*KZNullArm).TiltSeed != 0 {
 		t.Fatal("a Stage 0 null arm has no tilt seed")
 	}
-	if _, ok := KZPinnedSigma(16); ok {
-		t.Fatal("no sigma* may be pinned before the calibration is run and amend-1 is signed")
+	// the pinned sigma* table is exactly the E1 calibration's result (amend-1): 0.40 at L = 16 and 24, nothing else
+	for _, L := range []int{16, 24} {
+		if s, ok := KZPinnedSigma(L); !ok || s != 0.40 {
+			t.Fatalf("sigma*(%d) = %v, %v; want 0.40", L, s, ok)
+		}
+	}
+	for _, L := range []int{8, 12, 20, 32} {
+		if _, ok := KZPinnedSigma(L); ok {
+			t.Fatalf("no sigma* may be pinned for L = %d", L)
+		}
 	}
 }
 
