@@ -53,3 +53,15 @@ Per the spike→theory write-back rule (inter#246 / inter#247): a spike result �
 **Scope (explicit):** the write-back is about **this sigma model with this ramp only**. It says **nothing about the topology** of the G₂/SO(4) order-parameter manifold (π₂ = ℤ₂ point defects) — the ladder never ran, so there is no defect-density, exponent, or topological reading. A continuous-transition target would need a new model, a new pre-registration, and the beekeeper's re-approval (off the inter#224 approved list). @notary-implementor verifies the E move.
 
 **Reopen condition / next-probe candidate** (qbp-oppenheimer's theory item, seq 252; *not* a reading of this round): whether the transition is genuinely first-order (**H-first:** hysteresis gap saturates to a nonzero value as τ_Q → ∞) or continuous-but-too-fast for Model A at this L (**H-slow:** gap falls as a power of 1/τ_Q and drops below 5% at some reachable τ_Q), separated by a Stage-0b-only probe at τ_Q ∈ {1600, 3200, 6400, 12800} that **stores the full 41-point cool/heat seed-mean arrays** (the round-1 raw kept only `max_gap` + the two jumps — arch's measurement-gap note, seq 253). A round-2 candidate for inter#224, pending its own pre-reg and the beekeeper's re-approval.
+
+## Recorded prediction miss — P5 (a-priori, not data; kept separate from the E-move above)
+
+Per arch seq 258 and oppenheimer seq 257 §3, recorded as a first-class row, not a footnote:
+
+| Prediction | Filed | Outcome | Why it was mis-set |
+|---|---|---|---|
+| **P5:** "Stage 0 finds a continuous-looking transition with no hysteresis beyond tolerance" (~60%) | FROZEN-v1 §10 | **failed** on the main arm (Stage 0b, gap 0.5176 of S_max > 5%) | The order parameter here — the projector **Π onto the 3-plane**, a traceless symmetric tensor — carries a **cubic Landau invariant `tr(Π_tl³)`** (the nematic Q-tensor / RP^{N−1} / CP^{N−1} class in 3D), whose ordering transitions are **first-order** by that mechanism. So **first-order was the a-priori expectation**; a continuous transition was the less likely premise and P5's 60% was too high. The argument needed no data (oppenheimer's recorded miss, seq 257 §3). |
+
+**Separation (notary seq 259, anti-laundering):** this is the **a-priori-expectation correction**, NOT the justification for the E-move above — the falsification is drawn from the Stage-0b data, and the cubic-invariant / H-first argument stays a distinct theory item. The 0a drop (0.64 → 0.05 over one grid step) is consistent with H-first but, at L = 16, not discriminating (finite-size rounding of a continuous transition would be of the same width as the grid spacing).
+
+**Process (oppenheimer's wisdom, landed inter#249):** a physics freeze-check on any future ordering-transition spike asks "**does the order parameter admit a cubic invariant?**" before the premise probability is filed.
