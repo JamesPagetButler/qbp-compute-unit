@@ -37,15 +37,37 @@ FROZEN-v1 says "the saturation reference outside tolerance blocks the grid" and 
 - Saturation fields use seeds **5630–5649** (one seed per field), a fresh range after Stage 0's 5600–5629 (arch seq 212). The reserved range 5400–5599 stays reserved for the deferred split-G₂ round 2 and is not touched. The range was checked against every used range (R3 3000–3199; R4 4000–4399 and 9960–9969; tests and probes 9100–9979; kz main 5000–5199, null 5200–5399, Stage 0 5600–5629, probe 9930–9949). Used only for this check.
 - **Measured value, disclosed pre-data** (code `1ca237b`, 20-field blocks, seeds 12300+ and 12000+, outside every frozen range): L = 8: 0.459–0.482; L = 12: 0.463–0.466; L = 16: 0.467 (three blocks); L = 24: 0.465–0.467. The raw density sits at 0.466 and is **not** 0.50, because the sign of a cell is a product of 12 correlated triangle signs. The gate passes with a margin of about 0.016 to its lower edge. **The gate stays at 0.50 ± 0.05 as frozen by the director (arch seq 212: recentring a sanity gate on the code's own output would make it circular).** The 0.034 offset is recorded here as an observation, not a gate. If oppenheimer derives the expected value pre-data, the gate is re-set to the derived number ± 0.05 in this section before signing.
 
-## 5. S³ null: detector input (item 3) — **RULING PENDING**
+## 5. S³ null: detector input and read-time tilt (item 3, **option B**)
 
-Ruled (oppenheimer seq 205, arch seq 206): the S³ arm's detector receives only the SO(3) frame field Ad_q and lifts per edge as the main arm does. Implemented at `1ca237b` as `Z2DetectSO3Frames` (the S³ adapter calls it; q is never passed on).
+Ruled: oppenheimer seq 215 (physics), qbp-architecture seq 217, 218 (chain), qbp-oppenheimer seq 219; qbp-cu-implementor seq 216 (feasibility).
 
-**Finding (antigravity, post-ruling, seq 211):** this does not make the null non-flat. For frames F_a = R_a ∈ SO(3), the overlap M_ab = R_a R_bᵀ is already a rotation, so every triangle holonomy is the identity and every cell reads +1 on every field. Rough fields change only the ambiguity count. Test `TestKZAmend1S3FramesOnly`: 8 i.i.d. rough S³ fields (L = 8) read 0 raw and 0 defects. So the "S³ null fires" kill remains a code-bug detector, and Q5c is "above an algebraic-zero floor".
+**Background (antigravity seq 211, theorem and test).** The S³ arm's detector already received only the SO(3) frame field Ad_q (`Z2DetectSO3Frames` at `1ca237b`; q is never passed on). That does not make the null non-flat: for F_a = R_a ∈ SO(3) the overlap M_ab = R_a R_bᵀ is already a rotation, every triangle holonomy is the identity, and under the π/2 rule the nearest lifts multiply to +1 on any field. Test `TestKZAmend1S3FramesOnly`. Option A (null left flat) is therefore **not** adopted. oppenheimer withdraws the sentence "every −1 is a roughness false positive" of seq 205.
 
-**Text to be completed after the ruling,** one of:
-- **A.** The null is kept as is. This section then states that it certifies the code path only, reports the S³ ambiguity rate per rung, and carries the planning-table addendum arch trailed in seq 203 (Q5c: "trivially above an algebraic-zero floor; no detector-noise exclusion"; Q5a/Q5b carry the result).
-- **B.** The null field is replaced by a rough field of known zero charge with non-flat transport (oppenheimer to define it and set its numbers).
+**Definition (B).** The S³ arm keeps its frozen quench dynamics: target S³, the same rungs, the same Model-A update. **At read time only**, each site's frame plane f_x (the R³ ⊂ R⁷ carrying Ad_q, frame F_x = [R_x | 0]) is tilted by E_x = exp(σ ξ_x), with ξ_x an i.i.d. unit-Frobenius-norm element of so(7), **fixed per site per replicate** by its own pinned seed. The plane field P_x = E_x P₀ is homotopic to the constant plane through t ↦ exp(tσξ_x), so **w₂ = 0 exactly for every σ**; the non-flat transport comes from the polar factor of F_a F_bᵀ no longer being a rotation. Every non-ambiguous −1 on the B null is then a true detector false positive, and **Q5c reads as originally tabled; no planning-table addendum** (arch seq 217).
+
+**Implementation choices the ruling leaves implicit (HARNESS, disclosed):**
+- ξ_x is drawn as 21 i.i.d. standard normals for the strict upper triangle, antisymmetrised and scaled to unit Frobenius norm, from the PCG stream (tilt seed, site index). The rows of F_x are mapped as f'_i = E_x f_i. exp is a 20-term Taylor series (σ ≤ 0.4; the truncation error is far below rounding).
+- The tilt of replicate j is the same at every rung (it is fixed per site per replicate, not per run). Stage 0 never calls the detector, so it uses no tilt seed.
+- σ = 0 reproduces the S³ adapter exactly (test).
+
+**σ* rule (oppenheimer seq 215, pre-data).** σ* = the largest value on the grid {0.05, 0.10, 0.20, 0.40} rad such that the perturbed null's ambiguous-cell fraction (π/2 rule) on 20 pinned fields stays ≤ 5%. If even σ = 0.05 exceeds 5%, the null runs at σ = 0.05 and that fact is recorded. The fraction is **pooled** (pooled ambiguous cells over pooled cells of the 20 fields), as in the rung resolution rule. **[PENDING oppenheimer: the calibration field ensemble and the pooled reading. Antigravity proposes E1: the aligned S³ field (q = 1) tilted by the 20 pinned tilt seeds, measuring the tilt alone.]**
+
+**Calibration (arch seq 218, oppenheimer seq 219): at both candidate lattice sizes, before the run.** σ*(16) and σ*(24) are calibrated once, pre-run, on the same pinned seeds for both sizes, and both are frozen below. The run uses the entry for the L the probe selects ("σ* is read from the pinned table by the probe-selected L"). **There is no calibration step after the probe.** The calibration runs no dynamics, probe, Stage 0 or grid (unit level, at most 160 detector passes on single lattices, within the class deming cleared in seq 200).
+
+| Quantity | Value |
+|---|---|
+| Calibration seeds | tilt 5850–5869, field 5870–5889 (field seeds used only if the ensemble needs them) |
+| Run tilt seeds | 5650–5849 (replicate j uses 5650 + j; R ≤ 200) |
+| σ*(16) | **[PENDING calibration]** |
+| σ*(24) | **[PENDING calibration]** |
+| Calibration raw sha256 | **[PENDING calibration]** |
+| Fallback used (σ = 0.05)? | **[PENDING calibration]** |
+
+All of 5650–5889 was checked against every used range (R3 3000–3199; R4 4000–4399 and 9960–9969; tests and probes 9100–9979; kz main 5000–5199, null 5200–5399, reserved 5400–5599, Stage 0 5600–5629, saturation 5630–5649, probe 9930–9949); none overlaps. Smoke runs and unit tests use 12000+/13000+, and the seed guard refuses 5650–5889 outside the calibration and grid modes.
+
+**Cost (qbp-cu-implementor seq 216):** one 7×7 exponential per site per read on the S³ arm, at most 3% of that arm and 1.5% of the run, folded into the probe's t_d so the mechanical L/R rule absorbs it. No change to the step count, ladder, L ≤ 24, RAM or GOMAXPROCS = 1.
+
+**Disclosed pre-signing observation (antigravity seq 221; exploration on free seeds 13300+, L = 16, 4 analytic smooth SO(3) fields per row, amplitudes A = 0–32; not the calibration, no dynamics).** On the ruled grid σ ≤ 0.40 the tilted null read **zero raw −1 cells at every roughness**, and the ambiguous fraction moved little with σ. Zero raw −1 also holds through σ = 1.6 at A = 0, 4, 8. At σ = 2.4 raw −1 appears (588 cells, set by the tilt rather than the field), with 83–98% of cells ambiguous. So on the ruled grid the B null is flat in practice: it reports the detector's false-positive rate on resolved fields, and it is unlikely to fail. This is recorded as an observation, not a rule. `TestKZExplore` (skipped unless `KZ_EXPLORE=1`) reproduces it.
 
 ## 6. What does not change
 

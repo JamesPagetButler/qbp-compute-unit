@@ -48,8 +48,10 @@ expect 4 "-analyze with -run-calibration is refused"               -- -analyze x
 expect 8 "-run-calibration without an ensemble is refused"         -- -run-calibration -out x.jsonl
 expect 8 "-run-calibration with an unknown ensemble is refused"    -- -run-calibration -cal-ensemble gaussian -out x.jsonl
 expect 3 "-run-calibration stops at the pause file, writing no result" -- -run-calibration -cal-ensemble aligned $P -out cal-paused.jsonl
+expect 3 "-run-calibration (smooth) stops at the pause file, writing no result" -- -run-calibration -cal-ensemble smooth $P -out cal-paused2.jsonl
 grep -q '"kind":"calibration"' cal-paused.jsonl && { echo "FAIL: a paused calibration wrote a result"; fail=1; }
-rm -f cal-paused.jsonl
+grep -q '"kind":"calibration"' cal-paused2.jsonl 2>/dev/null && { echo "FAIL: a paused smooth calibration wrote a result"; fail=1; }
+rm -f cal-paused.jsonl cal-paused2.jsonl
 
 # grid guards (all with the safety-net pause file)
 expect 8 "-run-grid without a probe file is refused"               -- -run-grid $P -amend-sha $SHA -out x.jsonl

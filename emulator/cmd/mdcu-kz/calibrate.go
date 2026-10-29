@@ -61,6 +61,8 @@ func runCalibration(ensemble, out, pausePath string) int {
 		L        int
 		Sigma    float64
 		Fallback bool
+		Amp      float64
+		AmpState string
 	}
 	var stars []star
 	for _, L := range calSizes {
@@ -72,13 +74,23 @@ func runCalibration(ensemble, out, pausePath string) int {
 			return 3
 		}
 		L := L
-		mk := func(i int) [][4]float64 {
-			if ensemble == "aligned" {
-				return mdcu.NewKZS3FieldAligned(L).Q
+		var rows []mdcu.KZCalRow
+		var sc mdcu.KZSmoothCalibration
+		if ensemble == "smooth" {
+			sc = mdcu.KZCalibrateSmooth(L, field, tilt, p)
+			rows = sc.Rows
+			emit(map[string]any{"kind": "amplitude", "L": L, "A_half": sc.Amp.A, "untilted_pooled_ambig_frac": sc.Amp.Frac,
+				"iterations": sc.Amp.Iterations, "status": sc.Amp.Status, "target": mdcu.KZAmpTargetFrac,
+				"tolerance": mdcu.KZAmpTolerance, "bracket_hi": mdcu.KZAmpBracketHi})
+		} else {
+			mk := func(i int) [][4]float64 {
+				if ensemble == "aligned" {
+					return mdcu.NewKZS3FieldAligned(L).Q
+				}
+				return mdcu.NewKZS3FieldHaar(L, field[i]).Q
 			}
-			return mdcu.NewKZS3FieldHaar(L, field[i]).Q
+			rows = mdcu.KZCalibrateSigma(L, mk, tilt, p)
 		}
-		rows := mdcu.KZCalibrateSigma(L, mk, tilt, p)
 		for _, r := range rows {
 			emit(map[string]any{"kind": "calibration", "L": L, "sigma": r.Sigma, "fields": r.Fields, "cells": r.Cells,
 				"ambiguous": r.Ambiguous, "neg": r.NegCells, "defects": r.Defects,
@@ -86,14 +98,14 @@ func runCalibration(ensemble, out, pausePath string) int {
 		}
 		s, fb := mdcu.KZSigmaStar(rows)
 		emit(map[string]any{"kind": "sigma_star", "L": L, "sigma_star": s, "fallback": fb})
-		stars = append(stars, star{L, s, fb})
+		stars = append(stars, star{L, s, fb, sc.Amp.A, sc.Amp.Status})
 	}
 	emit(map[string]any{"kind": "end", "verdict": "calibration complete", "wall_s": time.Since(start).Seconds(), "loadavg": loadavg()})
 	w.Flush()
 	f.Close()
 	fmt.Println("raw sha256:", fileSHA(out))
 	for _, s := range stars {
-		fmt.Printf("ensemble=%s  L=%d  sigma*=%g  fallback=%v\n", ensemble, s.L, s.Sigma, s.Fallback)
+		fmt.Printf("ensemble=%s  L=%d  A_half=%g (%s)  sigma*=%g  fallback=%v\n", ensemble, s.L, s.Amp, s.AmpState, s.Sigma, s.Fallback)
 	}
 	return 0
 }

@@ -71,7 +71,7 @@ func main() {
 	runProbe := flag.Bool("run-probe", false, "REQUIRED to touch seeds 9930–9949: the outcome-blind probe")
 	runGrid := flag.Bool("run-grid", false, "REQUIRED to touch the frozen main/null/Stage 0/saturation/tilt seeds: THE RUN")
 	runCal := flag.Bool("run-calibration", false, "REQUIRED to touch the sigma* calibration seeds 5850–5889: the pre-run calibration (no dynamics)")
-	calEns := flag.String("cal-ensemble", "", "calibration only: field ensemble, aligned or haar (no default: it is a ruled choice)")
+	calEns := flag.String("cal-ensemble", "", "calibration only: field ensemble: smooth (the ruled E3), or aligned/haar (non-ruled controls); no default")
 	smokeSigma := flag.Float64("sigma", 0.20, "smoke: the null's tilt sigma")
 	probeFile := flag.String("probe-file", "", "probe JSONL whose (L, R, eta) the grid run uses (required with -run-grid)")
 	amendSHA := flag.String("amend-sha", "", "sha256 of the signed amend-1 file (required with -run-grid; recorded in meta)")
@@ -112,8 +112,8 @@ func main() {
 		*out = map[string]string{"grid": "mdcu-kz-grid.jsonl", "probe": "mdcu-kz-probe.jsonl", "smoke": "mdcu-kz-smoke.jsonl", "calibration": "mdcu-kz-calibration.jsonl"}[mode]
 	}
 	if mode == "calibration" {
-		if *calEns != "aligned" && *calEns != "haar" {
-			die(8, "refusing: -run-calibration needs -cal-ensemble aligned|haar")
+		if *calEns != "smooth" && *calEns != "aligned" && *calEns != "haar" {
+			die(8, "refusing: -run-calibration needs -cal-ensemble smooth|aligned|haar")
 		}
 		os.Exit(runCalibration(*calEns, *out, *pause))
 	}
