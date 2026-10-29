@@ -1,0 +1,11 @@
+# mdcu-kz grid meta
+# started: 2026-10-29T17:01:24-04:00
+# load_start: 2.39 1.95 1.62
+# cpu: AMD FX(tm)-8350 Eight-Core Processor
+# go: go version go1.24.2 linux/amd64
+# binary_sha256: a564c9901349d5e32cbb84b773b55bc9a02f198eb7738bcbe65a402fc9de3cd2
+# amend_sha256: e226da2352ae431ad40d49c582417f1fee0ea715a9ff9163a5d6e7440d26db59
+# unit tests: go test ./mdcu -run TestKZ passed
+# exit: 0
+# load_end: 1.57 1.53 1.57
+# finished: 2026-10-29T17:24:28-04:00
