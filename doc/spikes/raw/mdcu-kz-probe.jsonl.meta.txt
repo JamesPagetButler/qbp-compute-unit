@@ -1,0 +1,10 @@
+# mdcu-kz probe meta
+# started: 2026-10-29T17:00:06-04:00
+# load_start: 2.01 1.71 1.51
+# cpu: AMD FX(tm)-8350 Eight-Core Processor
+# go: go version go1.24.2 linux/amd64
+# binary_sha256: a564c9901349d5e32cbb84b773b55bc9a02f198eb7738bcbe65a402fc9de3cd2
+# unit tests: go test ./mdcu -run TestKZ passed
+# exit: 0
+# load_end: 2.63 1.90 1.58
+# finished: 2026-10-29T17:00:38-04:00
