@@ -84,6 +84,62 @@ echo '{"kind":"meta","L":8,"R":2,"ladder":[25,50]}' > partial.jsonl
 expect 1 "-analyze of a file with no end record is refused"        -- -analyze partial.jsonl
 expect 1 "-analyze of a missing file is refused"                   -- -analyze nope.jsonl
 
+# ---- qbp-kz-g2 round 1 Stage-0b-only mode (FROZEN-v1 §2 additions 1-2, §5 aborts) ----
+# 5900-5939 (run block) and 5940-5979 (re-run block) are refused by every other mode;
+# -run-0b derives its seeds from -tau and refuses typed seeds, tau off the set, mode mixing.
+TC=1.0666262219986817
+expect 4 "smoke seeds inside the kz-g2 r1 block are refused"         -- -first-seed 5900 -out x.jsonl
+expect 4 "smoke seeds at the end of the kz-g2 r1 block are refused"  -- -first-seed 5939 -R 1 -out x.jsonl
+expect 4 "smoke seeds inside the kz-g2 r1 re-run block are refused"  -- -first-seed 5940 -out x.jsonl
+expect 4 "smoke seeds straddling into the kz-g2 r1 block are refused" -- -first-seed 5895 -R 8 -out x.jsonl
+expect 4 "-smoke-0b on the kz-g2 r1 block is refused"                -- -smoke-0b -tau 20 -tc 1 -first-seed 5900 $P -out x.jsonl
+expect 4 "-smoke-0b on the re-run block is refused"                  -- -smoke-0b -tau 20 -tc 1 -first-seed 5970 $P -out x.jsonl
+expect 4 "-smoke-0b straddling into the block is refused"            -- -smoke-0b -tau 20 -tc 1 -first-seed 5895 $P -out x.jsonl
+expect 4 "-run-0b with -run-grid is refused"                         -- -run-0b -run-grid -tau 1600 -tc $TC -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-0b with -run-probe is refused"                        -- -run-0b -run-probe -tau 1600 -tc $TC -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-0b with -run-calibration is refused"                  -- -run-0b -run-calibration -cal-ensemble aligned -tau 1600 -tc $TC -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-0b with -smoke-0b is refused"                         -- -run-0b -smoke-0b -tau 1600 -tc $TC -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-analyze with -run-0b is refused"                          -- -analyze x.jsonl -run-0b
+expect 4 "-analyze-0b with -run-0b is refused"                       -- -analyze-0b -run-0b a b c d
+expect 4 "-analyze-0b with -run-grid is refused"                     -- -analyze-0b -run-grid a b c d
+expect 4 "-analyze-0b with -analyze is refused"                      -- -analyze-0b -analyze x.jsonl a b c d
+expect 4 "-run-0b with a typed first seed is refused (seeds are derived)" -- -run-0b -tau 1600 -tc $TC -prereg-sha $SHA -first-seed 5900 $P -out x.jsonl
+expect 4 "-run-0b with a typed wrong first seed is refused"          -- -run-0b -tau 1600 -tc $TC -prereg-sha $SHA -first-seed 5910 $P -out x.jsonl
+expect 4 "-run-0b with a typed free first seed is refused"           -- -run-0b -tau 1600 -tc $TC -prereg-sha $SHA -first-seed 13000 $P -out x.jsonl
+expect 4 "-run-0b with tau off the frozen set is refused"            -- -run-0b -tau 1700 -tc $TC -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-0b with the round-1 ladder tau is refused"            -- -run-0b -tau 200 -tc $TC -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-0b without -tau is refused"                           -- -run-0b -tc $TC -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-0b with -L is refused (L = 16 is frozen)"             -- -run-0b -tau 1600 -tc $TC -prereg-sha $SHA -L 8 $P -out x.jsonl
+expect 8 "-run-0b without -tc is refused (no default)"               -- -run-0b -tau 1600 -prereg-sha $SHA $P -out x.jsonl
+expect 8 "-run-0b without -prereg-sha is refused"                    -- -run-0b -tau 1600 -tc $TC $P -out x.jsonl
+expect 8 "-run-0b with a short -prereg-sha is refused"               -- -run-0b -tau 1600 -tc $TC -prereg-sha abc $P -out x.jsonl
+expect 8 "-run-0b with a non-hex -prereg-sha is refused"             -- -run-0b -tau 1600 -tc $TC -prereg-sha zz00000000000000000000000000000000000000000000000000000000000000 $P -out x.jsonl
+expect 8 "-run-0b with a short -rerun-amend-sha is refused"          -- -run-0b -tau 1600 -tc $TC -prereg-sha $SHA -rerun-amend-sha abc $P -out x.jsonl
+expect 0 "-run-0b dry-run prints the plan and writes nothing"        -- -run-0b -tau 6400 -tc $TC -prereg-sha $SHA -dry-run
+grep -q 'seeds 5920..5929' "$T/out" || { echo "FAIL: -run-0b dry-run for tau 6400 must plan seeds 5920..5929"; cat "$T/out"; fail=1; }
+grep -q 'qbp-kz-g2-r1-0b-tau6400.jsonl' "$T/out" || { echo "FAIL: default output name"; cat "$T/out"; fail=1; }
+[ -e qbp-kz-g2-r1-0b-tau6400.jsonl ] && { echo "FAIL: dry-run created the output"; fail=1; }
+expect 0 "-run-0b dry-run under the re-run amendment plans the re-run sub-block" -- -run-0b -tau 12800 -tc $TC -prereg-sha $SHA -rerun-amend-sha $SHA -dry-run
+grep -q 'seeds 5970..5979' "$T/out" || { echo "FAIL: re-run sub-block for tau 12800 must be 5970..5979"; cat "$T/out"; fail=1; }
+# safety net: a -run-0b that passes every guard stops at the pause file before any step
+expect 3 "-run-0b stops at the pause file before any step"          -- -run-0b -tau 1600 -tc $TC -prereg-sha $SHA $P -out 0b-paused.jsonl
+grep -q '"kind":"meta"' 0b-paused.jsonl || { echo "FAIL: paused 0b wrote no meta"; fail=1; }
+grep -q '"seeds":\[5900,5901,5902,5903,5904,5905,5906,5907,5908,5909\]' 0b-paused.jsonl || { echo "FAIL: meta seeds for tau 1600"; head -c 600 0b-paused.jsonl; fail=1; }
+grep -q "\"prereg_sha\":\"$SHA\"" 0b-paused.jsonl || { echo "FAIL: meta must record prereg_sha"; fail=1; }
+grep -q '"kind":"stage0b"' 0b-paused.jsonl && { echo "FAIL: a paused 0b run wrote a stage0b record"; fail=1; }
+grep -q '"kind":"end"' 0b-paused.jsonl && { echo "FAIL: a paused 0b run wrote an end record"; fail=1; }
+expect 3 "-run-0b re-run sub-block stops at the pause file"         -- -run-0b -tau 3200 -tc $TC -prereg-sha $SHA -rerun-amend-sha $SHA $P -out 0b-paused2.jsonl
+grep -q '"seeds":\[5950,5951,5952,5953,5954,5955,5956,5957,5958,5959\]' 0b-paused2.jsonl || { echo "FAIL: re-run seeds for tau 3200"; fail=1; }
+grep -q '"rerun":true' 0b-paused2.jsonl || { echo "FAIL: meta must flag the re-run"; fail=1; }
+# the round-1 analyzer refuses a 0b-only file by design; -analyze-0b refuses a partial set
+expect 1 "-analyze refuses a 0b-only file"                           -- -analyze 0b-paused.jsonl
+expect 1 "-analyze-0b with no files is refused"                      -- -analyze-0b
+expect 1 "-analyze-0b with three files is refused (no partial-set reading)" -- -analyze-0b 0b-paused.jsonl 0b-paused2.jsonl 0b-paused.jsonl
+grep -q 'partial' "$T/err" || { echo "FAIL: the partial-set refusal must say so"; cat "$T/err"; fail=1; }
+expect 1 "-analyze-0b with four incomplete files is refused"         -- -analyze-0b 0b-paused.jsonl 0b-paused2.jsonl 0b-paused.jsonl 0b-paused2.jsonl
+rm -f 0b-paused.jsonl 0b-paused2.jsonl
+expect 0 "-smoke-0b dry-run on free seeds is accepted"               -- -smoke-0b -tau 20 -tc 1 -first-seed 13000 -L 8 -dry-run
+
 # the positive control for the guard itself: a free-seed dry run is accepted
 expect 0 "a smoke dry-run on free seeds is accepted"               -- -dry-run
 

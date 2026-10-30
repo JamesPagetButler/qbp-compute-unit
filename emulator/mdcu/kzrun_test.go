@@ -2,8 +2,10 @@ package mdcu
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"math/rand/v2"
+	"strings"
 	"testing"
 )
 
@@ -297,5 +299,204 @@ func TestKZMainArmXi(t *testing.T) {
 	xi, capped := arm.Xi()
 	if !capped || xi != 4 {
 		t.Fatalf("an aligned field has no decay: xi=%v capped=%v", xi, capped)
+	}
+}
+
+// ---- qbp-kz-g2 round 1: Stage-0b-only entry point (FROZEN-v1 §2 addition 1) --------------
+
+// kzCountArm wraps a mock arm and counts its steps.
+type kzCountArm struct {
+	KZArm
+	steps *int
+}
+
+func (a *kzCountArm) Step(eta, T float64, rng *rand.Rand) { *a.steps++; a.KZArm.Step(eta, T, rng) }
+
+func kzStage0bOnlyCfg(seeds []uint64, tau int, smoke bool, recs *[]map[string]any, made *[]uint64, steps map[uint64]*int, nan bool) KZStage0bOnlyConfig {
+	idx, _ := KZKzG2R1TauIndex(tau)
+	return KZStage0bOnlyConfig{
+		L: 8, Eta: 0.1, Tc: 1.0, Tau: tau, TauIndex: idx, Seeds: seeds, Smoke: smoke,
+		Stage0: KZStage0Params{RecEvery: 5, NGrid: 41},
+		Mk: func(seed uint64) KZArm {
+			*made = append(*made, seed)
+			n := new(int)
+			steps[seed] = n
+			return &kzCountArm{KZArm: &kzMockArm{seed: seed, tc: 1, w: 0.3, s: 1, lastT: math.Inf(1), ordered: true, hyst: true, nan: nan}, steps: n}
+		},
+		Emit: func(r map[string]any) { *recs = append(*recs, r) },
+		Meta: map[string]any{"prereg_sha": "785e0ee2c81740b25fbeb9dfa5bb26e22159d8b7b221de2bdb75c2f7a6f51e28"},
+	}
+}
+
+func kzFreeBlock(first uint64) []uint64 {
+	s := make([]uint64, 10)
+	for j := range s {
+		s[j] = first + uint64(j)
+	}
+	return s
+}
+
+func TestKZStage0bOnlyFlow(t *testing.T) {
+	var recs []map[string]any
+	var made []uint64
+	steps := map[uint64]*int{}
+	seeds := kzFreeBlock(13500)
+	tau := 40
+	cfg := kzStage0bOnlyCfg(seeds, tau, true, &recs, &made, steps, false)
+	raw, err := KZExecuteStage0bOnly(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if kinds := kzKinds(recs); len(kinds) != 3 || kinds[0] != "meta" || kinds[1] != "stage0b" || kinds[2] != "end" {
+		t.Fatalf("records %v, want [meta stage0b end]", kinds)
+	}
+	for _, k := range []string{"saturation", "stage0a", "run", "abort"} {
+		if kzCount(recs, k) != 0 {
+			t.Fatalf("a Stage-0b-only run must not emit %q", k)
+		}
+	}
+	// one arm per seed, in the given order, each stepped hold + cool + heat
+	if len(made) != len(seeds) {
+		t.Fatalf("arms made %v", made)
+	}
+	for j, s := range seeds {
+		if made[j] != s {
+			t.Fatalf("seed order %v, want %v", made, seeds)
+		}
+		if n := *steps[s]; n != KZHoldSteps+2*tau {
+			t.Fatalf("seed %d: %d steps, want %d", s, n, KZHoldSteps+2*tau)
+		}
+	}
+	meta := recs[0]
+	if meta["prereg_sha"] != cfg.Meta["prereg_sha"] || meta["tau"] != tau || meta["tc"] != 1.0 || meta["mode"] != "smoke-0b" {
+		t.Fatalf("meta %v", meta)
+	}
+	if got, ok := meta["seeds"].([]uint64); !ok || len(got) != 10 || got[0] != 13500 {
+		t.Fatalf("meta seeds %v", meta["seeds"])
+	}
+	if _, has := meta["R"]; has {
+		t.Fatal("a 0b-only meta must not look like a grid meta (R, ladder); -analyze refuses it by design")
+	}
+	sb := recs[1]
+	if sb["tau"] != tau || sb["tc"] != 1.0 || sb["arm"] != "main" {
+		t.Fatalf("stage0b record %v", sb)
+	}
+	nrec := tau/5 + 1
+	if g := sb["grid"].([]float64); len(g) != 41 || g[0] != 0.5 || math.Abs(g[40]-1.5) > 1e-12 {
+		t.Fatalf("grid %v", g)
+	}
+	if len(sb["cool"].([]float64)) != 41 || len(sb["heat"].([]float64)) != 41 {
+		t.Fatal("cool/heat seed-mean arrays must be the 41-point grid curves")
+	}
+	cs, hs := sb["cool_series"].([][]float64), sb["heat_series"].([][]float64)
+	if len(cs) != 10 || len(hs) != 10 || len(cs[0]) != nrec || len(hs[9]) != nrec {
+		t.Fatalf("per-seed series %d x %d, %d x %d; want 10 x %d", len(cs), len(cs[0]), len(hs), len(hs[9]), nrec)
+	}
+	if len(sb["cool_t"].([]float64)) != nrec || len(sb["heat_t"].([]float64)) != nrec {
+		t.Fatal("record T labels")
+	}
+	gap, idx, T := KZStage0bGap(raw.Grid, raw.CoolOnGrid, raw.HeatOnGrid)
+	if sb["max_gap"] != gap || sb["max_gap_idx"] != idx || sb["max_gap_T"] != T || gap <= 0 {
+		t.Fatalf("max gap fields %v %v %v vs %v %v %v", sb["max_gap"], sb["max_gap_idx"], sb["max_gap_T"], gap, idx, T)
+	}
+	if sb["cool_jump"] != raw.CoolJump || sb["heat_jump"] != raw.HeatJump || sb["cool_jump_idx"] != raw.CoolJumpIdx ||
+		sb["heat_jump_idx"] != raw.HeatJumpIdx || sb["cool_jump_T"] != raw.CoolJumpT || sb["heat_jump_T"] != raw.HeatJumpT {
+		t.Fatalf("jump fields %v", sb)
+	}
+	reason := sb["reason"].(string)
+	if !strings.Contains(reason, fmt.Sprintf("grid point %d (T = %.4f)", idx, T)) {
+		t.Fatalf("reason %q does not name the max-gap index and T", reason)
+	}
+	if recs[2]["verdict"] != "0b complete" || recs[2]["tau"] != tau {
+		t.Fatalf("end %v", recs[2])
+	}
+	if _, ok := recs[2]["wall_s"].(float64); !ok {
+		t.Fatal("end record carries wall seconds")
+	}
+}
+
+func TestKZStage0bOnlyGuardsRefuseBeforeAnyStep(t *testing.T) {
+	type c struct {
+		name  string
+		seeds []uint64
+		tau   int
+		smoke bool
+	}
+	cases := []c{
+		{"smoke on a frozen kz seed", kzFreeBlock(5610), 40, true},
+		{"smoke on the kz-g2 r1 block", kzFreeBlock(5900), 40, true},
+		{"smoke on the re-run block", kzFreeBlock(5940), 40, true},
+		{"run mode on free seeds", kzFreeBlock(13500), 1600, false},
+		{"run mode with tau off the set", kzFreeBlock(13500), 1700, false},
+		{"run mode with a tau index that does not match the seeds", nil, 1600, false},
+	}
+	for _, k := range cases {
+		var recs []map[string]any
+		var made []uint64
+		steps := map[uint64]*int{}
+		cfg := kzStage0bOnlyCfg(k.seeds, k.tau, k.smoke, &recs, &made, steps, false)
+		_, err := KZExecuteStage0bOnly(cfg)
+		if code := kzAbortCode(t, err); code != 4 {
+			t.Errorf("%s: code %d, want 4", k.name, code)
+		}
+		if len(made) != 0 || len(recs) != 0 {
+			t.Errorf("%s: %d arms made, %d records written; the guard runs before anything", k.name, len(made), len(recs))
+		}
+	}
+	// the run-mode guard accepts exactly the derived sub-block (the arm is never built: the
+	// mock refuses via a Check hook that fires on the first step, so no frozen seed is run)
+	for i := range KZKzG2R1TauSet {
+		var recs []map[string]any
+		var made []uint64
+		steps := map[uint64]*int{}
+		cfg := kzStage0bOnlyCfg(KZKzG2R1Seeds(i, false), KZKzG2R1TauSet[i], false, &recs, &made, steps, false)
+		cfg.Mk = func(seed uint64) KZArm { panic("the test must not build an arm on a frozen seed") }
+		cfg.Check = func() error { return &KZAbortError{Code: 3, Reason: "pause file (test)"} }
+		_, err := KZExecuteStage0bOnly(cfg)
+		if code := kzAbortCode(t, err); code != 3 {
+			t.Errorf("tau index %d: code %d, want 3 (guard accepted, start check fired)", i, code)
+		}
+		if kinds := kzKinds(recs); len(kinds) != 2 || kinds[0] != "meta" || kinds[1] != "abort" {
+			t.Errorf("tau index %d: records %v, want [meta abort]", i, kinds)
+		}
+	}
+}
+
+func TestKZStage0bOnlyAborts(t *testing.T) {
+	// pause via the Check hook mid-run: abort record, no stage0b, no end
+	var recs []map[string]any
+	var made []uint64
+	steps := map[uint64]*int{}
+	cfg := kzStage0bOnlyCfg(kzFreeBlock(13500), 40, true, &recs, &made, steps, false)
+	calls := 0
+	cfg.Check = func() error {
+		calls++
+		if calls > 500 {
+			return &KZAbortError{Code: 3, Reason: "pause file"}
+		}
+		return nil
+	}
+	_, err := KZExecuteStage0bOnly(cfg)
+	if c := kzAbortCode(t, err); c != 3 {
+		t.Fatalf("code %d", c)
+	}
+	if calls != 501 {
+		t.Fatalf("Check must stop the run at the step that raised it, calls=%d", calls)
+	}
+	if kinds := kzKinds(recs); len(kinds) != 2 || kinds[0] != "meta" || kinds[1] != "abort" {
+		t.Fatalf("records %v, want [meta abort]", kinds)
+	}
+	if recs[1]["code"] != 3 {
+		t.Fatalf("abort record %v", recs[1])
+	}
+	// wall cap and pause are the driver's Check; NaN is screened here: exit 6
+	recs, made = nil, nil
+	cfg = kzStage0bOnlyCfg(kzFreeBlock(13500), 40, true, &recs, &made, steps, true)
+	_, err = KZExecuteStage0bOnly(cfg)
+	if c := kzAbortCode(t, err); c != 6 {
+		t.Fatalf("code %d", c)
+	}
+	if kzCount(recs, "stage0b") != 0 || kzCount(recs, "end") != 0 || kzCount(recs, "abort") != 1 {
+		t.Fatal("a NaN run writes an abort record and nothing else")
 	}
 }

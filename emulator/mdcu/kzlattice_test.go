@@ -248,7 +248,8 @@ func TestKZSeedGuard(t *testing.T) {
 		{9960, KZSeedUsed}, {9979, KZSeedUsed}, {9100, KZSeedUsed}, {9929, KZSeedUsed}, {9950, KZSeedUsed},
 		{5630, KZSeedSaturation}, {5649, KZSeedSaturation}, // amend-1 §4 (arch seq 212)
 		{5650, KZSeedTilt}, {5849, KZSeedTilt}, {5850, KZSeedTiltCal}, {5889, KZSeedTiltCal}, // amend-1 item 3
-		{12000, KZSeedFree}, {1, KZSeedFree}, {5890, KZSeedFree}, {9980, KZSeedFree},
+		{5900, KZSeedKzG2R1}, {5939, KZSeedKzG2R1}, {5940, KZSeedKzG2R1Rerun}, {5979, KZSeedKzG2R1Rerun}, // qbp-kz-g2 r1 §2
+		{12000, KZSeedFree}, {1, KZSeedFree}, {5890, KZSeedFree}, {5899, KZSeedFree}, {5980, KZSeedFree}, {9980, KZSeedFree},
 	}
 	for _, c := range cases {
 		if got := KZClassifySeed(c.seed); got != c.want {
@@ -258,9 +259,80 @@ func TestKZSeedGuard(t *testing.T) {
 	if err := KZCheckSmokeSeeds([]uint64{12000, 12001}); err != nil {
 		t.Errorf("free seeds refused: %v", err)
 	}
-	for _, bad := range [][]uint64{{5000}, {5200}, {5400}, {5600}, {5630}, {5649}, {5650}, {5849}, {5850}, {5889}, {9930}, {3000}, {4000}, {9960}, {12000, 5100}} {
+	for _, bad := range [][]uint64{{5000}, {5200}, {5400}, {5600}, {5630}, {5649}, {5650}, {5849}, {5850}, {5889}, {9930}, {3000}, {4000}, {9960}, {12000, 5100}, {5900}, {5939}, {5940}, {5979}, {13000, 5910}} {
 		if err := KZCheckSmokeSeeds(bad); err == nil {
 			t.Errorf("smoke seeds %v were accepted", bad)
+		}
+	}
+}
+
+// qbp-kz-g2 round 1 (FROZEN-v1 §2 Processes / Seeds): process i runs exactly seeds
+// 5900+10i … 5900+10i+9; the re-run block 5940–5979 uses the same τ index and is refused
+// unless an amendment selects it. The seed count is derived from the τ index, never passed.
+func TestKZKzG2R1SeedBlocks(t *testing.T) {
+	if got := KZKzG2R1TauSet; len(got) != 4 || got[0] != 1600 || got[1] != 3200 || got[2] != 6400 || got[3] != 12800 {
+		t.Fatalf("tau set %v", got)
+	}
+	for i, tau := range KZKzG2R1TauSet {
+		idx, ok := KZKzG2R1TauIndex(tau)
+		if !ok || idx != i {
+			t.Fatalf("tau %d: index %d ok=%v", tau, idx, ok)
+		}
+		seeds := KZKzG2R1Seeds(i, false)
+		if len(seeds) != 10 || seeds[0] != 5900+10*uint64(i) || seeds[9] != 5900+10*uint64(i)+9 {
+			t.Fatalf("tau index %d: seeds %v", i, seeds)
+		}
+		for _, s := range seeds {
+			if KZClassifySeed(s) != KZSeedKzG2R1 {
+				t.Fatalf("seed %d not in the kz-g2 r1 class", s)
+			}
+		}
+		rerun := KZKzG2R1Seeds(i, true)
+		if len(rerun) != 10 || rerun[0] != 5940+10*uint64(i) || rerun[9] != 5940+10*uint64(i)+9 {
+			t.Fatalf("tau index %d: re-run seeds %v", i, rerun)
+		}
+		for _, s := range rerun {
+			if KZClassifySeed(s) != KZSeedKzG2R1Rerun {
+				t.Fatalf("seed %d not in the kz-g2 r1 re-run class", s)
+			}
+		}
+		if err := KZCheckKzG2R1Seeds(seeds, i, false); err != nil {
+			t.Errorf("tau index %d: own sub-block refused: %v", i, err)
+		}
+		if err := KZCheckKzG2R1Seeds(rerun, i, true); err != nil {
+			t.Errorf("tau index %d: amended re-run sub-block refused: %v", i, err)
+		}
+		if err := KZCheckKzG2R1Seeds(rerun, i, false); err == nil {
+			t.Errorf("tau index %d: re-run sub-block accepted without an amendment", i)
+		}
+		if err := KZCheckKzG2R1Seeds(seeds, i, true); err == nil {
+			t.Errorf("tau index %d: main sub-block accepted under a re-run amendment", i)
+		}
+		if err := KZCheckKzG2R1Seeds(seeds, (i+1)%4, false); err == nil {
+			t.Errorf("tau index %d: another index's sub-block accepted", i)
+		}
+	}
+	for _, tau := range []int{25, 200, 1599, 1601, 25600} {
+		if _, ok := KZKzG2R1TauIndex(tau); ok {
+			t.Errorf("tau %d accepted; the set is {1600, 3200, 6400, 12800}", tau)
+		}
+	}
+	// a shifted, short, long or free block is refused in -run-0b
+	for _, bad := range [][]uint64{
+		{5901, 5902, 5903, 5904, 5905, 5906, 5907, 5908, 5909, 5910},
+		{5900, 5901, 5902, 5903, 5904, 5905, 5906, 5907, 5908},
+		{5900, 5901, 5902, 5903, 5904, 5905, 5906, 5907, 5908, 5909, 5910},
+		{13000, 13001, 13002, 13003, 13004, 13005, 13006, 13007, 13008, 13009},
+		{5610, 5611, 5612, 5613, 5614, 5615, 5616, 5617, 5618, 5619},
+		nil,
+	} {
+		if err := KZCheckKzG2R1Seeds(bad, 0, false); err == nil {
+			t.Errorf("seeds %v accepted for tau index 0", bad)
+		}
+	}
+	for _, idx := range []int{-1, 4} {
+		if err := KZCheckKzG2R1Seeds(KZKzG2R1Seeds(0, false), idx, false); err == nil {
+			t.Errorf("tau index %d accepted", idx)
 		}
 	}
 }

@@ -269,6 +269,16 @@ type KZStage0bRaw struct {
 	CoolJump, HeatJump     float64 // largest recorded-step jump of the seed-mean S
 	Records                int     // records per branch
 	CoolEndS, HeatStartS   float64 // seed-mean S at the end of cooling / start of heating
+
+	// qbp-kz-g2 round 1 (FROZEN-v1 §2 harness additions 3-5). Filled by
+	// KZStage0bRunWithSeries only; KZStage0bRun (frozen, round 1) leaves them zero.
+	CoolT, HeatT             []float64   // nominal T label of each record, per branch
+	CoolSeries, HeatSeries   [][]float64 // per seed, per record: the recorded S series
+	MaxGap                   float64     // max over the grid of |cool - heat| (S_max = 1)
+	MaxGapIdx                int         // its grid index
+	MaxGapT                  float64     // its grid T
+	CoolJumpIdx, HeatJumpIdx int         // lower record index i of the pair (i, i+1) of the max jump
+	CoolJumpT, HeatJumpT     float64     // nominal T of record i
 }
 
 // KZStage0bRun is the hysteresis check: per seed, hold 200 steps at T_hi, cool over
@@ -351,6 +361,113 @@ func KZStage0bAnalyze(cool, heat []float64, coolJump, heatJump float64) KZStage0
 		res.Reason = "first-order or glassy, premise fails:" + res.Reason
 	}
 	return res
+}
+
+// ---- qbp-kz-g2 round 1: Stage-0b-only measurement helpers (FROZEN-v1 §2 additions 3-5) ----
+//
+// These add to the round-1 Stage 0b code without touching it: KZStage0bRun and
+// KZStage0bAnalyze above are the frozen round-1 functions and stay byte-identical.
+
+// KZStage0bGap is the maximum over the grid of |cool - heat| (in units of S_max = 1), with
+// its grid index and grid T. Ties resolve to the first index. It is the gap(τ) of §3.
+func KZStage0bGap(grid, cool, heat []float64) (gap float64, idx int, T float64) {
+	for i := range cool {
+		if g := math.Abs(cool[i] - heat[i]); g > gap {
+			gap, idx = g, i
+		}
+	}
+	if len(grid) > 0 {
+		T = grid[idx]
+	}
+	return gap, idx, T
+}
+
+// KZMaxJumpAt is KZMaxJump with the position: the lower record index i of the pair
+// (i, i+1) carrying the largest |S[i+1] - S[i]| (first such pair on a tie). A series with
+// fewer than two records has no jump: (0, -1).
+func KZMaxJumpAt(S []float64) (jump float64, idx int) {
+	idx = -1
+	for i := 0; i+1 < len(S); i++ {
+		if j := math.Abs(S[i+1] - S[i]); j > jump || idx < 0 {
+			jump, idx = j, i
+		}
+	}
+	return jump, idx
+}
+
+// kzSeriesArm records every order-parameter read of the wrapped arm, in call order.
+type kzSeriesArm struct {
+	KZArm
+	vals []float64
+}
+
+func (a *kzSeriesArm) Order() float64 {
+	o := a.KZArm.Order()
+	a.vals = append(a.vals, o)
+	return o
+}
+
+// KZStage0bRunWithSeries runs KZStage0bRun unchanged (hold 200 at T_hi, cool over τ_Q,
+// heat over τ_Q; same seeds, same noise stream, same grid) and additionally keeps what
+// round 1 dropped: the per-seed recorded cool and heat S series (τ_Q/RecEvery + 1 values
+// each), the nominal T label of every record, the maximum gap on the grid with its index
+// and T, and the position of each branch's maximum single-step jump of the seed-mean S.
+// The seed-mean grid curves and the jump magnitudes are KZStage0bRun's own values.
+func KZStage0bRunWithSeries(mk func(seed uint64) KZArm, seeds []uint64, eta, Tc float64, prm KZStage0Params) KZStage0bRaw {
+	nrec := prm.TauQ/prm.RecEvery + 1
+	rec := make([]*kzSeriesArm, 0, len(seeds))
+	mkRec := func(seed uint64) KZArm {
+		a := &kzSeriesArm{KZArm: mk(seed)}
+		rec = append(rec, a)
+		return a
+	}
+	out := KZStage0bRun(mkRec, seeds, eta, Tc, prm)
+
+	Thi, Tlo := 1.5*Tc, 0.5*Tc
+	out.CoolT, out.HeatT = make([]float64, nrec), make([]float64, nrec)
+	for r := 0; r < nrec; r++ {
+		k := float64(r * prm.RecEvery)
+		out.CoolT[r] = Thi - (Thi-Tlo)*k/float64(prm.TauQ)
+		out.HeatT[r] = Tlo + (Thi-Tlo)*k/float64(prm.TauQ)
+	}
+	out.CoolSeries, out.HeatSeries = make([][]float64, len(seeds)), make([][]float64, len(seeds))
+	meanCool, meanHeat := make([]float64, nrec), make([]float64, nrec)
+	for si, a := range rec {
+		if len(a.vals) != 2*nrec {
+			panic(fmt.Sprintf("KZStage0bRun read the order parameter %d times for seed %d, want %d", len(a.vals), seeds[si], 2*nrec))
+		}
+		out.CoolSeries[si] = append([]float64(nil), a.vals[:nrec]...)
+		out.HeatSeries[si] = append([]float64(nil), a.vals[nrec:]...)
+		for r := 0; r < nrec; r++ {
+			meanCool[r] += out.CoolSeries[si][r]
+			meanHeat[r] += out.HeatSeries[si][r]
+		}
+	}
+	ns := float64(len(seeds))
+	for r := range meanCool {
+		meanCool[r] /= ns
+		meanHeat[r] /= ns
+	}
+	out.MaxGap, out.MaxGapIdx, out.MaxGapT = KZStage0bGap(out.Grid, out.CoolOnGrid, out.HeatOnGrid)
+	_, out.CoolJumpIdx = KZMaxJumpAt(meanCool)
+	_, out.HeatJumpIdx = KZMaxJumpAt(meanHeat)
+	if out.CoolJumpIdx >= 0 {
+		out.CoolJumpT = out.CoolT[out.CoolJumpIdx]
+	}
+	if out.HeatJumpIdx >= 0 {
+		out.HeatJumpT = out.HeatT[out.HeatJumpIdx]
+	}
+	return out
+}
+
+// KZStage0bReason is the summary string of a Stage-0b-only record. It names the maximum
+// gap with its grid index and T (FROZEN-v1 §2 addition 4: round 1's string named the last
+// failing point) and each branch's maximum jump with its record index and T (addition 5).
+// It is descriptive: this round applies no pass/fail here (§3 reads the four gaps).
+func KZStage0bReason(r KZStage0bRaw) string {
+	return fmt.Sprintf("max hysteresis gap %.4f of S_max at grid point %d (T = %.4f); "+
+		"max cool jump %.4f at record %d (T = %.4f); max heat jump %.4f at record %d (T = %.4f)",
+		r.MaxGap, r.MaxGapIdx, r.MaxGapT, r.CoolJump, r.CoolJumpIdx, r.CoolJumpT, r.HeatJump, r.HeatJumpIdx, r.HeatJumpT)
 }
 
 // ---- §6 probe rule ----------------------------------------------------------------------
