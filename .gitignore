@@ -9,6 +9,7 @@ cmd/wasm-visualizer/qbp.wasm
 
 # Compiled CLI binaries (per-cmd, by exact name — leaves source dirs tracked)
 cth/bin/
+emulator/bin/
 cmd/hw-eval/hw-eval
 
 # Local worktrees (created via `git worktree add worktrees/<name> ...`).
