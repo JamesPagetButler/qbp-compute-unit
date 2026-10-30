@@ -229,8 +229,8 @@ func KZExecuteStage0bOnly(cfg KZStage0bOnlyConfig) (raw KZStage0bRaw, err error)
 	switch {
 	case cfg.Mk == nil:
 		return raw, &KZAbortError{Code: 4, Reason: "no arm constructor"}
-	case cfg.Stage0.RecEvery <= 0 || cfg.Stage0.NGrid < 2 || cfg.Tau < cfg.Stage0.RecEvery || cfg.Tau%cfg.Stage0.RecEvery != 0:
-		return raw, &KZAbortError{Code: 4, Reason: fmt.Sprintf("tau %d is not a positive multiple of the record spacing %d", cfg.Tau, cfg.Stage0.RecEvery)}
+	case cfg.Stage0.RecEvery <= 0 || cfg.Stage0.NGrid < 2 || cfg.Tau < cfg.Stage0.RecEvery:
+		return raw, &KZAbortError{Code: 4, Reason: fmt.Sprintf("tau %d is below the record spacing %d", cfg.Tau, cfg.Stage0.RecEvery)}
 	case math.IsNaN(cfg.Tc) || math.IsInf(cfg.Tc, 0) || cfg.Tc <= 0 || cfg.Eta <= 0:
 		return raw, &KZAbortError{Code: 4, Reason: fmt.Sprintf("tc %v and eta %v must be finite and positive", cfg.Tc, cfg.Eta)}
 	case cfg.Smoke:

@@ -15,6 +15,14 @@
 //	GOMAXPROCS=1 nice -n 19 mdcu-kz -run-grid -probe-file probe.jsonl -amend-sha <sha> -out raw.jsonl   THE RUN
 //	mdcu-kz -analyze raw.jsonl                                the analysis, after the raw sha is posted
 //
+// qbp-kz-g2 round 1 (spikes/prereg/qbp-kz-g2-r1-prereg-FROZEN-v1.md on QBP, sha256
+// 785e0ee2…f51e28): the Stage-0b-only hysteresis probe, one tau_Q per process, seeds
+// 5900–5939 derived from the tau index (re-run block 5940–5979 under a dated amendment):
+//
+//	GOMAXPROCS=1 nice -n 19 mdcu-kz -run-0b -tau 1600 -tc 1.0666262219986817 -prereg-sha <sha>   ONE RUNG
+//	mdcu-kz -analyze-0b tau1600.jsonl tau3200.jsonl tau6400.jsonl tau12800.jsonl      the §3 reading, after the four shas are posted
+//	mdcu-kz -smoke-0b -tau 20 -tc 1 -first-seed 13000 -L 8                            free-seed smoke of the mode
+//
 // The grid run reads (L, R, eta) from the probe file and refuses a probe file that is
 // missing, was not run on the frozen probe seeds, or whose decision does not follow from
 // its own timings. The probe is outcome-blind: timings and the descent test, no counts.
@@ -36,6 +44,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -76,6 +85,13 @@ func main() {
 	probeFile := flag.String("probe-file", "", "probe JSONL whose (L, R, eta) the grid run uses (required with -run-grid)")
 	amendSHA := flag.String("amend-sha", "", "sha256 of the signed amend-1 file (required with -run-grid; recorded in meta)")
 	analyze := flag.String("analyze", "", "analyze a finished raw JSONL and exit; touches no seed")
+	run0b := flag.Bool("run-0b", false, "REQUIRED to touch seeds 5900–5939: qbp-kz-g2 r1 Stage-0b-only rung, one tau_Q per process")
+	smoke0b := flag.Bool("smoke-0b", false, "free-seed smoke of the Stage-0b-only mode (10 seeds from -first-seed, -L, any -tau)")
+	tc := flag.Float64("tc", math.NaN(), "0b: T_c in units of J (REQUIRED, no default; FROZEN-v1 §2: 1.0666262219986817)")
+	tau := flag.Int("tau", 0, "0b: this process's tau_Q (one of 1600/3200/6400/12800; -smoke-0b: any multiple of 10)")
+	preregSHA0b := flag.String("prereg-sha", "", "0b: sha256 of the frozen qbp-kz-g2 r1 pre-registration (REQUIRED with -run-0b; recorded in meta)")
+	rerunAmend := flag.String("rerun-amend-sha", "", "0b: sha256 of the dated amendment that selects the re-run sub-block 5940–5979 (optional)")
+	analyze0b := flag.Bool("analyze-0b", false, "apply the qbp-kz-g2 r1 §3 rule to the four Stage-0b-only raw files given as arguments; touches no seed")
 	first := flag.Uint64("first-seed", smokeFirst, "smoke: first seed of the seed block (must be free)")
 	smokeLsz := flag.Int("L", smokeL, "smoke: lattice size")
 	smokeR := flag.Int("R", 2, "smoke: replicates")
@@ -87,8 +103,14 @@ func main() {
 	maxOutMB := flag.Int64("max-out-mb", 50, "abort if output exceeds this (frozen: ≤ 50 MB)")
 	flag.Parse()
 
+	if *analyze0b {
+		if *runGrid || *runProbe || *runCal || *run0b || *smoke0b || *analyze != "" {
+			die(4, "refusing: -analyze-0b is its own step and touches no seed")
+		}
+		os.Exit(analyze0bFiles(flag.Args()))
+	}
 	if *analyze != "" {
-		if *runGrid || *runProbe || *runCal {
+		if *runGrid || *runProbe || *runCal || *run0b || *smoke0b {
 			die(4, "refusing: -analyze is its own step and touches no seed")
 		}
 		os.Exit(analyzeFile(*analyze))
@@ -99,23 +121,31 @@ func main() {
 	for _, m := range []struct {
 		on   bool
 		name string
-	}{{*runGrid, "grid"}, {*runProbe, "probe"}, {*runCal, "calibration"}} {
+	}{{*runGrid, "grid"}, {*runProbe, "probe"}, {*runCal, "calibration"}, {*run0b, "0b"}, {*smoke0b, "smoke-0b"}} {
 		if m.on {
 			mode = m.name
 			nmodes++
 		}
 	}
 	if nmodes > 1 {
-		die(4, "refusing: -run-grid, -run-probe and -run-calibration are separate steps")
+		die(4, "refusing: -run-grid, -run-probe, -run-calibration, -run-0b and -smoke-0b are separate steps")
 	}
 	if *out == "" {
-		*out = map[string]string{"grid": "mdcu-kz-grid.jsonl", "probe": "mdcu-kz-probe.jsonl", "smoke": "mdcu-kz-smoke.jsonl", "calibration": "mdcu-kz-calibration.jsonl"}[mode]
+		*out = map[string]string{"grid": "mdcu-kz-grid.jsonl", "probe": "mdcu-kz-probe.jsonl", "smoke": "mdcu-kz-smoke.jsonl", "calibration": "mdcu-kz-calibration.jsonl",
+			"0b": fmt.Sprintf("qbp-kz-g2-r1-0b-tau%d.jsonl", *tau), "smoke-0b": "mdcu-kz-smoke-0b.jsonl"}[mode]
 	}
 	if mode == "calibration" {
 		if *calEns != "aligned" && *calEns != "haar" {
 			die(8, "refusing: -run-calibration needs -cal-ensemble aligned|haar")
 		}
 		os.Exit(runCalibration(*calEns, *out, *pause))
+	}
+	if mode == "0b" || mode == "smoke-0b" {
+		typed := map[string]bool{}
+		flag.Visit(func(f *flag.Flag) { typed[f.Name] = true })
+		os.Exit(run0bMode(opts0b{smoke: mode == "smoke-0b", tau: *tau, tc: *tc, preregSHA: *preregSHA0b, rerunSHA: *rerunAmend,
+			firstSeed: *first, firstTyped: typed["first-seed"], L: *smokeLsz, lTyped: typed["L"], out: *out, dry: *dry,
+			maxWall: *maxWall, pause: *pause, maxRSSMB: *maxRSSMB, maxOutMB: *maxOutMB}))
 	}
 
 	// ---- configuration and guards ---------------------------------------------------
