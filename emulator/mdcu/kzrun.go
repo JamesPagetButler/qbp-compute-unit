@@ -194,3 +194,118 @@ func KZExecute(cfg KZRunConfig) (out KZRunOutcome, err error) {
 	}
 	return finish("complete")
 }
+
+// ---- qbp-kz-g2 round 1: Stage-0b-only orchestration (FROZEN-v1 §2 harness addition 1) ----
+//
+// One τ_Q per process. No saturation gate, no Stage 0a, no null arm, no ladder. The
+// round-1 KZExecute pipeline above is not modified; this entry point calls the same
+// frozen Stage 0b mechanics (KZStage0bRun via KZStage0bRunWithSeries) with the given T_c.
+
+// KZStage0bOnlyConfig is everything one Stage-0b-only process needs. Seeds are passed in
+// and checked against the τ index here as well as in the driver (FROZEN-v1 §5 seed guard).
+type KZStage0bOnlyConfig struct {
+	L        int
+	Eta, Tc  float64
+	Tau      int            // this process's τ_Q; one of KZKzG2R1TauSet unless Smoke
+	TauIndex int            // its τ index; the seeds must be KZKzG2R1Seeds(TauIndex, Rerun)
+	Rerun    bool           // the reserved re-run sub-block (dated amendment only)
+	Seeds    []uint64       // exactly the derived sub-block (or, in a smoke, free seeds)
+	Smoke    bool           // a free-seed smoke of the mode: any τ_Q, KZSeedFree seeds only
+	Stage0   KZStage0Params // RecEvery and NGrid (frozen 10 and 41); TauQ is Tau
+	Mk       func(seed uint64) KZArm
+	Check    func() error // called at the start and at every step; a non-nil error aborts
+	Emit     func(rec map[string]any)
+	Meta     map[string]any // driver-supplied meta fields (prereg_sha, binary/code sha, load …)
+}
+
+// KZExecuteStage0bOnly runs one Stage-0b-only process: meta, then the stage0b record
+// (grid, seed-mean curves, per-seed series, max gap with index and T, jumps with their
+// record index and T, the reason string), then end. Any abort emits one "abort" record
+// and returns the *KZAbortError (codes as KZExecute: 3 pause, 2 wall, 6 NaN, 4 guard).
+// The guards run before any arm is built and before any record is written.
+func KZExecuteStage0bOnly(cfg KZStage0bOnlyConfig) (raw KZStage0bRaw, err error) {
+	// 1. guards (exit 4 before any step; the driver has already refused, this is the backstop)
+	mode := "0b"
+	switch {
+	case cfg.Mk == nil:
+		return raw, &KZAbortError{Code: 4, Reason: "no arm constructor"}
+	case cfg.Stage0.RecEvery <= 0 || cfg.Stage0.NGrid < 2 || cfg.Tau < cfg.Stage0.RecEvery || cfg.Tau%cfg.Stage0.RecEvery != 0:
+		return raw, &KZAbortError{Code: 4, Reason: fmt.Sprintf("tau %d is not a positive multiple of the record spacing %d", cfg.Tau, cfg.Stage0.RecEvery)}
+	case math.IsNaN(cfg.Tc) || math.IsInf(cfg.Tc, 0) || cfg.Tc <= 0 || cfg.Eta <= 0:
+		return raw, &KZAbortError{Code: 4, Reason: fmt.Sprintf("tc %v and eta %v must be finite and positive", cfg.Tc, cfg.Eta)}
+	case cfg.Smoke:
+		mode = "smoke-0b"
+		if len(cfg.Seeds) == 0 {
+			return raw, &KZAbortError{Code: 4, Reason: "no seeds"}
+		}
+		if e := KZCheckSmokeSeeds(cfg.Seeds); e != nil {
+			return raw, &KZAbortError{Code: 4, Reason: "smoke-0b: " + e.Error()}
+		}
+	default:
+		idx, ok := KZKzG2R1TauIndex(cfg.Tau)
+		if !ok || idx != cfg.TauIndex {
+			return raw, &KZAbortError{Code: 4, Reason: fmt.Sprintf("tau %d (index %d) is not in the frozen set %v", cfg.Tau, cfg.TauIndex, KZKzG2R1TauSet)}
+		}
+		if e := KZCheckKzG2R1Seeds(cfg.Seeds, cfg.TauIndex, cfg.Rerun); e != nil {
+			return raw, &KZAbortError{Code: 4, Reason: "seed guard: " + e.Error()}
+		}
+	}
+
+	emit := cfg.Emit
+	if emit == nil {
+		emit = func(map[string]any) {}
+	}
+	start := time.Now()
+	defer func() {
+		if r := recover(); r != nil {
+			ae, ok := r.(*KZAbortError)
+			if !ok {
+				panic(r)
+			}
+			emit(map[string]any{"kind": "abort", "code": ae.Code, "reason": ae.Reason, "tau": cfg.Tau,
+				"wall_s": time.Since(start).Seconds()})
+			err = ae
+		}
+	}()
+
+	// 2. meta
+	prm := cfg.Stage0
+	prm.TauQ = cfg.Tau
+	meta := map[string]any{"kind": "meta", "mode": mode, "L": cfg.L, "eta": cfg.Eta, "tc": cfg.Tc,
+		"tau": cfg.Tau, "tau_index": cfg.TauIndex, "rerun": cfg.Rerun, "seeds": cfg.Seeds,
+		"hold_steps": KZHoldSteps, "rec_every": prm.RecEvery, "ngrid": prm.NGrid, "noise_stream": kzStreamStage0b,
+		"t_hi": 1.5 * cfg.Tc, "t_lo": 0.5 * cfg.Tc, "started": start.Format(time.RFC3339)}
+	for k, v := range cfg.Meta {
+		meta[k] = v
+	}
+	emit(meta)
+
+	// 3. start check (pause file / wall), then the frozen Stage 0b mechanics per seed
+	if cfg.Check != nil {
+		if e := cfg.Check(); e != nil {
+			if ae, ok := e.(*KZAbortError); ok {
+				panic(ae)
+			}
+			panic(&KZAbortError{Code: 1, Reason: e.Error()})
+		}
+	}
+	mk := func(seed uint64) KZArm { return &kzTick{KZArm: cfg.Mk(seed), check: cfg.Check} }
+	raw = KZStage0bRunWithSeries(mk, cfg.Seeds, cfg.Eta, cfg.Tc, prm)
+
+	// 4. the record. The round-1 5 % / 10 % clauses are reported as measurement definitions
+	// (KZStage0bAnalyze, unchanged), not as a gate: §3 reads the four gaps together.
+	r1 := KZStage0bAnalyze(raw.CoolOnGrid, raw.HeatOnGrid, raw.CoolJump, raw.HeatJump)
+	emit(map[string]any{"kind": "stage0b", "arm": "main", "tau": cfg.Tau, "tau_index": cfg.TauIndex, "tc": cfg.Tc,
+		"seeds": cfg.Seeds, "records": raw.Records,
+		"grid": raw.Grid, "cool": raw.CoolOnGrid, "heat": raw.HeatOnGrid,
+		"cool_t": raw.CoolT, "heat_t": raw.HeatT, "cool_series": raw.CoolSeries, "heat_series": raw.HeatSeries,
+		"max_gap": raw.MaxGap, "max_gap_idx": raw.MaxGapIdx, "max_gap_T": raw.MaxGapT,
+		"cool_jump": raw.CoolJump, "cool_jump_idx": raw.CoolJumpIdx, "cool_jump_T": raw.CoolJumpT,
+		"heat_jump": raw.HeatJump, "heat_jump_idx": raw.HeatJumpIdx, "heat_jump_T": raw.HeatJumpT,
+		"cool_end_s": raw.CoolEndS, "heat_start_s": raw.HeatStartS,
+		"reason":              KZStage0bReason(raw),
+		"round1_clauses_pass": r1.Pass, "round1_clauses_reason": r1.Reason})
+	emit(map[string]any{"kind": "end", "verdict": "0b complete", "tau": cfg.Tau, "seeds_run": len(cfg.Seeds),
+		"wall_s": time.Since(start).Seconds()})
+	return raw, nil
+}
