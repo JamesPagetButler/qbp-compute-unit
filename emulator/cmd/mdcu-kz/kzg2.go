@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"os/exec"
 	"regexp"
 	"runtime"
 	"runtime/debug"
@@ -216,23 +217,30 @@ func shortSHA(s string) string {
 }
 
 // codeSHA is the VCS revision stamped into the binary (go build in the repo), with
-// "+dirty" when the tree was modified; "unknown" if the build was not stamped.
+// "+dirty" when the tree was modified. Go does not stamp a build inside a git worktree
+// (whose .git is a file), so it falls back to git itself in the working directory, which
+// the wrapper runs from emulator/; "unknown" if neither is available.
 func codeSHA() string {
-	bi, ok := debug.ReadBuildInfo()
-	if !ok {
-		return "unknown"
-	}
 	rev, dirty := "", false
-	for _, s := range bi.Settings {
-		switch s.Key {
-		case "vcs.revision":
-			rev = s.Value
-		case "vcs.modified":
-			dirty = s.Value == "true"
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		for _, s := range bi.Settings {
+			switch s.Key {
+			case "vcs.revision":
+				rev = s.Value
+			case "vcs.modified":
+				dirty = s.Value == "true"
+			}
 		}
 	}
 	if rev == "" {
-		return "unknown"
+		out, err := exec.Command("git", "rev-parse", "HEAD").Output()
+		if err != nil {
+			return "unknown"
+		}
+		rev = strings.TrimSpace(string(out)) + " (git, cwd)"
+		if st, err := exec.Command("git", "status", "--porcelain").Output(); err == nil && len(strings.TrimSpace(string(st))) > 0 {
+			dirty = true
+		}
 	}
 	if dirty {
 		rev += "+dirty"
