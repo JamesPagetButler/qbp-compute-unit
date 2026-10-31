@@ -169,8 +169,8 @@ func TestKZKzG2R3StartKinds(t *testing.T) {
 	}
 	// the constructor dispatch
 	f := kzEqStartField("aligned", 4, 13001)
-	if e := f.Energy(); e != 0 {
-		t.Errorf("aligned field energy %g, want 0", e)
+	if e := f.Energy(); math.Abs(e) > 1e-12 {
+		t.Errorf("aligned field energy %g, want 0 (to rounding of the frozen Energy())", e)
 	}
 	g := kzEqStartField("haar", 4, 13001)
 	if e := g.Energy(); !(e > 0) {
@@ -189,7 +189,8 @@ func TestKZKzG2R3StartKinds(t *testing.T) {
 // §2 row 1: e = Energy()/(3 L^3) is 0 for the aligned field and positive, <= 3, for Haar.
 func TestKZEqEnergyDensity(t *testing.T) {
 	L := 4
-	if e := KZEqEnergyDensity(NewKZPlaneFieldAligned(L, 13000)); e != 0 {
+	// 0 to the rounding of the frozen Energy() (3 − ‖F Fᵀ‖² of a unit frame: ~1e-14)
+	if e := KZEqEnergyDensity(NewKZPlaneFieldAligned(L, 13000)); math.Abs(e) > 1e-12 {
 		t.Errorf("aligned e = %g, want 0", e)
 	}
 	e := KZEqEnergyDensity(NewKZPlaneFieldHaar(L, 13000))

@@ -48,9 +48,10 @@ func TestKZEqBinningAndSmoothing(t *testing.T) {
 func TestKZEqBarrierResolvedAndFloor(t *testing.T) {
 	// two clean peaks: lower 800, valley 100 -> resolved, dF = ln 8
 	h := make([]float64, 60)
-	h[20], h[21], h[22] = 100, 800, 100
-	h[30] = 100
-	h[40], h[41], h[42] = 100, 1000, 100
+	for i := 20; i <= 42; i++ {
+		h[i] = 100 // a flat valley floor of 100 between the peaks
+	}
+	h[21], h[41] = 800, 1000
 	b := KZEqBarrierOf(h)
 	if !b.Resolved || !b.Candidate {
 		t.Fatalf("clean two-peak not resolved: %+v", b)
@@ -59,8 +60,8 @@ func TestKZEqBarrierResolvedAndFloor(t *testing.T) {
 		t.Errorf("barrier %+v, want dF = ln 8 between bins 21 and 41", b)
 	}
 	// the valley index is the minimum between the peaks (first on a tie)
-	if h[b.Valley] != 0 {
-		t.Errorf("valley bin %d has count %g, want a 0 bin", b.Valley, h[b.Valley])
+	if h[b.Valley] != 100 || b.Valley != 22 {
+		t.Errorf("valley bin %d has count %g, want bin 22 with 100", b.Valley, h[b.Valley])
 	}
 	// empty valley -> 0.5 before the log
 	g := make([]float64, 60)
@@ -87,14 +88,19 @@ func TestKZEqBarrierResolvedAndFloor(t *testing.T) {
 	if !b.Candidate {
 		t.Errorf("sub-floor valley must still be a candidate (unresolved): %+v", b)
 	}
-	// exactly at the floor: n_lower - n_valley == 3 sqrt(sum) is NOT resolved (strict >)
+	// near the floor: two peaks of 100 with a valley of 64: 36 vs 3*sqrt(164) = 38.4 -> unresolved
 	e := make([]float64, 60)
-	e[10], e[20] = 100, 64 // 36 vs 3*sqrt(164) = 38.4 -> unresolved
-	if b = KZEqBarrierOf(e); b.Resolved {
+	for i := 10; i <= 20; i++ {
+		e[i] = 64
+	}
+	e[10], e[20] = 100, 100
+	if b = KZEqBarrierOf(e); b.Resolved || b.DeltaF != 0 || !b.Candidate {
 		t.Errorf("36 > 38.4? resolved wrongly: %+v", b)
 	}
-	e[20] = 40 // 60 vs 3*sqrt(140) = 35.5 -> resolved
-	if b = KZEqBarrierOf(e); !b.Resolved {
+	for i := 11; i <= 19; i++ {
+		e[i] = 40 // 60 vs 3*sqrt(140) = 35.5 -> resolved, dF = ln(100/40)
+	}
+	if b = KZEqBarrierOf(e); !b.Resolved || math.Abs(b.DeltaF-math.Log(2.5)) > 1e-12 {
 		t.Errorf("60 > 35.5 not resolved: %+v", b)
 	}
 	// unimodal -> no candidate, dF = 0
@@ -114,8 +120,8 @@ func TestKZEqSinglePeakRippleReadsUnimodal(t *testing.T) {
 	for i := range raw {
 		raw[i] = math.Round(3000 * math.Exp(-float64((i-30)*(i-30))/60))
 	}
-	raw[22] += 60
-	raw[23] -= 60
+	raw[22] += 150 // a one-bin ripple on the flank: bin 22 becomes a strict local maximum
+	raw[23] -= 150
 	sm := KZEqSmooth3(raw)
 	b := KZEqBarrierOf(sm)
 	if b.Resolved || b.DeltaF != 0 {
@@ -313,11 +319,11 @@ func synthPoint(L, l, tt int, r *rand.Rand, gen synthGen) KZEqPoint {
 		ne, under := KZEqNEff(len(E), tau)
 		p.Runs = append(p.Runs, KZEqSeedResult{Seed: p.Seeds[j], Start: starts[j], S: S, E: E, TauIntRec: tau, NEff: ne, Undersampled: under})
 	}
-	p.File = "synth-L" + itoa(L) + "-t" + itoa(tt)
+	p.File = "synth-L" + kzEqItoa(L) + "-t" + kzEqItoa(tt)
 	return p
 }
 
-func itoa(i int) string { return string(rune('0' + i/10)) + string(rune('0' + i%10)) }
+func kzEqItoa(i int) string { return string(rune('0' + i/10)) + string(rune('0' + i%10)) }
 
 func synthSet(seed uint64, gen synthGen) []KZEqPoint {
 	r := rand.New(rand.NewPCG(seed, 99))
@@ -480,7 +486,7 @@ func TestKZEqMutationBGateUndersampledL12(t *testing.T) {
 		}
 		return contGen(L, T, j, r)
 	}
-	d = decide(t, synthSet(6, gen8))
+	d = decide(t, synthSet(12, gen8)) // seed 6 draws a chance D_e = 3.03 at (16, 1.20) in iid data: a true (c) metastability by the rule, not this test's subject
 	if d.Outcome != "H-CONT" || d.UnderB {
 		t.Fatalf("an L = 8 flag gated (b): outcome %q underB %v\n%s", d.Outcome, d.UnderB, KZEqFormatReport(d))
 	}
