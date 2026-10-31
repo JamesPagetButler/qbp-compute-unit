@@ -377,11 +377,16 @@ func TestKZEqOnlyFlowAndGuards(t *testing.T) {
 		t.Errorf("peak_sys_mb %v, want > 0", end["peak_sys_mb"])
 	}
 
-	// guards: each refused with code 4 before any record is written
+	// guards: each refused with code 4 before any record is written. SAFETY NET (the lesson
+	// of the mutation check, 2026-10-31): every guard case carries a Check that aborts at the
+	// start check with code 3, so a guard mutated into accepting can never step a lattice from
+	// inside the test binary — the case then fails as "code 3, want 4" instead of running.
+	net := func() error { return &KZAbortError{Code: 3, Reason: "safety net: a guard accepted"} }
 	refuse := func(name string, mut func(c *KZEqOnlyConfig)) {
 		c := base
 		c.Seeds = append([]uint64(nil), base.Seeds...)
 		c.Starts = append([]string(nil), base.Starts...)
+		c.Check = net
 		recs = nil
 		mut(&c)
 		_, err := KZExecuteEqOnly(c)
@@ -407,12 +412,14 @@ func TestKZEqOnlyFlowAndGuards(t *testing.T) {
 	refuse("sampling below rec_every", func(c *KZEqOnlyConfig) { c.Prm.Sampling = 5 })
 
 	// run mode (Smoke = false): the frozen table binds everything
+	// (never run without the safety-net Check: a production-shaped config on frozen seeds)
 	run := KZEqOnlyConfig{L: 16, LIndex: 2, TIndex: 5, T: 1.15, Eta: 0.1, Seeds: KZKzG2R3Seeds(2, 5, false),
-		Starts: KZKzG2R3Starts(), Prm: DefaultKZEqParams(), Emit: func(r map[string]any) { recs = append(recs, r) }}
+		Starts: KZKzG2R3Starts(), Prm: DefaultKZEqParams(), Check: net, Emit: func(r map[string]any) { recs = append(recs, r) }}
 	refuseRun := func(name string, mut func(c *KZEqOnlyConfig)) {
 		c := run
 		c.Seeds = append([]uint64(nil), run.Seeds...)
 		c.Starts = append([]string(nil), run.Starts...)
+		c.Check = net
 		recs = nil
 		mut(&c)
 		_, err := KZExecuteEqOnly(c)
