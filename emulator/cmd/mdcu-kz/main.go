@@ -23,6 +23,14 @@
 //	mdcu-kz -analyze-0b tau1600.jsonl tau3200.jsonl tau6400.jsonl tau12800.jsonl      the §3 reading, after the four shas are posted
 //	mdcu-kz -smoke-0b -tau 20 -tc 1 -first-seed 13000 -L 8                            free-seed smoke of the mode
 //
+// qbp-kz-g2 round 3 (spikes/prereg/qbp-kz-g2-r3-prereg-FROZEN-v1.md on QBP, sha256
+// 132f6a42…1a623): equilibrium sampling at fixed T, one (L, t) per process, seeds
+// 6000–6119 derived from (l, t) (re-run block 6120–6239 under a dated amendment):
+//
+//	GOMAXPROCS=1 nice -n 19 mdcu-kz -run-eq -L 16 -t 5 -prereg-sha <sha> -max-out-mb 10        ONE (L, t) POINT
+//	mdcu-kz -analyze-eq <27 raw files> [-plot-out plot.json]   the §3 reading, after all 27 shas are posted
+//	mdcu-kz -smoke-eq -L 8 [-first-seed 13000]                 free-seed smoke of the mode (1 hot + 1 cold seed)
+//
 // The grid run reads (L, R, eta) from the probe file and refuses a probe file that is
 // missing, was not run on the frozen probe seeds, or whose decision does not follow from
 // its own timings. The probe is outcome-blind: timings and the descent test, no counts.
@@ -92,6 +100,11 @@ func main() {
 	preregSHA0b := flag.String("prereg-sha", "", "0b: sha256 of the frozen qbp-kz-g2 r1 pre-registration (REQUIRED with -run-0b; recorded in meta)")
 	rerunAmend := flag.String("rerun-amend-sha", "", "0b: sha256 of the dated amendment that selects the re-run sub-block 5940–5979 (optional)")
 	analyze0b := flag.Bool("analyze-0b", false, "apply the qbp-kz-g2 r1 §3 rule to the four Stage-0b-only raw files given as arguments; touches no seed")
+	runEq := flag.Bool("run-eq", false, "REQUIRED to touch seeds 6000–6119: qbp-kz-g2 r3 equilibrium point, one (L, t) per process (-L, -t, -prereg-sha)")
+	smokeEq := flag.Bool("smoke-eq", false, "free-seed smoke of the equilibrium mode (1 hot + 1 cold seed from -first-seed, -L, 500 + 2000 steps)")
+	tIdx := flag.Int("t", -1, "eq: T index 0..9 into the frozen T table {1.08 … 1.20} (REQUIRED with -run-eq; L = 8 refuses 3, 5, 7)")
+	analyzeEq := flag.Bool("analyze-eq", false, "apply the qbp-kz-g2 r3 §3 rule to the 27 equilibrium raw files given as arguments; touches no seed")
+	plotOut := flag.String("plot-out", "", "analyze-eq: write the plot data JSON here (optional)")
 	first := flag.Uint64("first-seed", smokeFirst, "smoke: first seed of the seed block (must be free)")
 	smokeLsz := flag.Int("L", smokeL, "smoke: lattice size")
 	smokeR := flag.Int("R", 2, "smoke: replicates")
@@ -103,14 +116,20 @@ func main() {
 	maxOutMB := flag.Int64("max-out-mb", 50, "abort if output exceeds this (frozen: ≤ 50 MB)")
 	flag.Parse()
 
+	if *analyzeEq {
+		if *runGrid || *runProbe || *runCal || *run0b || *smoke0b || *runEq || *smokeEq || *analyze0b || *analyze != "" {
+			die(4, "refusing: -analyze-eq is its own step and touches no seed")
+		}
+		os.Exit(analyzeEqFiles(flag.Args(), *plotOut))
+	}
 	if *analyze0b {
-		if *runGrid || *runProbe || *runCal || *run0b || *smoke0b || *analyze != "" {
+		if *runGrid || *runProbe || *runCal || *run0b || *smoke0b || *runEq || *smokeEq || *analyze != "" {
 			die(4, "refusing: -analyze-0b is its own step and touches no seed")
 		}
 		os.Exit(analyze0bFiles(flag.Args()))
 	}
 	if *analyze != "" {
-		if *runGrid || *runProbe || *runCal || *run0b || *smoke0b {
+		if *runGrid || *runProbe || *runCal || *run0b || *smoke0b || *runEq || *smokeEq {
 			die(4, "refusing: -analyze is its own step and touches no seed")
 		}
 		os.Exit(analyzeFile(*analyze))
@@ -121,18 +140,25 @@ func main() {
 	for _, m := range []struct {
 		on   bool
 		name string
-	}{{*runGrid, "grid"}, {*runProbe, "probe"}, {*runCal, "calibration"}, {*run0b, "0b"}, {*smoke0b, "smoke-0b"}} {
+	}{{*runGrid, "grid"}, {*runProbe, "probe"}, {*runCal, "calibration"}, {*run0b, "0b"}, {*smoke0b, "smoke-0b"}, {*runEq, "eq"}, {*smokeEq, "smoke-eq"}} {
 		if m.on {
 			mode = m.name
 			nmodes++
 		}
 	}
 	if nmodes > 1 {
-		die(4, "refusing: -run-grid, -run-probe, -run-calibration, -run-0b and -smoke-0b are separate steps")
+		die(4, "refusing: -run-grid, -run-probe, -run-calibration, -run-0b, -smoke-0b, -run-eq and -smoke-eq are separate steps")
 	}
 	if *out == "" {
 		*out = map[string]string{"grid": "mdcu-kz-grid.jsonl", "probe": "mdcu-kz-probe.jsonl", "smoke": "mdcu-kz-smoke.jsonl", "calibration": "mdcu-kz-calibration.jsonl",
-			"0b": fmt.Sprintf("qbp-kz-g2-r1-0b-tau%d.jsonl", *tau), "smoke-0b": "mdcu-kz-smoke-0b.jsonl"}[mode]
+			"0b": fmt.Sprintf("qbp-kz-g2-r1-0b-tau%d.jsonl", *tau), "smoke-0b": "mdcu-kz-smoke-0b.jsonl"}[mode] // eq / smoke-eq: runEqMode names the file from (L, t)
+	}
+	if mode == "eq" || mode == "smoke-eq" {
+		typed := map[string]bool{}
+		flag.Visit(func(f *flag.Flag) { typed[f.Name] = true })
+		os.Exit(runEqMode(optsEq{smoke: mode == "smoke-eq", L: *smokeLsz, lTyped: typed["L"], t: *tIdx, tTyped: typed["t"], tcTyped: typed["tc"],
+			preregSHA: *preregSHA0b, rerunSHA: *rerunAmend, firstSeed: *first, firstTyped: typed["first-seed"], out: *out, dry: *dry,
+			maxWall: *maxWall, pause: *pause, maxRSSMB: *maxRSSMB, maxOutMB: *maxOutMB}))
 	}
 	if mode == "calibration" {
 		if *calEns != "aligned" && *calEns != "haar" {
