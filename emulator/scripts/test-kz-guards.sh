@@ -137,8 +137,105 @@ expect 1 "-analyze-0b with no files is refused"                      -- -analyze
 expect 1 "-analyze-0b with three files is refused (no partial-set reading)" -- -analyze-0b 0b-paused.jsonl 0b-paused2.jsonl 0b-paused.jsonl
 grep -q 'partial' "$T/err" || { echo "FAIL: the partial-set refusal must say so"; cat "$T/err"; fail=1; }
 expect 1 "-analyze-0b with four incomplete files is refused"         -- -analyze-0b 0b-paused.jsonl 0b-paused2.jsonl 0b-paused.jsonl 0b-paused2.jsonl
-rm -f 0b-paused.jsonl 0b-paused2.jsonl
+rm -f 0b-paused2.jsonl
 expect 0 "-smoke-0b dry-run on free seeds is accepted"               -- -smoke-0b -tau 20 -tc 1 -first-seed 13000 -L 8 -dry-run
+
+# ---- qbp-kz-g2 round 3 equilibrium mode (r3 FROZEN-v1 §2 rows 3-4, §5 seed guard; sha 132f6a42…1a623) ----
+# 6000-6119 (run block) and 6120-6239 (re-run block) are refused by every other mode (smokes
+# included); -run-eq derives its seeds from (L, t), refuses typed seeds, -tc, L off {8,12,16},
+# t off 0..9, (L = 8, t in {3,5,7}) and mode mixing.
+expect 4 "smoke seeds inside the kz-g2 r3 block are refused"         -- -first-seed 6000 -out x.jsonl
+expect 4 "smoke seeds at the end of the kz-g2 r3 block are refused"  -- -first-seed 6119 -R 1 -out x.jsonl
+expect 4 "smoke seeds inside the kz-g2 r3 re-run block are refused"  -- -first-seed 6120 -out x.jsonl
+expect 4 "smoke seeds at the end of the r3 re-run block are refused" -- -first-seed 6239 -R 1 -out x.jsonl
+expect 4 "smoke seeds straddling into the kz-g2 r3 block are refused" -- -first-seed 5995 -R 8 -out x.jsonl
+expect 4 "-smoke-0b on the kz-g2 r3 block is refused"                -- -smoke-0b -tau 20 -tc 1 -first-seed 6000 $P -out x.jsonl
+expect 4 "-smoke-0b on the kz-g2 r3 re-run block is refused"         -- -smoke-0b -tau 20 -tc 1 -first-seed 6230 $P -out x.jsonl
+expect 4 "-smoke-eq on the kz-g2 r3 block is refused"                -- -smoke-eq -L 8 -first-seed 6000 $P -out x.jsonl
+expect 4 "-smoke-eq on the kz-g2 r3 re-run block is refused"         -- -smoke-eq -L 8 -first-seed 6238 $P -out x.jsonl
+expect 4 "-smoke-eq straddling into the r3 block is refused"         -- -smoke-eq -L 8 -first-seed 5999 $P -out x.jsonl
+expect 4 "-smoke-eq straddling out of the r3 re-run block is refused" -- -smoke-eq -L 8 -first-seed 6239 $P -out x.jsonl
+expect 4 "-smoke-eq on the kz-g2 r1 block is refused"                -- -smoke-eq -L 8 -first-seed 5900 $P -out x.jsonl
+expect 4 "-run-eq with -run-grid is refused"                         -- -run-eq -run-grid -L 16 -t 5 -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-eq with -run-probe is refused"                        -- -run-eq -run-probe -L 16 -t 5 -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-eq with -run-0b is refused"                           -- -run-eq -run-0b -tau 1600 -tc $TC -L 16 -t 5 -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-eq with -smoke-eq is refused"                         -- -run-eq -smoke-eq -L 16 -t 5 -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-eq with -smoke-0b is refused"                         -- -run-eq -smoke-0b -tau 20 -tc 1 -L 16 -t 5 -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-0b with -smoke-eq is refused"                         -- -run-0b -smoke-eq -tau 1600 -tc $TC -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-analyze-eq with -run-eq is refused"                       -- -analyze-eq -run-eq a
+expect 4 "-analyze-eq with -run-0b is refused"                       -- -analyze-eq -run-0b a
+expect 4 "-analyze-eq with -analyze-0b is refused"                   -- -analyze-eq -analyze-0b a b c d
+expect 4 "-analyze-eq with -analyze is refused"                      -- -analyze-eq -analyze x.jsonl a
+expect 4 "-analyze-0b with -run-eq is refused"                       -- -analyze-0b -run-eq a b c d
+expect 4 "-analyze with -run-eq is refused"                          -- -analyze x.jsonl -run-eq
+expect 4 "-run-eq with a typed first seed is refused (seeds are derived)" -- -run-eq -L 16 -t 5 -prereg-sha $SHA -first-seed 6100 $P -out x.jsonl
+expect 4 "-run-eq with a typed free first seed is refused"           -- -run-eq -L 16 -t 5 -prereg-sha $SHA -first-seed 13000 $P -out x.jsonl
+expect 4 "-run-eq with -tc is refused (not an eq flag)"              -- -run-eq -L 16 -t 5 -tc $TC -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-eq without -L is refused (no default)"                -- -run-eq -t 5 -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-eq without -t is refused (no default)"                -- -run-eq -L 16 -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-eq with L = 24 is refused"                            -- -run-eq -L 24 -t 5 -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-eq with L = 10 is refused"                            -- -run-eq -L 10 -t 5 -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-eq with t = 10 is refused"                            -- -run-eq -L 16 -t 10 -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-eq with t = -1 is refused"                            -- -run-eq -L 16 -t -1 -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-eq L = 8 at t = 3 is refused"                         -- -run-eq -L 8 -t 3 -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-eq L = 8 at t = 5 is refused"                         -- -run-eq -L 8 -t 5 -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-eq L = 8 at t = 7 is refused"                         -- -run-eq -L 8 -t 7 -prereg-sha $SHA $P -out x.jsonl
+expect 4 "-run-eq L = 8 at t = 3 is refused even as a dry-run"       -- -run-eq -L 8 -t 3 -prereg-sha $SHA -dry-run
+expect 8 "-run-eq without -prereg-sha is refused"                    -- -run-eq -L 16 -t 5 $P -out x.jsonl
+expect 8 "-run-eq with a short -prereg-sha is refused"               -- -run-eq -L 16 -t 5 -prereg-sha abc $P -out x.jsonl
+expect 8 "-run-eq with a non-hex -prereg-sha is refused"             -- -run-eq -L 16 -t 5 -prereg-sha zz00000000000000000000000000000000000000000000000000000000000000 $P -out x.jsonl
+expect 8 "-run-eq with a short -rerun-amend-sha is refused"          -- -run-eq -L 16 -t 5 -prereg-sha $SHA -rerun-amend-sha abc $P -out x.jsonl
+expect 0 "-run-eq dry-run (L=16, t=5) prints the plan and writes nothing" -- -run-eq -L 16 -t 5 -prereg-sha $SHA -dry-run
+grep -q 'seeds 6100,6101,6102' "$T/out" || { echo "FAIL: -run-eq dry-run for (16, 5) must plan seeds 6100,6101,6102"; cat "$T/out"; fail=1; }
+grep -q 'T=1.15' "$T/out" || { echo "FAIL: -run-eq dry-run for t=5 must plan T=1.15"; cat "$T/out"; fail=1; }
+grep -q 'starts haar,haar,aligned' "$T/out" || { echo "FAIL: -run-eq dry-run must plan the start kinds haar,haar,aligned"; cat "$T/out"; fail=1; }
+grep -q 'burn-in 5000  sampling 50000  record every 10 (5000 records/seed)' "$T/out" || { echo "FAIL: -run-eq dry-run must plan 5000/50000/10"; cat "$T/out"; fail=1; }
+grep -q 'qbp-kz-g2-r3-eq-L16-t05.jsonl' "$T/out" || { echo "FAIL: default output name"; cat "$T/out"; fail=1; }
+[ -e qbp-kz-g2-r3-eq-L16-t05.jsonl ] && { echo "FAIL: dry-run created the output"; fail=1; }
+expect 0 "-run-eq dry-run (L=8, t=9) plans the last L=8 sub-block"  -- -run-eq -L 8 -t 9 -prereg-sha $SHA -dry-run
+grep -q 'seeds 6036,6037,6038' "$T/out" || { echo "FAIL: (8, 9) must plan seeds 6036,6037,6038"; cat "$T/out"; fail=1; }
+expect 0 "-run-eq dry-run (L=12, t=0) plans the first L=12 sub-block" -- -run-eq -L 12 -t 0 -prereg-sha $SHA -dry-run
+grep -q 'seeds 6040,6041,6042' "$T/out" || { echo "FAIL: (12, 0) must plan seeds 6040,6041,6042"; cat "$T/out"; fail=1; }
+expect 0 "-run-eq dry-run under the re-run amendment plans the re-run sub-block" -- -run-eq -L 16 -t 5 -prereg-sha $SHA -rerun-amend-sha $SHA -dry-run
+grep -q 'seeds 6220,6221,6222' "$T/out" || { echo "FAIL: re-run sub-block for (16, 5) must be 6220,6221,6222"; cat "$T/out"; fail=1; }
+# the end-line blindness surface: the plan never prints a statistic word
+grep -qiE 'mean|binder|barrier|variance' "$T/out" && { echo "FAIL: the eq plan prints a statistic word"; cat "$T/out"; fail=1; }
+# safety net: a -run-eq that passes every guard stops at the pause file before any step
+expect 3 "-run-eq stops at the pause file before any step"          -- -run-eq -L 8 -t 0 -prereg-sha $SHA $P -out eq-paused.jsonl
+grep -q '"kind":"meta"' eq-paused.jsonl || { echo "FAIL: paused eq wrote no meta"; fail=1; }
+grep -q '"mode":"eq"' eq-paused.jsonl || { echo "FAIL: meta mode must be eq"; fail=1; }
+grep -q '"seeds":\[6000,6001,6002\]' eq-paused.jsonl || { echo "FAIL: meta seeds for (8, 0)"; head -c 600 eq-paused.jsonl; fail=1; }
+grep -q '"starts":\["haar","haar","aligned"\]' eq-paused.jsonl || { echo "FAIL: meta starts"; fail=1; }
+grep -q "\"prereg_sha\":\"$SHA\"" eq-paused.jsonl || { echo "FAIL: meta must record prereg_sha"; fail=1; }
+grep -q '"noise_stream":100002' eq-paused.jsonl || { echo "FAIL: meta must record the eq noise stream 100002"; fail=1; }
+grep -q '"kind":"abort".*"steps":0' eq-paused.jsonl || { echo "FAIL: the abort at start must record steps 0 (a no-run)"; fail=1; }
+grep -q '"kind":"eq"' eq-paused.jsonl && { echo "FAIL: a paused eq run wrote an eq record"; fail=1; }
+grep -q '"kind":"end"' eq-paused.jsonl && { echo "FAIL: a paused eq run wrote an end record"; fail=1; }
+expect 3 "-run-eq re-run sub-block stops at the pause file"         -- -run-eq -L 12 -t 3 -prereg-sha $SHA -rerun-amend-sha $SHA $P -out eq-paused2.jsonl
+grep -q '"seeds":\[6172,6173,6174\]' eq-paused2.jsonl || { echo "FAIL: re-run seeds for (12, 3)"; fail=1; }
+grep -q '"rerun":true' eq-paused2.jsonl || { echo "FAIL: meta must flag the re-run"; fail=1; }
+expect 3 "-smoke-eq stops at the pause file before any step"        -- -smoke-eq -L 4 -first-seed 13000 $P -out smoke-eq-paused.jsonl
+grep -q '"mode":"smoke-eq"' smoke-eq-paused.jsonl || { echo "FAIL: smoke-eq meta mode"; fail=1; }
+grep -q '"seeds":\[13000,13001\]' smoke-eq-paused.jsonl || { echo "FAIL: smoke-eq seeds"; fail=1; }
+# the analyzers refuse each other's files and partial sets
+expect 1 "-analyze refuses an eq file"                               -- -analyze eq-paused.jsonl
+expect 1 "-analyze-0b refuses eq files"                              -- -analyze-0b eq-paused.jsonl eq-paused2.jsonl eq-paused.jsonl eq-paused2.jsonl
+expect 1 "-analyze-eq refuses a 0b file set"                         -- -analyze-eq 0b-paused.jsonl
+expect 1 "-analyze-eq with no files is refused"                      -- -analyze-eq
+expect 1 "-analyze-eq with one file is refused (no partial-set reading)" -- -analyze-eq eq-paused.jsonl
+grep -q 'partial' "$T/err" || { echo "FAIL: the partial-set refusal must say so"; cat "$T/err"; fail=1; }
+expect 1 "-analyze-eq with 26 files is refused"                      -- -analyze-eq $(for i in $(seq 26); do printf 'eq-paused.jsonl '; done)
+grep -q 'partial' "$T/err" || { echo "FAIL: the 26-file refusal must say partial"; cat "$T/err"; fail=1; }
+expect 1 "-analyze-eq with 27 copies of an incomplete file is refused" -- -analyze-eq $(for i in $(seq 27); do printf 'eq-paused.jsonl '; done)
+expect 1 "-analyze-eq with 27 copies of a smoke file is refused"     -- -analyze-eq $(for i in $(seq 27); do printf 'smoke-eq-paused.jsonl '; done)
+grep -qE 'smoke|two files' "$T/err" || { echo "FAIL: the smoke refusal must say so"; cat "$T/err"; fail=1; }
+rm -f eq-paused.jsonl eq-paused2.jsonl smoke-eq-paused.jsonl 0b-paused.jsonl
+expect 0 "-smoke-eq dry-run on free seeds is accepted"               -- -smoke-eq -L 8 -first-seed 13000 -dry-run
+grep -q 'SMOKE-EQ' "$T/out" || { echo "FAIL: smoke-eq dry-run must say its mode"; cat "$T/out"; fail=1; }
+grep -q 'burn-in 500  sampling 2000  record every 10 (200 records/seed)' "$T/out" || { echo "FAIL: smoke-eq lengths 500/2000/10"; cat "$T/out"; fail=1; }
+grep -q 'starts haar,aligned' "$T/out" || { echo "FAIL: smoke-eq must run one hot + one cold seed"; cat "$T/out"; fail=1; }
+expect 0 "-smoke-eq dry-run with the default first seed is accepted" -- -smoke-eq -L 8 -dry-run
+grep -q 'seeds 13000,13001' "$T/out" || { echo "FAIL: smoke-eq default seeds 13000,13001"; cat "$T/out"; fail=1; }
 
 # the positive control for the guard itself: a free-seed dry run is accepted
 expect 0 "a smoke dry-run on free seeds is accepted"               -- -dry-run
