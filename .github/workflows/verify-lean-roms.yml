@@ -61,7 +61,7 @@ jobs:
         run: go build ./cmd/lean2rom
 
       - name: Verify ROM checksums
-        run: make verify-roms
+        run: make verify-roms-ci
 
       - name: Run emulator tests (includes TestSIMDConstantsMatchROM)
         run: make test

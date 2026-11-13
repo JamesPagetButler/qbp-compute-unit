@@ -5,12 +5,14 @@
 #   make lean-build      — Build lean/ (toolchain-pinned); fails on compile error or any sorry
 #   make sign-roms       — Regenerate roms/ from lean/QBP/Sedenion.lean
 #   make verify-roms     — Verify ROM checksums match Lean source (CI gate)
+#   make verify-roms-ci  — Same, but fails loud if Lean extraction doesn't actually run
+#                          (no silent Go-native fallback; what CI itself uses)
 #   make test            — Run all emulator tests
 #   make bench           — Run all benchmarks
 #   make baseline        — Capture a durable, env-stamped perf baseline (doc/benchmarks/)
 #   make vet             — Run go vet
 
-.PHONY: lean-build sign-roms verify-roms test bench baseline vet
+.PHONY: lean-build sign-roms verify-roms verify-roms-ci test bench baseline vet
 
 # Build the Lean proofs under lean/ (toolchain pinned by lean/lean-toolchain;
 # requires elan on PATH). `lake build` alone only fails on a compile error —
@@ -47,6 +49,15 @@ sign-roms:
 verify-roms:
 	go run ./cmd/lean2rom -root . -verify
 	@echo "ROM checksums match Lean source"
+
+# Same as verify-roms, but fails instead of silently falling back if Lean
+# extraction didn't actually run (qbp-compute-unit#82 AC-c, qbp-architecture
+# §I4 live-test seq 4696: "make verify-roms require Lean extraction"). This
+# is what CI invokes; plain verify-roms stays fallback-friendly for local
+# dev without a Lean toolchain installed.
+verify-roms-ci:
+	go run ./cmd/lean2rom -root . -verify -require-lean
+	@echo "ROM checksums match Lean source (Lean extraction confirmed, no fallback)"
 
 # Run all emulator tests (includes TestSIMDConstantsMatchROM).
 test:
