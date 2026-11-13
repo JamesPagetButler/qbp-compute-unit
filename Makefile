@@ -2,6 +2,7 @@
 # Root targets for the lean2rom pipeline and emulator tests.
 #
 # Usage:
+#   make lean-build      — Build lean/ (toolchain-pinned); fails on compile error or any sorry
 #   make sign-roms       — Regenerate roms/ from lean/QBP/Sedenion.lean
 #   make verify-roms     — Verify ROM checksums match Lean source (CI gate)
 #   make test            — Run all emulator tests
@@ -9,7 +10,20 @@
 #   make baseline        — Capture a durable, env-stamped perf baseline (doc/benchmarks/)
 #   make vet             — Run go vet
 
-.PHONY: sign-roms verify-roms test bench baseline vet
+.PHONY: lean-build sign-roms verify-roms test bench baseline vet
+
+# Build the Lean proofs under lean/ (toolchain pinned by lean/lean-toolchain;
+# requires elan on PATH). `lake build` alone only fails on a compile error —
+# `sorry` typechecks and warns, it doesn't fail — so also grep the build
+# output for sorry/sorryAx and fail CI on either (qbp-compute-unit#82 AC-c:
+# closes the "proven ≠ wired" gap where lean2rom silently fell back to
+# its Go-native extraction whenever `lean` wasn't on PATH).
+lean-build:
+	cd lean && lake build 2>&1 | tee /tmp/lake-build.log
+	@if grep -qE "sorryAx|declaration uses 'sorry'" /tmp/lake-build.log; then \
+		echo "FAIL: sorry/sorryAx detected in Lean build output"; exit 1; \
+	fi
+	@echo "lean/ builds clean: no sorry, no sorryAx"
 
 # Regenerate all four ROM hex files, Go constants, and asm constants.
 # Runs lean2rom which either invokes Lean (if available) or uses the

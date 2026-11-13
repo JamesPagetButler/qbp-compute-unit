@@ -38,6 +38,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # qbp-compute-unit#82 AC-c: install the pinned Lean toolchain so this
+      # workflow genuinely builds/checks lean/ instead of lean2rom silently
+      # falling back to its Go-native extraction whenever `lean` isn't on
+      # PATH (the "proven ≠ wired" gap). Toolchain version comes from
+      # lean/lean-toolchain — elan resolves it automatically.
+      - name: Install elan (Lean toolchain manager)
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build Lean proofs (fails on compile error or any sorry)
+        run: make lean-build
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
