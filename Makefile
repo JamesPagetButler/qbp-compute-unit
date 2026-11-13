@@ -16,14 +16,23 @@
 # requires elan on PATH). `lake build` alone only fails on a compile error —
 # `sorry` typechecks and warns, it doesn't fail — so also grep the build
 # output for sorry/sorryAx and fail CI on either (qbp-compute-unit#82 AC-c:
-# closes the "proven ≠ wired" gap where lean2rom silently fell back to
-# its Go-native extraction whenever `lean` wasn't on PATH).
+# closes the "proven ≠ wired" gap where lean2rom silently fell back to its
+# Go-native extraction whenever `lean` wasn't on PATH).
+#
+# make's recipe shell is /bin/sh (dash on Ubuntu/CI), which has no
+# `pipefail` — piping `lake build | tee` would make the recipe's exit
+# status tee's (always 0), so a real compile error would NOT fail this
+# target (caught in review, qbp-oppenheimer, live-test seq 4695: the same
+# "proven ≠ wired" gap one layer down). Capture lake build's own exit
+# status explicitly instead of piping through tee.
 lean-build:
-	cd lean && lake build 2>&1 | tee /tmp/lake-build.log
-	@if grep -qE "sorryAx|declaration uses 'sorry'" /tmp/lake-build.log; then \
+	@cd lean && lake build > /tmp/lake-build.log 2>&1; rc=$$?; \
+	cat /tmp/lake-build.log; \
+	if [ $$rc -ne 0 ]; then echo "FAIL: lake build failed (exit $$rc)"; exit $$rc; fi; \
+	if grep -qE "sorryAx|declaration uses 'sorry'" /tmp/lake-build.log; then \
 		echo "FAIL: sorry/sorryAx detected in Lean build output"; exit 1; \
-	fi
-	@echo "lean/ builds clean: no sorry, no sorryAx"
+	fi; \
+	echo "lean/ builds clean: no sorry, no sorryAx"
 
 # Regenerate all four ROM hex files, Go constants, and asm constants.
 # Runs lean2rom which either invokes Lean (if available) or uses the
