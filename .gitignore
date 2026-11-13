@@ -11,6 +11,12 @@ cmd/wasm-visualizer/qbp.wasm
 cth/bin/
 cmd/hw-eval/hw-eval
 
+# Lake build output (qbp-compute-unit#82 T10 landing). lean/lean-toolchain and
+# lean/lakefile.lean are tracked; this is just the .olean/.ilean/.c artifacts
+# and lake's local dependency manifest, neither of which is source.
+lean/.lake/
+lean/lake-manifest.json
+
 # Local worktrees (created via `git worktree add worktrees/<name> ...`).
 # Untracked by policy — worktrees are forensic audit material per
 # feedback_branch_cleanup.md (no pre-stable cleanup), not committable

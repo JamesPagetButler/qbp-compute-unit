@@ -46,14 +46,15 @@ import (
 func main() {
 	verifyOnly := flag.Bool("verify", false, "Only verify checksums; do not regenerate")
 	repoRoot := flag.String("root", ".", "Repository root directory")
+	requireLean := flag.Bool("require-lean", false, "Fail instead of silently falling back to the Go-native derivation if Lean extraction doesn't run")
 	flag.Parse()
 
-	if err := run(*repoRoot, *verifyOnly); err != nil {
+	if err := run(*repoRoot, *verifyOnly, *requireLean); err != nil {
 		log.Fatalf("lean2rom: %v", err)
 	}
 }
 
-func run(root string, verifyOnly bool) error {
+func run(root string, verifyOnly, requireLean bool) error {
 	tables, leanUsed, err := loadTables(root)
 	if err != nil {
 		return fmt.Errorf("loading tables: %w", err)
@@ -64,6 +65,14 @@ func run(root string, verifyOnly bool) error {
 		src = "lean/QBP/Sedenion.lean"
 	}
 	log.Printf("lean2rom: source = %s", src)
+
+	// qbp-compute-unit#82 AC-c (qbp-architecture §I4, live-test seq 4696): without
+	// this, a broken/missing Lean toolchain degrades silently to the Go-native
+	// derivation — the "proven ≠ wired" gap. CI passes -require-lean; local/dev
+	// usage without Lean installed can still fall back.
+	if requireLean && !leanUsed {
+		return fmt.Errorf("-require-lean set but Lean extraction was not used (fell back to Go-native derivation); see the preceding log line for why")
+	}
 
 	if err := validateTables(tables); err != nil {
 		return fmt.Errorf("table validation: %w", err)
@@ -126,13 +135,26 @@ func extractFromLean(root, leanPath string) (Tables, error) {
 		return Tables{}, fmt.Errorf("lean not in PATH")
 	}
 
-	cmd := exec.Command(lean, leanPath)
-	cmd.Dir = root
+	// Run from lean/ (not root): elan resolves the pinned toolchain by walking
+	// up from the working directory looking for a lean-toolchain file, which
+	// only exists under lean/. Running from root with no project toolchain
+	// there falls through to elan's configured default — `none` in CI — and
+	// fails with no stdout (qbp-architecture §I4, live-test seq 4696).
+	leanDir := filepath.Join(root, "lean")
+	relLeanPath, relErr := filepath.Rel(leanDir, leanPath)
+	if relErr != nil {
+		relLeanPath = leanPath
+	}
+
+	cmd := exec.Command(lean, relLeanPath)
+	cmd.Dir = leanDir
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	out, err := cmd.Output()
 	if err != nil {
 		// lean exits non-zero on warnings but still emits output; check for JSON
 		if len(out) == 0 {
-			return Tables{}, fmt.Errorf("lean exited %v with no output", err)
+			return Tables{}, fmt.Errorf("lean exited %v with no output (stderr: %s)", err, strings.TrimSpace(stderr.String()))
 		}
 		log.Printf("lean2rom: lean exited non-zero (%v); attempting to parse output anyway", err)
 	}
