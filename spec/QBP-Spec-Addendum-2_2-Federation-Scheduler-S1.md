@@ -1,6 +1,6 @@
 # QBP-CU Spec Addendum 2.2 — Federation Resource Scheduler (inter#301, v1.6.3–v1.7.1): QBP-CU as a scheduled CPU-heavy workload
 
-**Status:** theory addendum, GO from the beekeeper (live-test seq 5539/5540, qbp-architecture). Covers qbp-compute-unit's part of the **ratified** inter#301 design, versions v1.6.3 through v1.7.1 (ratification: inter#301 issuecomment-7022163369). Consolidates the S1 design record already accepted into inter#301 (cited by comment below) plus the v1.7/v1.7.1 degrade ladder, applied honestly to this repo's actual workload shape. This addendum will cite qbp-architecture's consolidated cross-repo design doc once its PR lands; drafted from the inter#301 record in the meantime, per direction. Owner: `qbp-cu-implementor`. Draft, not yet §I4-reviewed.
+**Status:** theory addendum, GO from the beekeeper (live-test seq 5539/5540, qbp-architecture). Covers qbp-compute-unit's part of the **ratified** inter#301 design, versions v1.6.3 through v1.7.1 (ratification: inter#301 issuecomment-7022163369). Consolidates the S1 design record already accepted into inter#301 (cited by comment below) plus the v1.7/v1.7.1 degrade ladder, applied honestly to this repo's actual workload shape. **Consolidated cross-repo design doc: inter#304 (`design/federation-scheduler-design-v1.md`, §8.4 for this repo's required coverage).** Owner: `qbp-cu-implementor`. Draft, not yet §I4-reviewed.
 
 Draft, no E claims. This addendum states what the ratified scheduler design means for qbp-compute-unit's workloads; it does not itself run or measure anything (that's #89/#90, cited in §7).
 
@@ -45,10 +45,24 @@ v1.7.1's D2 degrade ladder is per-axis:
 - **RAM below the floor**, if it ever applies to a QBP-CU job: the envelope check runs first (over-envelope is a fault, not blameless), blameless preemption picks the victim losing the least completed work, re-queue happens only with headroom ≥ envelope + the non-federation RAM margin, and a second blameless preemption on the same job escalates to deming rather than looping forever. None of this needs a QBP-CU-specific carve-out; a `qbp-cu`-kind batch job is just another batch job on this axis, consistent with §1's "no second pool, no double counting" and the earlier-accepted rule that classification goes by what a job actually consumes, not by its launch flag.
 - **Continuous lanes are never OOM'd by the scheduler** — not relevant to qbp-compute-unit per §5, since it has none.
 
-## 7. Open follow-through (not blocking ratification, tracked on this repo's own issues)
+## 7. The derived estimate class: why it does not hold today
+
+inter#304 §3.11 defines three run-time estimate classes — **declared** (requester's stated time, wide safety), **measured** (refit from per-job runs, E-graded by calibration), and **derived** (a proven cycle count × a validated cycle rate). *Derived* requires all five of:
+
+1. a proven cycle count — fixed fuel, or a proven WCET-style upper bound (fuel determinism checked by [#100](https://github.com/JamesPagetButler/qbp-compute-unit/issues/100));
+2. proven-correct execution ([#99](https://github.com/JamesPagetButler/qbp-compute-unit/issues/99), extending T10);
+3. a validated rate per width, QW64 ≠ QW128 ([#89](https://github.com/JamesPagetButler/qbp-compute-unit/issues/89));
+4. **interference-free execution** — a dedicated unit at a fixed clock, inside the tested envelope;
+5. a composed grade: F from the proof and contract checks, E from #89/#99/#100.
+
+**The derived class does not hold today, for one specific reason: condition 4.** QBP-CU has no dedicated unit — per §1, the emulator runs as an ordinary x86 process sharing the box's CPU/thermal pool with every other job, so "a dedicated unit at a fixed clock" is false by construction, independent of how good #89/#99/#100 eventually turn out to be. The cycle count *can* be derived (it already is proven to depend only on (opcode, width), never on operand values or wall-clock timing — see the fuel-metric-determinism invariant), but wall-clock time stays **measured**, not derived, until real silicon ([#77](https://github.com/JamesPagetButler/qbp-compute-unit/issues/77)) gives QBP-CU an actual dedicated, fixed-clock unit. This is consistent with §1's "no second pool" framing: the same fact that keeps QBP-CU from double-counting against x86 is the fact that blocks the derived-class upgrade.
+
+**Cycle-count source (inter#304 §3.11 G3):** Edda's `Cap.Fuel` is the designed-but-dark cycle-count carrier (gated on wyrd#91). The named invariant stands: `Cap.Fuel` stays abstract, and wall-clock conversion is an **external multiplication** by the #89 per-width factor — never a re-pin of the count itself. Cross-confirmed independently from the Edda side at live-test seq 5488/5490.
+
+## 8. Open follow-through (not blocking ratification, tracked on this repo's own issues)
 
 - [#89](https://github.com/JamesPagetButler/qbp-compute-unit/issues/89) (cu-speed-1:1 spike) and [#90](https://github.com/JamesPagetButler/qbp-compute-unit/issues/90) (Tariff cost model) remain the long-run source for the model-cycle cost (§3.3) and the per-width run-time estimate (§4); both open, unbuilt, scheduled post-S4.
 - [#99](https://github.com/JamesPagetButler/qbp-compute-unit/issues/99) (opcode-vs-T10 differential test) and [#100](https://github.com/JamesPagetButler/qbp-compute-unit/issues/100) (fuel-metric scheduling-invariance test) are the two experiments that would upgrade the emulator opcode-execution and fuel-determinism claims this addendum relies on in §3.3/§1 from tested-only to tested-with-mutant-kill evidence. Filed, unscheduled.
 - If/when real QBP-CU silicon ([#77](https://github.com/JamesPagetButler/qbp-compute-unit/issues/77)) lands, §1's "no second pool" premise and §4's "request parameter, not capacity axis" framing for QW64/QW128 both need re-verification, not just a numbers refresh — this is the same Run-phase re-verify obligation already standing on the fuel-metric-determinism invariant.
 
-Refs: inter#301 (the ratified design record, v1.0 → v1.7.1), inter#303 (pod layout, input welcome, not yet contributed to from this seat), qbp-compute-unit#77/#82/#89/#90/#98/#99/#100.
+Refs: inter#301 (the ratified design record, v1.0 → v1.7.1), inter#304 (consolidated design doc, §8.4 for this repo's required coverage), inter#303 (pod layout, input welcome, not yet contributed to from this seat), qbp-compute-unit#77/#82/#89/#90/#98/#99/#100.
